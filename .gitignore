@@ -1,0 +1,22 @@
+/node_modules
+/.next
+/out
+/build
+.DS_Store
+*.pem
+npm-debug.log*
+.env*.local
+.vercel
+next-env.d.ts
+.eslintcache
+
+/src/generated/prisma
+
+# local env
+.env
+tsconfig.tsbuildinfo
+.pgdata/
+
+# Raw source datasets — large brochure PDFs, not app assets
+creators data/
+creators_new/

@@ -1,0 +1,177 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Creators Home — light theme (whiter + a hint of lavender) */
+    --background: 264 30% 99.4%;
+    --foreground: 263 45% 16%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 263 45% 16%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 263 45% 16%;
+
+    /* Deep royal-purple brand */
+    --primary: 262 52% 30%;
+    --primary-foreground: 264 60% 98%;
+
+    /* Vivid lavender accent */
+    --accent: 258 85% 66%;
+    --accent-foreground: 0 0% 100%;
+
+    --muted: 258 44% 96%;
+    --muted-foreground: 256 18% 46%;
+
+    --border: 258 36% 90%;
+    --input: 258 36% 90%;
+    --ring: 258 85% 66%;
+
+    --success: 142 64% 40%;
+    --danger: 350 72% 55%;
+    --warning: 32 92% 50%;
+
+    --radius: 0.95rem;
+  }
+
+  .dark {
+    /* Creators Home — dark theme (deep purple, glowy lavender) */
+    --background: 265 44% 8%;
+    --foreground: 258 35% 92%;
+
+    --card: 264 40% 12%;
+    --card-foreground: 258 35% 92%;
+
+    --popover: 264 40% 12%;
+    --popover-foreground: 258 35% 92%;
+
+    /* Kept a deep purple (not flipped to light) so brand bands stay dark + glowy */
+    --primary: 263 48% 24%;
+    --primary-foreground: 258 40% 95%;
+
+    /* Glowy bright lavender accent */
+    --accent: 262 90% 72%;
+    --accent-foreground: 264 60% 10%;
+
+    --muted: 264 30% 17%;
+    --muted-foreground: 258 22% 66%;
+
+    --border: 264 30% 22%;
+    --input: 264 30% 24%;
+    --ring: 262 90% 72%;
+
+    --success: 142 60% 50%;
+    --danger: 350 78% 66%;
+    --warning: 38 90% 60%;
+  }
+
+  * {
+    border-color: hsl(var(--border));
+  }
+
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-feature-settings: "rlig" 1, "calt" 1;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection {
+    background: hsl(var(--accent) / 0.25);
+  }
+}
+
+@layer utilities {
+  /* Glassmorphism surface used across hero + floating cards */
+  .glass {
+    background: hsl(var(--card) / 0.6);
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    border: 1px solid hsl(var(--border) / 0.7);
+  }
+
+  .glass-dark {
+    background: linear-gradient(
+      135deg,
+      hsl(263 52% 22% / 0.74),
+      hsl(272 50% 30% / 0.55)
+    );
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    border: 1px solid hsl(0 0% 100% / 0.12);
+  }
+
+  .text-gradient {
+    background: linear-gradient(
+      120deg,
+      hsl(var(--accent)),
+      hsl(280 90% 72%)
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Subtle dotted blueprint grid for hero / section backgrounds */
+  .bg-grid {
+    background-image: radial-gradient(
+      hsl(var(--foreground) / 0.06) 1px,
+      transparent 1px
+    );
+    background-size: 22px 22px;
+  }
+
+  .shimmer {
+    position: relative;
+    overflow: hidden;
+  }
+  .shimmer::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+      90deg,
+      transparent,
+      hsl(0 0% 100% / 0.18),
+      transparent
+    );
+    animation: shimmer 2.2s infinite;
+  }
+  @keyframes shimmer {
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Respect users who prefer reduced motion: neutralise CSS animations,
+   transitions and smooth scrolling. (framer-motion is handled separately via
+   <MotionConfig reducedMotion="user"> in the root layout.) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  html {
+    scroll-behavior: auto;
+  }
+}
