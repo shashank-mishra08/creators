@@ -1,3 +1,5 @@
+import fs from "node:fs";
+import path from "node:path";
 import { prisma } from "@/lib/db/prisma";
 import type { NormalizedProject } from "@/lib/import/validator";
 
@@ -46,6 +48,29 @@ export async function upsertProject(
       media: { create: p.media },
       attributes: { create: p.attributes },
     };
+
+    // Auto-discover cover image if missing
+    if (!children.media.create.some(m => (m as any).type === "cover")) {
+      try {
+        const publicProps = path.join(process.cwd(), "public", "properties");
+        if (fs.existsSync(publicProps)) {
+          const files = fs.readdirSync(publicProps).filter(f => !f.startsWith('.'));
+          // Look for an image containing 'cover' and a word from the slug
+          const slugWords = p.slug.split('-');
+          for (const file of files) {
+            if (file.includes('cover') && slugWords.some(w => w.length > 3 && file.includes(w))) {
+               children.media.create.push({
+                 type: "cover",
+                 url: `/properties/${file}`
+               } as any);
+               break;
+            }
+          }
+        }
+      } catch (e) {
+        // Ignore file system errors during auto-discovery
+      }
+    }
 
     const scalars = {
       name: p.property.name,

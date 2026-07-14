@@ -329,7 +329,16 @@ export function validateAndClean(parsed: ParsedProject): ValidationResult {
 
   // ---- media ----
   const media: NormalizedProject["media"] = [];
-  const addMedia = (type: string, url: string | null) => {
+  const addMedia = (type: string, rawUrl: string | null) => {
+    let url = rawUrl?.trim();
+    if (url && !url.startsWith("http") && !url.startsWith("/")) {
+      // If it doesn't have a path separator, assume it's in the properties folder
+      if (!url.includes("/")) {
+        url = "/properties/" + url;
+      } else {
+        url = "/" + url;
+      }
+    }
     if (!url) return;
     if (!C.isUrl(url)) {
       warn(`media.${type}`, `Invalid ${type} URL: ${url}`);

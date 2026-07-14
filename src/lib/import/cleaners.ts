@@ -123,7 +123,8 @@ export function bhkCount(label: string): number | null {
 export function isUrl(v: unknown): boolean {
   const s = str(v);
   if (!s) return false;
-  if (s.startsWith("/")) return true; // Allow local asset paths
+  // Allow local asset paths (either starting with / or something like properties/image.jpg)
+  if (s.startsWith("/") || s.match(/\.(jpg|jpeg|png|webp)$/i)) return true;
   try {
     const u = new URL(s);
     return u.protocol === "http:" || u.protocol === "https:";

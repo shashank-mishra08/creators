@@ -4,6 +4,7 @@ const nextConfig = {
   images: {
     // Local assets for now. When media moves to a CDN/CMS, add the host here.
     remotePatterns: [],
+    unoptimized: true,
   },
   // Keep the Prisma client + pg driver out of the bundler (server-only natives).
   experimental: {
