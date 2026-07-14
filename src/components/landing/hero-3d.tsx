@@ -53,21 +53,21 @@ export function Hero3D() {
       ref={stage}
       onMouseMove={onMove}
       onMouseLeave={onLeave}
-      className="relative flex min-h-[calc(100svh-4rem)] items-center overflow-hidden bg-grid"
+      className="relative flex min-h-[calc(100svh-4rem)] items-center overflow-hidden bg-background"
     >
-      {/* Ambient glow */}
-      <div className="pointer-events-none absolute -left-32 top-10 h-[26rem] w-[26rem] rounded-full bg-accent/25 blur-[130px]" />
-      <div className="pointer-events-none absolute -right-24 bottom-0 h-[30rem] w-[30rem] rounded-full bg-primary/25 blur-[140px] dark:bg-accent/15" />
+      {/* Subtle premium ambient glow */}
+      <div className="pointer-events-none absolute -left-32 top-0 h-[30rem] w-[30rem] rounded-full bg-primary/10 blur-[120px] dark:bg-primary/20" />
+      <div className="pointer-events-none absolute -right-24 bottom-0 h-[30rem] w-[30rem] rounded-full bg-accent/10 blur-[140px] dark:bg-accent/15" />
 
       <div className="container relative grid w-full items-center gap-10 py-10 lg:grid-cols-[1fr_1.05fr]">
         {/* Copy */}
         <div>
-          <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card/70 px-4 py-1.5 text-xs font-semibold text-muted-foreground backdrop-blur">
-            <Sparkles className="h-3.5 w-3.5 text-accent" />
-            Comparison is our superpower · NCR Real Estate
+          <span className="inline-flex items-center gap-2 rounded-full border border-border/50 bg-muted/30 px-4 py-1.5 text-xs font-semibold text-muted-foreground backdrop-blur-md">
+            <Sparkles className="h-3.5 w-3.5 text-primary" />
+            Curated Real Estate Insights · Delhi NCR
           </span>
 
-          <h1 className="mt-6 font-display text-5xl font-extrabold leading-[1.02] tracking-tight text-primary dark:text-foreground sm:text-6xl xl:text-7xl">
+          <h1 className="mt-6 font-display text-4xl font-extrabold leading-[1.05] tracking-tight text-primary dark:text-foreground sm:text-5xl xl:text-6xl">
             Compare
             <br />
             Properties
@@ -75,37 +75,35 @@ export function Hero3D() {
             <span className="text-gradient">Smarter.</span>
           </h1>
 
-          <p className="mt-6 max-w-md text-base leading-relaxed text-muted-foreground sm:text-lg">
-            Stack homes side-by-side and let our rule-based engine score them on
-            price, amenities, location, builder and ROI — the best investment, in
-            minutes.
+          <p className="mt-6 max-w-md text-sm leading-relaxed text-muted-foreground sm:text-base">
+            Skip the guesswork. We provide in-depth analysis on location advantages, builder reputation, and true market value so you can make an informed property investment.
           </p>
 
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <Link href="/properties">
-              <Button variant="accent" size="lg" className="group">
-                Start Comparing
+              <Button size="lg" className="group text-white shadow-lg">
+                Explore Projects
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Button>
             </Link>
-            <Link href="/properties">
-              <Button variant="outline" size="lg">
-                Explore Properties
+            <Link href="/compare">
+              <Button variant="outline" size="lg" className="border-border/50 bg-background/50 backdrop-blur-md hover:bg-muted">
+                Compare Properties
               </Button>
             </Link>
           </div>
 
-          <dl className="mt-10 flex flex-wrap gap-x-9 gap-y-4">
+          <dl className="mt-10 flex flex-wrap gap-x-12 gap-y-6 border-t border-border/50 pt-8">
             {[
-              { k: "20+", v: "Verified projects" },
-              { k: "5", v: "Scoring factors" },
-              { k: "< 2 min", v: "To a decision" },
+              { k: "100+", v: "Curated Projects" },
+              { k: "Real-time", v: "Market Analytics" },
+              { k: "0", v: "Hidden Charges" },
             ].map((s) => (
               <div key={s.v}>
-                <dt className="font-display text-2xl font-extrabold text-primary dark:text-foreground">
+                <dt className="font-display text-2xl font-bold text-primary dark:text-foreground">
                   {s.k}
                 </dt>
-                <dd className="text-xs text-muted-foreground">{s.v}</dd>
+                <dd className="mt-1 text-sm text-muted-foreground">{s.v}</dd>
               </div>
             ))}
           </dl>

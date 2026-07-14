@@ -332,7 +332,7 @@ export function PropertyExplorer({ initial }: { initial: Property[]; title?: str
   );
 
   return (
-    <section id="explore" className="container scroll-mt-20 py-10">
+    <section id="explore" className="container scroll-mt-20 pt-10 pb-0">
       <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
         {/* ───────────── FILTER SIDEBAR (sticky, desktop ≥1024px only) ───────────── */}
         <aside className="hidden h-fit lg:sticky lg:top-20 lg:block">
@@ -589,7 +589,7 @@ export function PropertyExplorer({ initial }: { initial: Property[]; title?: str
       </div>
 
       <CompareBar />
-      <div className="h-24" />
+      <div className="h-6" />
     </section>
   );
 }
@@ -783,27 +783,27 @@ const ListingCard = React.forwardRef<HTMLDivElement, { property: Property }>(
           </div>
         )}
 
-        <div className="mt-auto grid grid-cols-2 gap-1.5 pt-3 sm:grid-cols-[1fr_1fr_auto]">
+        <div className="mt-auto grid grid-cols-2 gap-2 pt-3">
           <button
             onClick={handleShortlist}
             className={cn(
-              "inline-flex items-center justify-center gap-1 rounded-lg border px-2 py-2 text-[11px] font-semibold transition-colors",
+              "inline-flex items-center justify-center gap-1 rounded-lg border px-2 py-2.5 text-[12px] font-semibold transition-colors",
               shortlisted ? "border-accent bg-accent/10 text-accent" : "border-border text-foreground hover:bg-muted",
             )}
           >
-            <Heart className={cn("h-3 w-3", shortlisted && "fill-accent")} /> Shortlist
+            <Heart className={cn("h-3.5 w-3.5", shortlisted && "fill-accent")} /> Shortlist
           </button>
           <button
             onClick={() => toggleCompare(p.id)}
             className={cn(
-              "inline-flex items-center justify-center gap-1 rounded-lg border px-2 py-2 text-[11px] font-semibold transition-colors",
+              "inline-flex items-center justify-center gap-1 rounded-lg border px-2 py-2.5 text-[12px] font-semibold transition-colors",
               inCompare ? "border-accent bg-accent/10 text-accent" : "border-border text-foreground hover:bg-muted",
             )}
           >
-            <GitCompareArrows className="h-3 w-3" /> {inCompare ? "Added" : "Compare"}
+            <GitCompareArrows className="h-3.5 w-3.5" /> {inCompare ? "Added" : "Compare"}
           </button>
-          <Link href={`/properties/${p.id}`} className="col-span-2 sm:col-span-1">
-            <Button variant="accent" size="sm" className="h-full w-full px-3 text-[11px]">
+          <Link href={`/properties/${p.id}`} className="col-span-2">
+            <Button variant="accent" size="sm" className="h-full w-full py-2.5 text-[12px]">
               View Details
             </Button>
           </Link>

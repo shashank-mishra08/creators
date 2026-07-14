@@ -22,11 +22,11 @@ export function Logo({
         <Image
           src="/brand/creators-logo.png"
           alt="Creators Arena"
-          width={320}
-          height={200}
+          width={240}
+          height={80}
           priority
           className={cn(
-            "h-28 w-auto object-contain mt-4",
+            "h-14 w-auto object-contain scale-110",
             dark && "brightness-0 invert"
           )}
         />

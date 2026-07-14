@@ -45,6 +45,10 @@ const config: Config = {
         success: "hsl(var(--success))",
         danger: "hsl(var(--danger))",
         warning: "hsl(var(--warning))",
+        brand: {
+          purple: "#7166F0",
+          light: "#8571C0",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",

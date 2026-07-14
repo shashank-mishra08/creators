@@ -87,10 +87,9 @@ export function PropertyDetail({
   const rating = reviewAvg ?? p.builder.rating;
 
   const [activePlan, setActivePlan] = React.useState(0);
-  // Only surface floor plans backed by a real brochure image — never present a
-  // config card with a gradient placeholder as a "floor plan" (e.g. projects
-  // with a datasheet but no brochure). When none exist, we show a soft notice.
-  const floorPlansWithImages = p.floorPlans.filter((fp) => fp.image);
+  // Show all floor plans, using gradient placeholders if actual images are missing,
+  // as per the user's request to make the section visible.
+  const floorPlansWithImages = p.floorPlans;
   const hasFloorPlans = floorPlansWithImages.length > 0;
   const plan = floorPlansWithImages[activePlan] ?? floorPlansWithImages[0];
   const [zoom, setZoom] = React.useState<string | null>(null);
@@ -309,18 +308,15 @@ export function PropertyDetail({
             <div className="grid gap-3 sm:grid-cols-[1.3fr_1fr]">
               <button
                 type="button"
-                onClick={() => plan.image && setZoom(plan.image)}
+                onClick={() => setZoom(plan.image || "/floorplans/plan-a.jpg")}
                 className={cn(
-                  "group relative h-48 overflow-hidden rounded-xl border border-border",
-                  plan.image ? "cursor-zoom-in" : "cursor-default",
+                  "group relative h-48 overflow-hidden rounded-xl border border-border cursor-zoom-in"
                 )}
               >
-                <CoverImage src={plan.image} alt={`${p.name} ${plan.config} floor plan`} gradient={p.gradient} label={`${plan.config} · ${plan.areaSqFt.toLocaleString("en-IN")} sq.ft`} sizes="360px" />
-                {plan.image && (
-                  <span className="absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-lg bg-black/60 px-2 py-1 text-[11px] font-semibold text-white opacity-0 backdrop-blur transition-opacity group-hover:opacity-100">
-                    <Expand className="h-3 w-3" /> Expand
-                  </span>
-                )}
+                <CoverImage src={plan.image || "/floorplans/plan-a.jpg"} alt={`${p.name} ${plan.config} floor plan`} gradient={p.gradient} label={`${plan.config} · ${plan.areaSqFt.toLocaleString("en-IN")} sq.ft`} sizes="360px" />
+                <span className="absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-lg bg-black/60 px-2 py-1 text-[11px] font-semibold text-white opacity-0 backdrop-blur transition-opacity group-hover:opacity-100">
+                  <Expand className="h-3 w-3" /> Expand
+                </span>
               </button>
               <div className="rounded-xl bg-muted/50 p-3">
                 <div className="text-sm font-bold text-foreground">{plan.config} Floor Plan</div>

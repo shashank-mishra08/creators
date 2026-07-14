@@ -11,6 +11,8 @@ export const metadata: Metadata = {
 // DB-backed: render at request time, not build time.
 export const dynamic = "force-dynamic";
 
+import { ReviewSection } from "@/components/landing/review-section";
+
 export default async function HomePage() {
   const properties = await getDataSource().list();
   return (
@@ -23,6 +25,7 @@ export default async function HomePage() {
         title="Featured properties by location"
         subtitle="Browse live NCR projects grouped by location, then shortlist 2–4 to compare."
       />
+      <ReviewSection />
     </>
   );
 }

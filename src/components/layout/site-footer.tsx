@@ -21,7 +21,7 @@ const LOCATIONS = [
 
 export function SiteFooter() {
   return (
-    <footer className="mt-24 bg-primary text-primary-foreground">
+    <footer className="mt-0 bg-primary text-primary-foreground">
       <div className="container grid gap-12 py-16 md:grid-cols-[1.4fr_1fr_1fr_1.2fr]">
         <div>
           <div className="text-primary-foreground">
