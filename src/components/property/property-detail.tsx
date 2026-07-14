@@ -373,6 +373,23 @@ export function PropertyDetail({
         </div>
       </div>
 
+      {/* Master Plan */}
+      {(p.layout || true) && (
+        <div className="mt-4 rounded-2xl border border-border bg-card p-5 shadow-glass">
+          <h2 className="mb-3 font-display text-base font-bold text-primary dark:text-foreground">Master Plan</h2>
+          <button
+            type="button"
+            onClick={() => setZoom(p.layout || p.image || "/floorplans/plan-a.jpg")}
+            className="group relative block h-64 w-full overflow-hidden rounded-xl border border-border sm:h-96 cursor-zoom-in"
+          >
+            <CoverImage src={p.layout || p.image || "/floorplans/plan-a.jpg"} alt={`${p.name} Master Plan`} gradient={p.gradient} sizes="(max-width:1024px) 100vw, 80vw" />
+            <span className="absolute bottom-4 right-4 inline-flex items-center gap-1 rounded-lg bg-black/60 px-3 py-2 text-xs font-semibold text-white opacity-0 backdrop-blur transition-opacity group-hover:opacity-100">
+              <Expand className="h-4 w-4" /> Expand Layout
+            </span>
+          </button>
+        </div>
+      )}
+
       {/* Location & Connectivity */}
       <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_1.4fr]">
         <div className="rounded-2xl border border-border bg-card p-5 shadow-glass">

@@ -99,6 +99,8 @@ function mapProperty(p: PropertyRow): Property {
     .filter((m) => m.type === "gallery")
     .map((m) => m.url);
 
+  const layout = p.media.find((m) => m.type === "layout")?.url ?? null;
+
   return {
     id: p.id,
     name: p.name,
@@ -148,6 +150,7 @@ function mapProperty(p: PropertyRow): Property {
     highlights: p.attributes
       .filter((a) => a.category === "highlight")
       .map((a) => a.value),
+    layout,
   };
 }
 

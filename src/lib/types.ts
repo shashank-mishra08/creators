@@ -127,6 +127,8 @@ export interface Property {
   investment: InvestmentMetrics;
   floorPlans: FloorPlan[];
   highlights: string[];
+  /** Master plan / land layout image. */
+  layout: string | null;
 }
 
 /** A user/visitor review of a property. */
