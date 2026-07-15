@@ -8,10 +8,12 @@ import { cn } from "@/lib/utils";
  */
 export function Logo({
   className,
+  imageClassName,
   showWord = true,
   dark = false,
 }: {
   className?: string;
+  imageClassName?: string;
   /** When true the text/icon renders white (for dark hero backgrounds). */
   showWord?: boolean;
   dark?: boolean;
@@ -22,12 +24,13 @@ export function Logo({
         <Image
           src="/brand/creators-logo.png"
           alt="Creators Arena"
-          width={240}
-          height={80}
+          width={320}
+          height={200}
           priority
           className={cn(
-            "h-14 w-auto object-contain scale-110",
-            dark && "brightness-0 invert"
+            "h-28 w-auto object-contain mt-4",
+            dark && "brightness-0 invert",
+            imageClassName
           )}
         />
       </span>
