@@ -42,6 +42,7 @@ export interface AmenityItem {
   key: string;
   label: string;
   available: boolean;
+  note: string | null;
 }
 
 export type AmenityKey =
@@ -90,6 +91,16 @@ export interface FloorPlan {
   image: string;
 }
 
+/** A single tower's details from the source sheet (nulls where unavailable). */
+export interface TowerInfo {
+  name: string;
+  /** Floor configuration, e.g. "B+S+G+34". */
+  floorPlan: string | null;
+  lifts: number | null;
+  unitsPerFloor: number | null;
+  totalUnits: number | null;
+}
+
 /** The core property entity. */
 export interface Property {
   id: string;
@@ -129,6 +140,8 @@ export interface Property {
   highlights: string[];
   /** Master plan / land layout image. */
   layout: string | null;
+  /** Per-tower details from the source sheet (empty when none). */
+  towerList: TowerInfo[];
 }
 
 /** A user/visitor review of a property. */

@@ -53,6 +53,7 @@ const propertyInclude = {
   amenities: true,
   media: { orderBy: { sortOrder: "asc" } },
   attributes: { orderBy: { sortOrder: "asc" } },
+  towerUnits: { orderBy: { sortOrder: "asc" } },
 } satisfies Prisma.PropertyInclude;
 
 type PropertyRow = Prisma.PropertyGetPayload<{ include: typeof propertyInclude }>;
@@ -82,7 +83,7 @@ function mapProperty(p: PropertyRow): Property {
 
   // Full source amenity list (available first, then alphabetical) for display.
   const amenityList = p.amenities
-    .map((a) => ({ key: a.key, label: a.label, available: a.available }))
+    .map((a) => ({ key: a.key, label: a.label, available: a.available, note: a.note ?? null }))
     .sort(
       (x, y) =>
         Number(y.available) - Number(x.available) ||
@@ -151,6 +152,13 @@ function mapProperty(p: PropertyRow): Property {
       .filter((a) => a.category === "highlight")
       .map((a) => a.value),
     layout,
+    towerList: p.towerUnits.map((t) => ({
+      name: t.name,
+      floorPlan: t.floorPlan ?? null,
+      lifts: t.lifts ?? null,
+      unitsPerFloor: t.unitsPerFloor ?? null,
+      totalUnits: t.totalUnits ?? null,
+    })),
   };
 }
 
