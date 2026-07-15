@@ -8,6 +8,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   BadgeCheck,
   Building2,
+  Check,
   ChevronDown,
   GitCompareArrows,
   Headset,
@@ -44,7 +45,7 @@ const fmtBudget = (lakh: number): string => {
 // Native range-thumb styling (self-contained, no global CSS). Only the thumb is
 // interactive so two overlaid sliders don't block each other.
 const THUMB =
-  "pointer-events-none absolute inset-0 h-1.5 w-full cursor-pointer appearance-none bg-transparent " +
+  "pointer-events-none absolute inset-0 h-full w-full cursor-pointer appearance-none bg-transparent " +
   "[&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:bg-accent [&::-webkit-slider-thumb]:shadow-md " +
   "[&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-white [&::-moz-range-thumb]:bg-accent [&::-moz-range-thumb]:shadow-md [&::-moz-range-track]:bg-transparent";
 // Filter by max unit size (super area, sq.ft) across a project's configs.
@@ -704,7 +705,7 @@ function CheckRow({
             checked ? "border-accent bg-accent text-accent-foreground" : "border-border",
           )}
         >
-          {checked && <span className="h-2 w-2 rounded-[2px] bg-current" />}
+          {checked && <Check className="h-3 w-3" />}
         </span>
         <span className="text-foreground">{label}</span>
       </span>
