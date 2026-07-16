@@ -8,68 +8,82 @@ import { handleError, json } from "@/lib/api/http";
 import { AppError } from "@/lib/errors";
 import { prisma } from "@/lib/db/prisma";
 import { parseWorkbook } from "@/lib/import/parser";
-import { validateAndClean } from "@/lib/import/validator";
-import { importFile } from "@/lib/import/importer";
+import { validateAndClean, type Issue } from "@/lib/import/validator";
+import { normalizedToFormData } from "@/lib/import/to-form-data";
+import type { PropertyFormData } from "@/components/admin/property-form";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const MAX_SIZE_MB = 10;
+const MAX_FILES = 20;
+
+interface PreviewResult {
+  fileName: string;
+  ok: boolean; // false → has errors → cannot be published
+  issues: Issue[];
+  formData: PropertyFormData | null;
+  existingId: string | null; // set → publishing will UPDATE this property
+}
 
 /**
  * POST /api/admin/import
- * Accepts one .xlsx via multipart/form-data.
- *  - mode "preview" (default): parse + validate only, no DB write.
- *  - mode "commit": run the full importer (writes to DB + audit log).
- * Reuses the existing import engine unchanged.
+ * Accepts one or more .xlsx via multipart/form-data ("file", repeatable).
+ * Parses + validates each and returns prefilled form data for review.
+ * NOTHING is written to the DB here — publishing happens through the existing
+ * property create/update APIs once the admin saves the form.
  */
 export async function POST(req: NextRequest) {
-  let tmpPath: string | null = null;
   try {
     await requireAdminSession();
 
-    const formData = await req.formData();
-    const file = formData.get("file") as File | null;
-    const commit = formData.get("mode") === "commit";
+    const form = await req.formData();
+    const files = form.getAll("file").filter((f): f is File => f instanceof File);
 
-    if (!file) throw new AppError("No file provided", 400);
-    if (!file.name.toLowerCase().endsWith(".xlsx")) {
-      throw new AppError("Only .xlsx Excel files are allowed", 400);
-    }
-    if (file.size / (1024 * 1024) > MAX_SIZE_MB) {
-      throw new AppError(`File too large. Maximum size is ${MAX_SIZE_MB}MB`, 400);
-    }
+    if (files.length === 0) throw new AppError("No file provided", 400);
+    if (files.length > MAX_FILES) throw new AppError(`Too many files. Max ${MAX_FILES} at once.`, 400);
 
-    // The engine reads from a path, so stage the upload in the OS temp dir.
-    tmpPath = path.join(os.tmpdir(), `${randomUUID()}.xlsx`);
-    await writeFile(tmpPath, Buffer.from(await file.arrayBuffer()));
-
-    if (commit) {
-      return json({ mode: "commit", report: await importFile(tmpPath) });
-    }
-
-    // Preview: parse + validate only — nothing is written.
-    const { ok, issues, project } = validateAndClean(await parseWorkbook(tmpPath));
-    const summary = project && {
-      name: project.property.name,
-      builder: project.builder.name,
-      city: project.property.city,
-      locality: project.property.locality,
-      possession: project.property.possession,
-      priceRange: project.pricing.priceRangeLabel,
-      configs: project.configurations.map((c) => `${c.label} · ${c.areaSqFt} sqft`),
-      towers: project.towers.length,
-      amenities: project.amenities.filter((a) => a.available).length,
-      attributes: project.attributes.length,
-      // Tell the admin whether publishing will update an existing project or add a new one.
-      isUpdate: Boolean(
-        await prisma.property.findUnique({ where: { slug: project.slug }, select: { id: true } }),
-      ),
-    };
-    return json({ mode: "preview", ok, issues, summary });
+    const results: PreviewResult[] = [];
+    for (const file of files) results.push(await previewOne(file));
+    return json({ results });
   } catch (err) {
     return handleError(err);
+  }
+}
+
+/** Parse + validate a single file. Never throws — file-level errors are reported inline. */
+async function previewOne(file: File): Promise<PreviewResult> {
+  const fail = (message: string): PreviewResult => ({
+    fileName: file.name,
+    ok: false,
+    issues: [{ level: "error", field: "file", message }],
+    formData: null,
+    existingId: null,
+  });
+
+  if (!file.name.toLowerCase().endsWith(".xlsx")) return fail("Only .xlsx Excel files are allowed");
+  if (file.size / (1024 * 1024) > MAX_SIZE_MB) return fail(`File too large (max ${MAX_SIZE_MB}MB)`);
+
+  const tmpPath = path.join(os.tmpdir(), `${randomUUID()}.xlsx`);
+  try {
+    await writeFile(tmpPath, Buffer.from(await file.arrayBuffer()));
+    const { ok, issues, project } = validateAndClean(await parseWorkbook(tmpPath));
+    if (!project) return { fileName: file.name, ok, issues, formData: null, existingId: null };
+
+    const existing = await prisma.property.findUnique({
+      where: { slug: project.slug },
+      select: { id: true },
+    });
+    return {
+      fileName: file.name,
+      ok,
+      issues,
+      formData: normalizedToFormData(project),
+      existingId: existing?.id ?? null,
+    };
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : String(e));
   } finally {
-    if (tmpPath) await unlink(tmpPath).catch(() => {});
+    await unlink(tmpPath).catch(() => {});
   }
 }

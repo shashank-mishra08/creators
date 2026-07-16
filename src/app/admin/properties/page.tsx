@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import {
   Plus, Search, Eye, EyeOff, Pencil, Trash2,
-  Building2, RefreshCw,
+  Building2, RefreshCw, FileSpreadsheet
 } from "lucide-react";
 import { DeleteConfirmModal } from "@/components/admin/delete-confirm-modal";
 
@@ -115,13 +115,22 @@ export default function AdminPropertiesPage() {
             {properties.length} total · {properties.filter((p) => !p.hidden).length} visible
           </p>
         </div>
-        <Link
-          href="/admin/properties/add"
-          className="inline-flex items-center gap-2 bg-[#7166F0] text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#5a52d5] transition-colors shadow-sm shadow-[#7166F0]/30"
-        >
-          <Plus className="w-4 h-4" />
-          Add New Property
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/admin/import"
+            className="inline-flex items-center gap-2 bg-white border border-slate-200 text-slate-700 px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-slate-50 transition-colors shadow-sm"
+          >
+            <FileSpreadsheet className="w-4 h-4" />
+            Import from Excel
+          </Link>
+          <Link
+            href="/admin/properties/add"
+            className="inline-flex items-center gap-2 bg-[#7166F0] text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#5a52d5] transition-colors shadow-sm shadow-[#7166F0]/30"
+          >
+            <Plus className="w-4 h-4" />
+            Add New Property
+          </Link>
+        </div>
       </div>
 
       {/* Filters */}
