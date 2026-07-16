@@ -39,7 +39,7 @@ export function AdminSidebar() {
           <img 
             src="/brand/creators-logo.png" 
             alt="Creators Logo" 
-            className="h-14 w-auto object-contain brightness-0 invert transition-transform hover:scale-105"
+            className="w-[180px] h-auto object-contain brightness-0 invert transition-transform hover:scale-105"
           />
         </Link>
       </div>
