@@ -251,16 +251,16 @@ export default function AdminPropertiesPage() {
                             title={prop.hidden ? "Show property" : "Hide property"}
                             className={`w-8 h-8 flex items-center justify-center rounded-lg border transition-all disabled:opacity-50 ${
                               prop.hidden
-                                ? "border-green-200 text-green-500 hover:bg-green-500 hover:text-white hover:border-green-500"
-                                : "border-slate-200 text-slate-400 hover:bg-slate-500 hover:text-white hover:border-slate-500"
+                                ? "border-red-200 text-red-500 hover:bg-red-500 hover:text-white hover:border-red-500"
+                                : "border-green-200 text-green-500 hover:bg-green-500 hover:text-white hover:border-green-500"
                             }`}
                           >
-                            {prop.hidden ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                            {prop.hidden ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                           </button>
                           <button
                             onClick={() => setDeleteTarget(prop)}
                             title="Delete property"
-                            className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-400 hover:bg-red-500 hover:text-white hover:border-red-500 transition-all"
+                            className="w-8 h-8 flex items-center justify-center rounded-lg border border-red-200 text-red-500 hover:bg-red-500 hover:text-white hover:border-red-500 transition-all"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
