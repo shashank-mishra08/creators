@@ -33,13 +33,13 @@ export function AdminSidebar() {
   return (
     <aside className="w-[280px] bg-white border-r flex flex-col h-screen sticky top-0 shrink-0">
       {/* Logo Area */}
-      <div className="h-20 flex items-center px-6 bg-[#7166F0] text-white">
-        <Link href="/admin" className="flex items-center gap-3 w-full">
+      <div className="h-20 flex items-center justify-center bg-[#7166F0] border-b border-[#5a52d5] text-white">
+        <Link href="/admin" className="flex items-center justify-center w-full h-full">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img 
             src="/brand/creators-logo.png" 
             alt="Creators Logo" 
-            className="h-8 w-auto object-contain brightness-0 invert"
+            className="h-14 w-auto object-contain brightness-0 invert transition-transform hover:scale-105"
           />
         </Link>
       </div>
