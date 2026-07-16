@@ -137,7 +137,7 @@ export function ReviewSection() {
                   </div>
 
                   <p className="text-[13px] text-slate-600 leading-relaxed dark:text-muted-foreground">
-                    "{review.text}"
+                    &quot;{review.text}&quot;
                   </p>
                 </div>
               </div>

@@ -35,6 +35,8 @@ export function SiteHeader() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  if (pathname.startsWith("/admin")) return null;
+
   return (
     <header
       className={cn(

@@ -50,10 +50,10 @@ const propertyInclude = {
   location: true,
   investment: true,
   configurations: { orderBy: { sortOrder: "asc" } },
+  towerUnits: { orderBy: { sortOrder: "asc" } },
   amenities: true,
   media: { orderBy: { sortOrder: "asc" } },
   attributes: { orderBy: { sortOrder: "asc" } },
-  towerUnits: { orderBy: { sortOrder: "asc" } },
 } satisfies Prisma.PropertyInclude;
 
 type PropertyRow = Prisma.PropertyGetPayload<{ include: typeof propertyInclude }>;
@@ -83,7 +83,7 @@ function mapProperty(p: PropertyRow): Property {
 
   // Full source amenity list (available first, then alphabetical) for display.
   const amenityList = p.amenities
-    .map((a) => ({ key: a.key, label: a.label, available: a.available, note: a.note ?? null }))
+    .map((a) => ({ key: a.key, label: a.label, available: a.available }))
     .sort(
       (x, y) =>
         Number(y.available) - Number(x.available) ||
@@ -99,7 +99,6 @@ function mapProperty(p: PropertyRow): Property {
   const gallery = p.media
     .filter((m) => m.type === "gallery")
     .map((m) => m.url);
-
   const layout = p.media.find((m) => m.type === "layout")?.url ?? null;
 
   return {
@@ -123,6 +122,7 @@ function mapProperty(p: PropertyRow): Property {
     totalUnits: p.totalUnits ?? null,
     image: cover,
     gallery,
+    layout,
     gradient: [p.gradientFrom, p.gradientTo],
     amenities,
     amenityList,
@@ -148,10 +148,6 @@ function mapProperty(p: PropertyRow): Property {
       priceLabel: c.priceLabel,
       image: c.floorPlanImage || "",
     })),
-    highlights: p.attributes
-      .filter((a) => a.category === "highlight")
-      .map((a) => a.value),
-    layout,
     towerList: p.towerUnits.map((t) => ({
       name: t.name,
       floorPlan: t.floorPlan ?? null,
@@ -159,14 +155,18 @@ function mapProperty(p: PropertyRow): Property {
       unitsPerFloor: t.unitsPerFloor ?? null,
       totalUnits: t.totalUnits ?? null,
     })),
+    highlights: p.attributes
+      .filter((a) => a.category === "highlight")
+      .map((a) => a.value),
   };
 }
 
 /* --------------------------------- queries ---------------------------------- */
 
 function buildWhere(filters?: PropertyFilters): Prisma.PropertyWhereInput {
-  if (!filters) return {};
-  const where: Prisma.PropertyWhereInput = {};
+  // Always exclude hidden properties from public queries.
+  const where: Prisma.PropertyWhereInput = { hidden: false };
+  if (!filters) return where;
 
   if (filters.city && filters.city !== "All") where.city = filters.city;
   if (filters.kind && filters.kind !== "All") where.kind = filters.kind;

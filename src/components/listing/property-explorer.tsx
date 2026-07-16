@@ -67,7 +67,6 @@ const AMENITY_OPTS: { key: AmenityKey; label: string }[] = [
 const TABS: { label: string; test: (p: Property) => boolean }[] = [
   { label: "Apartments", test: (p) => p.kind === "Apartment" },
   { label: "Luxury Homes", test: (p) => p.priceLakh >= 250 || p.kind === "Villa" },
-  { label: "New Launches", test: (p) => p.possession === "New Launch" },
 ];
 const FEATURES = [
   { icon: "/icons/price.png", label: "Price & Configuration" },
@@ -90,7 +89,28 @@ const toggle = <T,>(set: Set<T>, v: T) => {
   return n;
 };
 
-export function PropertyExplorer({ initial }: { initial: Property[]; title?: string; subtitle?: string }) {
+function hashString(str: string, seed: number) {
+  let h = 0xdeadbeef ^ seed;
+  for (let i = 0; i < str.length; i++) {
+    h = Math.imul(h ^ str.charCodeAt(i), 2654435761);
+  }
+  return (h ^ h >>> 16) >>> 0;
+}
+
+let globalSeed: number | null = null;
+
+export function PropertyExplorer({ initial, seed, title, subtitle }: { initial: Property[]; seed?: number; title?: string; subtitle?: string }) {
+  if (typeof window !== "undefined" && globalSeed === null && seed !== undefined) {
+    globalSeed = seed;
+  }
+  const activeSeed = typeof window !== "undefined" ? (globalSeed ?? seed) : seed;
+
+  const shuffledInitial = React.useMemo(() => {
+    if (activeSeed === undefined) return initial;
+    const s = Math.floor(activeSeed * 10000000);
+    return [...initial].sort((a, b) => hashString(a.id, s) - hashString(b.id, s));
+  }, [initial, activeSeed]);
+
   const router = useRouter();
   const selected = useComparison((s) => s.selected);
 
@@ -106,22 +126,24 @@ export function PropertyExplorer({ initial }: { initial: Property[]; title?: str
   const [amenities, setAmenities] = React.useState<Set<AmenityKey>>(new Set());
   const [builders, setBuilders] = React.useState<Set<string>>(new Set());
   const [sort, setSort] = React.useState("recommended");
+  // Toolbar "Search by Project Name" — real-time, partial, case-insensitive.
+  const [projectQuery, setProjectQuery] = React.useState("");
 
   // Distinct builder/brand names, derived from the live data (never hardcoded).
   const builderNames = React.useMemo(
-    () => [...new Set(initial.map((p) => p.builder.name))].sort(),
-    [initial],
+    () => [...new Set(shuffledInitial.map((p) => p.builder.name))].sort(),
+    [shuffledInitial],
   );
 
   // Budget bounds derived from real priced properties (rounded to ₹5 L steps).
   const priceBounds = React.useMemo(() => {
-    const ps = initial.map((p) => p.priceLakh).filter((n) => n > 0);
+    const ps = shuffledInitial.map((p) => p.priceLakh).filter((n) => n > 0);
     if (!ps.length) return { min: 0, max: 0 };
     return {
       min: Math.floor(Math.min(...ps) / 5) * 5,
       max: Math.ceil(Math.max(...ps) / 5) * 5,
     };
-  }, [initial]);
+  }, [shuffledInitial]);
   const budgetRange = React.useMemo<[number, number]>(
     () => budget ?? [priceBounds.min, priceBounds.max],
     [budget, priceBounds],
@@ -130,7 +152,7 @@ export function PropertyExplorer({ initial }: { initial: Property[]; title?: str
     budget != null && (budget[0] > priceBounds.min || budget[1] < priceBounds.max);
 
   const filtered = React.useMemo(() => {
-    let list = initial.filter((p) => TABS[tab].test(p));
+    let list = shuffledInitial.filter((p) => TABS[tab].test(p));
     if (locations.size) list = list.filter((p) => locations.has(p.city));
     const q = locQuery.trim().toLowerCase();
     if (q)
@@ -138,6 +160,11 @@ export function PropertyExplorer({ initial }: { initial: Property[]; title?: str
         `${p.name} ${p.builder.name} ${p.locality} ${p.city}`
           .toLowerCase()
           .includes(q),
+      );
+    const pq = projectQuery.trim().toLowerCase();
+    if (pq)
+      list = list.filter((p) =>
+        `${p.name} ${p.builder.name}`.toLowerCase().includes(pq),
       );
     if (budgetActive)
       list = list.filter(
@@ -154,7 +181,7 @@ export function PropertyExplorer({ initial }: { initial: Property[]; title?: str
     if (sort === "price-desc") s.sort((a, b) => b.priceLakh - a.priceLakh);
     if (sort === "rating") s.sort((a, b) => b.builder.rating - a.builder.rating);
     return s;
-  }, [initial, tab, locations, locQuery, budgetActive, budgetRange, areaIdx, bhks, possessions, amenities, builders, sort]);
+  }, [shuffledInitial, tab, locations, locQuery, projectQuery, budgetActive, budgetRange, areaIdx, bhks, possessions, amenities, builders, sort]);
 
   const clearAll = () => {
     setLocations(new Set());
@@ -167,7 +194,7 @@ export function PropertyExplorer({ initial }: { initial: Property[]; title?: str
     setLocQuery("");
   };
 
-  const count = (fn: (p: Property) => boolean) => initial.filter(fn).length;
+  const count = (fn: (p: Property) => boolean) => shuffledInitial.filter(fn).length;
 
   // Mobile/tablet filter drawer (desktop keeps the permanent sidebar).
   const [filtersOpen, setFiltersOpen] = React.useState(false);
@@ -333,7 +360,7 @@ export function PropertyExplorer({ initial }: { initial: Property[]; title?: str
   );
 
   return (
-    <section id="explore" className="container scroll-mt-20 pt-10 pb-0">
+    <section id="explore" className="container scroll-mt-20 pt-10 pb-0 -mb-10 lg:-mb-20">
       <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
         {/* ───────────── FILTER SIDEBAR (sticky, desktop ≥1024px only) ───────────── */}
         <aside className="hidden h-fit lg:sticky lg:top-20 lg:block">
@@ -388,6 +415,16 @@ export function PropertyExplorer({ initial }: { initial: Property[]; title?: str
                   </span>
                 )}
               </button>
+              <div className="relative w-full sm:w-56">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  value={projectQuery}
+                  onChange={(e) => setProjectQuery(e.target.value)}
+                  placeholder="Search by Project or Builder..."
+                  aria-label="Search by project or builder name"
+                  className="h-10 w-full rounded-xl border border-border bg-card pl-9 pr-3 text-sm outline-none ring-accent/40 focus:ring-2"
+                />
+              </div>
               <div className="relative">
                 <select
                   value={sort}
@@ -479,13 +516,13 @@ export function PropertyExplorer({ initial }: { initial: Property[]; title?: str
             <div className="grid items-center gap-5 lg:grid-cols-[auto_1fr]">
               <div className="relative flex items-center">
                 <span className="relative h-20 w-28 overflow-hidden rounded-xl sm:h-24 sm:w-36">
-                  <CoverImage src={initial[0]?.image} alt={initial[0]?.name ?? ""} gradient={initial[0]?.gradient} sizes="160px" />
+                  <CoverImage src={shuffledInitial[0]?.image} alt={shuffledInitial[0]?.name ?? ""} gradient={shuffledInitial[0]?.gradient} sizes="160px" />
                 </span>
                 <span className="z-10 -mx-3 flex h-10 w-10 items-center justify-center rounded-full border-4 border-card bg-primary text-[11px] font-extrabold text-primary-foreground">
                   V/S
                 </span>
                 <span className="relative h-20 w-28 overflow-hidden rounded-xl sm:h-24 sm:w-36">
-                  <CoverImage src={initial[1]?.image} alt={initial[1]?.name ?? ""} gradient={initial[1]?.gradient} sizes="160px" />
+                  <CoverImage src={shuffledInitial[1]?.image} alt={shuffledInitial[1]?.name ?? ""} gradient={shuffledInitial[1]?.gradient} sizes="160px" />
                 </span>
               </div>
               <div className="text-center lg:text-left">
@@ -590,7 +627,7 @@ export function PropertyExplorer({ initial }: { initial: Property[]; title?: str
       </div>
 
       <CompareBar />
-      <div className="h-6" />
+      <div className="h-24" />
     </section>
   );
 }
@@ -705,7 +742,7 @@ function CheckRow({
             checked ? "border-accent bg-accent text-accent-foreground" : "border-border",
           )}
         >
-          {checked && <Check className="h-3 w-3" />}
+          {checked && <Check className="h-3.5 w-3.5 stroke-[3]" />}
         </span>
         <span className="text-foreground">{label}</span>
       </span>
@@ -717,102 +754,102 @@ function CheckRow({
 
 const ListingCard = React.forwardRef<HTMLDivElement, { property: Property }>(
   function ListingCard({ property: p }, ref) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const mounted = useMounted();
-  const inCompare = useComparison((s) => s.selected.includes(p.id));
-  const toggleCompare = useComparison((s) => s.toggle);
-  const user = useAuth((s) => s.user);
-  const toggleShortlist = useAuth((s) => s.toggleShortlist);
-  const saved = useAuth((s) => s.savedIds.includes(p.id));
-  const shortlisted = mounted && saved;
+    const router = useRouter();
+    const pathname = usePathname();
+    const mounted = useMounted();
+    const inCompare = useComparison((s) => s.selected.includes(p.id));
+    const toggleCompare = useComparison((s) => s.toggle);
+    const user = useAuth((s) => s.user);
+    const toggleShortlist = useAuth((s) => s.toggleShortlist);
+    const saved = useAuth((s) => s.savedIds.includes(p.id));
+    const shortlisted = mounted && saved;
 
-  const handleShortlist = () => {
-    if (!user) {
-      setPendingAction({ type: "shortlist", propertyId: p.id });
-      router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
-      return;
-    }
-    toggleShortlist(p.id);
-  };
+    const handleShortlist = () => {
+      if (!user) {
+        setPendingAction({ type: "shortlist", propertyId: p.id });
+        router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
+        return;
+      }
+      toggleShortlist(p.id);
+    };
 
-  return (
-    <motion.div
-      ref={ref}
-      layout
-      whileHover={{ y: -4 }}
-      className="flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-glass"
-    >
-      <div className="relative h-44 w-full">
-        <CoverImage src={p.image} alt={p.name} gradient={p.gradient} label={p.name} sizes="(max-width:768px) 100vw, 360px" />
-        <button
-          onClick={handleShortlist}
-          aria-label="Shortlist"
-          className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-slate-700 shadow-sm backdrop-blur hover:bg-white"
-        >
-          <Heart className={cn("h-4 w-4", shortlisted && "fill-accent text-accent")} />
-        </button>
-      </div>
-
-      <div className="flex flex-1 flex-col p-4">
-        <h3 className="font-display text-base font-bold text-primary dark:text-foreground">{p.builder.name} {p.name}</h3>
-        <p className="mt-0.5 flex items-center gap-1 text-xs font-semibold text-accent">
-          <Building2 className="h-3 w-3" /> {p.builder.name}
-        </p>
-        <p className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
-          <MapPin className="h-3 w-3 text-accent" /> {p.locality}, {p.city}
-        </p>
-        <div className="mt-2 font-display text-lg font-extrabold text-accent">
-          {formatPriceLakh(p.priceLakh)}
-          <span className="text-xs font-medium text-muted-foreground">*</span>
-        </div>
-        <p className="text-xs text-muted-foreground">
-          {[p.configs, sqftRange(p)].filter(Boolean).join(" · ")}
-        </p>
-
-        <div className="mt-3 flex flex-wrap items-center gap-x-2.5 gap-y-1 rounded-lg bg-muted/60 px-2.5 py-2 text-[11px] text-muted-foreground">
-          <span className="font-semibold text-foreground">{p.possession}</span>
-          {p.totalUnits ? <span>· {p.totalUnits.toLocaleString("en-IN")} units</span> : null}
-          <span>· {p.towers} {p.towers === 1 ? "tower" : "towers"}</span>
-        </div>
-
-        {p.location.metroKm > 0 && (
-          <div className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
-            <TrainFront className="h-3.5 w-3.5 shrink-0 text-accent" />
-            <span>Metro Distance</span>
-            <span className="font-bold text-foreground">{p.location.metroKm} min</span>
-          </div>
-        )}
-
-        <div className="mt-auto grid grid-cols-2 gap-2 pt-3">
+    return (
+      <motion.div
+        ref={ref}
+        layout
+        whileHover={{ y: -4 }}
+        className="flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-glass"
+      >
+        <div className="relative h-44 w-full">
+          <CoverImage src={p.image} alt={p.name} gradient={p.gradient} label={p.name} sizes="(max-width:768px) 100vw, 360px" />
           <button
             onClick={handleShortlist}
-            className={cn(
-              "inline-flex items-center justify-center gap-1 rounded-lg border px-2 py-2.5 text-[12px] font-semibold transition-colors",
-              shortlisted ? "border-accent bg-accent/10 text-accent" : "border-border text-foreground hover:bg-muted",
-            )}
+            aria-label="Shortlist"
+            className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-slate-700 shadow-sm backdrop-blur hover:bg-white"
           >
-            <Heart className={cn("h-3.5 w-3.5", shortlisted && "fill-accent")} /> Shortlist
+            <Heart className={cn("h-4 w-4", shortlisted && "fill-accent text-accent")} />
           </button>
-          <button
-            onClick={() => toggleCompare(p.id)}
-            className={cn(
-              "inline-flex items-center justify-center gap-1 rounded-lg border px-2 py-2.5 text-[12px] font-semibold transition-colors",
-              inCompare ? "border-accent bg-accent/10 text-accent" : "border-border text-foreground hover:bg-muted",
-            )}
-          >
-            <GitCompareArrows className="h-3.5 w-3.5" /> {inCompare ? "Added" : "Compare"}
-          </button>
-          <Link href={`/properties/${p.id}`} className="col-span-2">
-            <Button variant="accent" size="sm" className="h-full w-full py-2.5 text-[12px]">
-              View Details
-            </Button>
-          </Link>
         </div>
-      </div>
-    </motion.div>
-  );
-});
+
+        <div className="flex flex-1 flex-col p-4">
+          <h3 className="font-display text-base font-bold text-primary dark:text-foreground">{p.builder.name} {p.name}</h3>
+          <p className="mt-0.5 flex items-center gap-1 text-xs font-semibold text-accent">
+            <Building2 className="h-3 w-3" /> {p.builder.name}
+          </p>
+          <p className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
+            <MapPin className="h-3 w-3 text-accent" /> {p.locality}, {p.city}
+          </p>
+          <div className="mt-2 font-display text-lg font-extrabold text-accent">
+            {formatPriceLakh(p.priceLakh)}
+            <span className="text-xs font-medium text-muted-foreground">*</span>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {[p.configs, sqftRange(p)].filter(Boolean).join(" · ")}
+          </p>
+
+          <div className="mt-3 flex flex-wrap items-center gap-x-2.5 gap-y-1 rounded-lg bg-muted/60 px-2.5 py-2 text-[11px] text-muted-foreground">
+            <span className="font-semibold text-foreground">{p.possession}</span>
+            {p.totalUnits ? <span>· {p.totalUnits.toLocaleString("en-IN")} units</span> : null}
+            <span>· {p.towers} {p.towers === 1 ? "tower" : "towers"}</span>
+          </div>
+
+          {p.location.metroKm > 0 && (
+            <div className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
+              <TrainFront className="h-3.5 w-3.5 shrink-0 text-accent" />
+              <span>Metro Distance</span>
+              <span className="font-bold text-foreground">{p.location.metroKm} min</span>
+            </div>
+          )}
+
+          <div className="mt-auto grid grid-cols-2 gap-2 pt-3">
+            <button
+              onClick={handleShortlist}
+              className={cn(
+                "inline-flex items-center justify-center gap-1 rounded-lg border px-2 py-2.5 text-[12px] font-semibold transition-colors",
+                shortlisted ? "border-accent bg-accent/10 text-accent" : "border-border text-foreground hover:bg-muted",
+              )}
+            >
+              <Heart className={cn("h-3.5 w-3.5", shortlisted && "fill-accent")} /> Shortlist
+            </button>
+            <button
+              onClick={() => toggleCompare(p.id)}
+              className={cn(
+                "inline-flex items-center justify-center gap-1 rounded-lg border px-2 py-2.5 text-[12px] font-semibold transition-colors",
+                inCompare ? "border-accent bg-accent/10 text-accent" : "border-border text-foreground hover:bg-muted",
+              )}
+            >
+              <GitCompareArrows className="h-3.5 w-3.5" /> {inCompare ? "Added" : "Compare"}
+            </button>
+            <Link href={`/properties/${p.id}`} className="col-span-2">
+              <Button variant="accent" size="sm" className="h-full w-full py-2.5 text-[12px]">
+                View Details
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </motion.div>
+    );
+  });
 ListingCard.displayName = "ListingCard";
 
 function sqftRange(p: Property): string {

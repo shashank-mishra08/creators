@@ -42,7 +42,6 @@ export interface AmenityItem {
   key: string;
   label: string;
   available: boolean;
-  note: string | null;
 }
 
 export type AmenityKey =
@@ -129,6 +128,8 @@ export interface Property {
   image: string;
   /** Additional brochure images (gallery); empty when none exist. */
   gallery: string[];
+  /** Master plan / land layout image. */
+  layout: string | null;
   /** Tailwind-friendly gradient stops for the card fallback / accent. */
   gradient: [string, string];
   amenities: Record<AmenityKey, boolean>;
@@ -137,11 +138,9 @@ export interface Property {
   location: LocationMetrics;
   investment: InvestmentMetrics;
   floorPlans: FloorPlan[];
-  highlights: string[];
-  /** Master plan / land layout image. */
-  layout: string | null;
   /** Per-tower details from the source sheet (empty when none). */
   towerList: TowerInfo[];
+  highlights: string[];
 }
 
 /** A user/visitor review of a property. */

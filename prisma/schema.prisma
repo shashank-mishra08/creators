@@ -64,6 +64,7 @@ model Property {
   configsLabel    String    @default("") // e.g. "2 / 3 / 4 BHK" (derived)
   gradientFrom    String    @default("#0f3460")
   gradientTo      String    @default("#16697a")
+  hidden          Boolean   @default(false) // admin can hide without deleting
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
@@ -272,6 +273,7 @@ model User {
   passwordHash     String?
   provider         String            @default("email")
   savedPropertyIds String[]          @default([])
+  isAdmin          Boolean           @default(false)
   resetTokenHash   String?
   resetTokenExp    DateTime?
   createdAt        DateTime          @default(now())

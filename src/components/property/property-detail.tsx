@@ -28,6 +28,7 @@ import { setPendingAction } from "@/lib/pending-action";
 import { Button } from "@/components/ui/button";
 import { CoverImage } from "@/components/ui/cover-image";
 import { Lightbox } from "@/components/ui/lightbox";
+import { SiteVisitModal } from "@/components/property/site-visit-modal";
 import { cn, formatPriceLakh } from "@/lib/utils";
 
 const EXPERT_PHONE = "+919252996677";
@@ -86,10 +87,12 @@ export function PropertyDetail({
 
   const rating = reviewAvg ?? p.builder.rating;
 
+  const [isSiteVisitOpen, setIsSiteVisitOpen] = React.useState(false);
   const [activePlan, setActivePlan] = React.useState(0);
-  // Show all floor plans, using gradient placeholders if actual images are missing,
-  // as per the user's request to make the section visible.
-  const floorPlansWithImages = p.floorPlans;
+  // Only surface floor plans backed by a real brochure image — never present a
+  // config card with a gradient placeholder as a "floor plan" (e.g. projects
+  // with a datasheet but no brochure). When none exist, we show a soft notice.
+  const floorPlansWithImages = p.floorPlans.filter((fp) => fp.image);
   const hasFloorPlans = floorPlansWithImages.length > 0;
   const plan = floorPlansWithImages[activePlan] ?? floorPlansWithImages[0];
   const [zoom, setZoom] = React.useState<string | null>(null);
@@ -214,11 +217,9 @@ export function PropertyDetail({
             <div className="text-xs text-muted-foreground">{p.configs} · {p.priceRangeLabel}</div>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row">
-            <a href={`tel:${EXPERT_PHONE}`} className="flex-1">
-              <Button variant="accent" size="sm" className="w-full">
-                <CalendarCheck className="h-4 w-4" /> Book Site Visit
-              </Button>
-            </a>
+            <Button variant="accent" size="sm" className="w-full flex-1" onClick={() => setIsSiteVisitOpen(true)}>
+              <CalendarCheck className="h-4 w-4" /> Book Site Visit
+            </Button>
             <a href={`tel:${EXPERT_PHONE}`} className="flex-1">
               <Button variant="outline" size="sm" className="w-full">
                 <Phone className="h-4 w-4" /> Contact Expert
@@ -281,6 +282,37 @@ export function PropertyDetail({
         </div>
       </div>
 
+      {/* Tower Details — per-tower structure from the source sheet */}
+      {p.towerList.length > 0 && (
+        <div className="mt-4 rounded-2xl border border-border bg-card p-5 shadow-glass">
+          <h2 className="mb-3 font-display text-base font-bold text-primary dark:text-foreground">Tower Details</h2>
+          <div className="overflow-x-auto rounded-xl border border-border">
+            <table className="w-full text-sm">
+              <thead className="bg-muted text-xs text-muted-foreground">
+                <tr>
+                  <th className="px-3 py-2 text-left font-semibold">Tower</th>
+                  <th className="px-3 py-2 text-left font-semibold">Floor Configuration</th>
+                  <th className="px-3 py-2 text-left font-semibold">Lifts</th>
+                  <th className="px-3 py-2 text-left font-semibold">Units / Floor</th>
+                  <th className="px-3 py-2 text-left font-semibold">Total Units</th>
+                </tr>
+              </thead>
+              <tbody>
+                {p.towerList.map((t, i) => (
+                  <tr key={`${t.name}-${i}`} className="border-t border-border">
+                    <td className="whitespace-nowrap px-3 py-2 font-semibold text-foreground">{t.name}</td>
+                    <td className="whitespace-nowrap px-3 py-2 text-muted-foreground">{t.floorPlan ?? "—"}</td>
+                    <td className="px-3 py-2 text-muted-foreground">{t.lifts ?? "—"}</td>
+                    <td className="px-3 py-2 text-muted-foreground">{t.unitsPerFloor ?? "—"}</td>
+                    <td className="px-3 py-2 text-muted-foreground">{t.totalUnits != null ? t.totalUnits.toLocaleString("en-IN") : "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       {/* Floor Plans + Amenities */}
       <div className="mt-4 grid gap-4 lg:grid-cols-[1.4fr_1fr]">
         <div className="rounded-2xl border border-border bg-card p-5 shadow-glass">
@@ -308,15 +340,18 @@ export function PropertyDetail({
             <div className="grid gap-3 sm:grid-cols-[1.3fr_1fr]">
               <button
                 type="button"
-                onClick={() => setZoom(plan.image || "/floorplans/plan-a.jpg")}
+                onClick={() => plan.image && setZoom(plan.image)}
                 className={cn(
-                  "group relative h-48 overflow-hidden rounded-xl border border-border cursor-zoom-in"
+                  "group relative h-48 overflow-hidden rounded-xl border border-border",
+                  plan.image ? "cursor-zoom-in" : "cursor-default",
                 )}
               >
-                <CoverImage src={plan.image || "/floorplans/plan-a.jpg"} alt={`${p.name} ${plan.config} floor plan`} gradient={p.gradient} label={`${plan.config} · ${plan.areaSqFt.toLocaleString("en-IN")} sq.ft`} sizes="360px" />
-                <span className="absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-lg bg-black/60 px-2 py-1 text-[11px] font-semibold text-white opacity-0 backdrop-blur transition-opacity group-hover:opacity-100">
-                  <Expand className="h-3 w-3" /> Expand
-                </span>
+                <CoverImage src={plan.image} alt={`${p.name} ${plan.config} floor plan`} gradient={p.gradient} label={`${plan.config} · ${plan.areaSqFt.toLocaleString("en-IN")} sq.ft`} sizes="360px" />
+                {plan.image && (
+                  <span className="absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-lg bg-black/60 px-2 py-1 text-[11px] font-semibold text-white opacity-0 backdrop-blur transition-opacity group-hover:opacity-100">
+                    <Expand className="h-3 w-3" /> Expand
+                  </span>
+                )}
               </button>
               <div className="rounded-xl bg-muted/50 p-3">
                 <div className="text-sm font-bold text-foreground">{plan.config} Floor Plan</div>
@@ -374,15 +409,15 @@ export function PropertyDetail({
       </div>
 
       {/* Master Plan */}
-      {(p.layout || true) && (
+      {p.layout && (
         <div className="mt-4 rounded-2xl border border-border bg-card p-5 shadow-glass">
           <h2 className="mb-3 font-display text-base font-bold text-primary dark:text-foreground">Master Plan</h2>
           <button
             type="button"
-            onClick={() => setZoom(p.layout || p.image || "/floorplans/plan-a.jpg")}
+            onClick={() => setZoom(p.layout!)}
             className="group relative block h-64 w-full overflow-hidden rounded-xl border border-border sm:h-96 cursor-zoom-in"
           >
-            <CoverImage src={p.layout || p.image || "/floorplans/plan-a.jpg"} alt={`${p.name} Master Plan`} gradient={p.gradient} sizes="(max-width:1024px) 100vw, 80vw" />
+            <CoverImage src={p.layout} alt={`${p.name} Master Plan`} gradient={p.gradient} sizes="(max-width:1024px) 100vw, 80vw" />
             <span className="absolute bottom-4 right-4 inline-flex items-center gap-1 rounded-lg bg-black/60 px-3 py-2 text-xs font-semibold text-white opacity-0 backdrop-blur transition-opacity group-hover:opacity-100">
               <Expand className="h-4 w-4" /> Expand Layout
             </span>
@@ -497,6 +532,12 @@ export function PropertyDetail({
 
       {/* Floor-plan lightbox */}
       {zoom && <Lightbox src={zoom} onClose={() => setZoom(null)} />}
+      
+      <SiteVisitModal 
+        isOpen={isSiteVisitOpen} 
+        onClose={() => setIsSiteVisitOpen(false)} 
+        propertyName={p.name} 
+      />
     </div>
   );
 }

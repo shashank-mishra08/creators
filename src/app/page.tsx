@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getDataSource } from "@/lib/data-source";
 import { Hero3D } from "@/components/landing/hero-3d";
 import { PropertyExplorer } from "@/components/listing/property-explorer";
+import { ReviewSection } from "@/components/landing/review-section";
 
 // Title/description/OG inherited from the root layout; set the home canonical.
 export const metadata: Metadata = {
@@ -11,10 +12,9 @@ export const metadata: Metadata = {
 // DB-backed: render at request time, not build time.
 export const dynamic = "force-dynamic";
 
-import { ReviewSection } from "@/components/landing/review-section";
-
 export default async function HomePage() {
   const properties = await getDataSource().list();
+  const seed = Math.random();
   return (
     <>
       {/* Hero is a fixed marketing illustration — intentionally NOT fed live
@@ -22,6 +22,7 @@ export default async function HomePage() {
       <Hero3D />
       <PropertyExplorer
         initial={properties}
+        seed={seed}
         title="Featured properties by location"
         subtitle="Browse live NCR projects grouped by location, then shortlist 2–4 to compare."
       />

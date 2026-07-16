@@ -1,6 +1,9 @@
+"use client";
+
 import Link from "next/link";
 import { Mail, MapPin, Phone, Globe } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
+import { usePathname } from "next/navigation";
 
 const QUICK_LINKS = [
   "Home",
@@ -20,6 +23,9 @@ const LOCATIONS = [
 ];
 
 export function SiteFooter() {
+  const pathname = usePathname();
+  if (pathname.startsWith("/admin")) return null;
+
   return (
     <footer className="mt-0 bg-primary text-primary-foreground">
       <div className="container grid gap-12 py-16 md:grid-cols-[1.4fr_1fr_1fr_1.2fr]">
