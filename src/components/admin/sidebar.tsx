@@ -33,16 +33,15 @@ export function AdminSidebar() {
   return (
     <aside className="w-[280px] bg-white border-r flex flex-col h-screen sticky top-0 shrink-0">
       {/* Logo Area */}
-      <div className="h-20 flex items-center px-6 bg-brand-purple text-white">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full border border-white/40 flex items-center justify-center">
-            <span className="text-xl font-medium tracking-wide">C</span>
-          </div>
-          <div className="flex flex-col">
-            <span className="text-sm font-semibold tracking-widest leading-tight">CREATORS</span>
-            <span className="text-[10px] font-medium tracking-widest text-white/80">ADMIN PANEL</span>
-          </div>
-        </div>
+      <div className="h-20 flex items-center px-6 bg-[#7166F0] text-white">
+        <Link href="/admin" className="flex items-center gap-3 w-full">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img 
+            src="/brand/creators-logo.png" 
+            alt="Creators Logo" 
+            className="h-8 w-auto object-contain brightness-0 invert"
+          />
+        </Link>
       </div>
 
       <div className="flex-1 overflow-y-auto py-4 scrollbar-hide">
