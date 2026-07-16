@@ -1,4 +1,7 @@
 import { NextResponse } from "next/server";
+import { prisma } from "@/lib/db/prisma";
+
+export const runtime = "nodejs";
 
 export async function POST(req: Request) {
   try {
@@ -7,6 +10,11 @@ export async function POST(req: Request) {
     if (!name || !phone || !project || !date || !time) {
       return NextResponse.json({ error: "All fields are required" }, { status: 400 });
     }
+
+    // Persist the lead so it appears in the admin "Site Visits" page.
+    await prisma.siteVisitBooking.create({
+      data: { name, phone, propertyName: project, visitDate: date, visitTime: time },
+    });
 
     const GOOGLE_FORM_URL = process.env.GOOGLE_FORM_URL;
     

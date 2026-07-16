@@ -309,6 +309,24 @@ model SavedComparisonProperty {
   @@map("saved_comparison_properties")
 }
 
+// ───────────────── Site-visit bookings (public "Book Site Visit" form) ─────────────────
+// Captures leads submitted from the property page modal so admins can see and
+// follow up on requested visits. Stand-alone table — not linked to Property so
+// the lead survives even if the referenced project is later renamed or removed.
+model SiteVisitBooking {
+  id           String   @id @default(uuid()) @db.Uuid
+  propertyName String // project the visitor asked about (label as shown on site)
+  name         String // visitor full name
+  phone        String // 10-digit mobile (already normalised by the form)
+  visitDate    String // requested date (yyyy-mm-dd, as submitted)
+  visitTime    String // requested time (HH:mm, as submitted)
+  status       String   @default("new") // new | contacted | visited (future use)
+  createdAt    DateTime @default(now())
+
+  @@index([createdAt])
+  @@map("site_visit_bookings")
+}
+
 // ───────────────── Import audit (validation reports + idempotency log) ─────────────────
 model ImportRun {
   id           String   @id @default(uuid()) @db.Uuid

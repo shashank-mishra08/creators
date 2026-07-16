@@ -3,10 +3,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { 
-  Home, Building2, PlusCircle, Users, MapPin, Star, 
-  LayoutDashboard, Image as ImageIcon, MessageSquare, 
-  Mail, CalendarCheck, PhoneCall, UserCog, Settings, 
-  ChevronLeft
+  Home, Building2, PlusCircle, Users, MapPin, Star,
+  LayoutDashboard, Image as ImageIcon, MessageSquare,
+  Mail, CalendarCheck, PhoneCall, UserCog, Settings,
+  ChevronLeft, FileSpreadsheet
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -16,6 +16,13 @@ const navGroups = [
     items: [
       { name: "Properties", href: "/admin/properties", icon: Home },
       { name: "Add Property", href: "/admin/properties/add", icon: PlusCircle },
+      { name: "Import from Excel", href: "/admin/import", icon: FileSpreadsheet },
+    ]
+  },
+  {
+    title: "CLIENT ENGAGEMENT",
+    items: [
+      { name: "Site Visits", href: "/admin/bookings", icon: CalendarCheck },
     ]
   },
   {
