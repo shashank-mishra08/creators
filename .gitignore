@@ -3,6 +3,8 @@
 /out
 /build
 .DS_Store
+# macOS AppleDouble metadata (regenerated on non-APFS/exFAT volumes)
+._*
 *.pem
 npm-debug.log*
 .env*.local
