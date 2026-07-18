@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { Mail, MapPin, Phone, Globe } from "lucide-react";
+import { Mail, MapPin, Phone, Globe, Clock, Instagram, Facebook, Linkedin, Youtube } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { usePathname } from "next/navigation";
+import type { PublicSettings } from "@/lib/services/settings.service";
 
 const QUICK_LINKS = [
   "Home",
@@ -22,9 +23,38 @@ const LOCATIONS = [
   "Greater Noida West",
 ];
 
-export function SiteFooter() {
+// Current defaults — used as fallbacks so the footer looks unchanged whenever a
+// Settings field is left blank (or settings can't be read).
+const FALLBACK = {
+  tagline:
+    "At Creators Arena, we don't just close deals — we help you find the perfect space to grow, live, or build your dreams. Your gateway to smart property decisions.",
+  rera: "UPRERAAGT0000827072025",
+  phone: "+91-9891321123",
+  email: "contact@creatorshome.in",
+  website: "www.creatorshome.in",
+  address: "E-219, 2nd Floor, Sector 63, Noida 201301",
+};
+
+export function SiteFooter({ settings }: { settings?: PublicSettings | null }) {
   const pathname = usePathname();
   if (pathname.startsWith("/admin")) return null;
+
+  const s = settings ?? null;
+  const tagline = s?.footerTagline?.trim() || FALLBACK.tagline;
+  const rera = s?.reraNumber?.trim() || FALLBACK.rera;
+  const phone = s?.contactPhone?.trim() || FALLBACK.phone;
+  const email = s?.contactEmail?.trim() || FALLBACK.email;
+  const website = s?.websiteUrl?.trim() || FALLBACK.website;
+  const address = s?.officeAddress?.trim() || FALLBACK.address;
+  const hours = s?.businessHours?.trim() || "";
+  const customFields = (s?.footerCustomFields ?? []).filter((f) => f.label || f.value);
+
+  const socials = [
+    { url: s?.instagramUrl?.trim(), Icon: Instagram, label: "Instagram" },
+    { url: s?.facebookUrl?.trim(), Icon: Facebook, label: "Facebook" },
+    { url: s?.linkedinUrl?.trim(), Icon: Linkedin, label: "LinkedIn" },
+    { url: s?.youtubeUrl?.trim(), Icon: Youtube, label: "YouTube" },
+  ].filter((x) => x.url);
 
   return (
     <footer className="mt-0 bg-primary text-primary-foreground">
@@ -34,13 +64,28 @@ export function SiteFooter() {
             <Logo />
           </div>
           <p className="mt-5 max-w-xs text-sm leading-relaxed text-primary-foreground/70">
-            At Creators Arena, we don&apos;t just close deals — we help you find
-            the perfect space to grow, live, or build your dreams. Your gateway
-            to smart property decisions.
+            {tagline}
           </p>
           <p className="mt-6 text-xs font-semibold tracking-wide text-primary-foreground/50">
-            RERA REG. NO: UPRERAAGT0000827072025
+            RERA REG. NO: {rera}
           </p>
+
+          {socials.length > 0 && (
+            <div className="mt-5 flex items-center gap-3">
+              {socials.map(({ url, Icon, label }) => (
+                <a
+                  key={label}
+                  href={url!}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label={label}
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-primary-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                >
+                  <Icon className="h-4 w-4" />
+                </a>
+              ))}
+            </div>
+          )}
         </div>
 
         <FooterCol title="Quick Links">
@@ -61,18 +106,31 @@ export function SiteFooter() {
           </h4>
           <ul className="space-y-3 text-sm text-primary-foreground/75">
             <li className="flex items-center gap-2.5">
-              <Phone className="h-4 w-4 text-accent" /> +91-9891321123
+              <Phone className="h-4 w-4 text-accent" /> {phone}
             </li>
             <li className="flex items-center gap-2.5">
-              <Mail className="h-4 w-4 text-accent" /> contact@creatorshome.in
+              <Mail className="h-4 w-4 text-accent" /> {email}
             </li>
             <li className="flex items-center gap-2.5">
-              <Globe className="h-4 w-4 text-accent" /> www.creatorshome.in
+              <Globe className="h-4 w-4 text-accent" /> {website}
             </li>
             <li className="flex items-start gap-2.5">
-              <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-accent" /> E-219,
-              2nd Floor, Sector 63, Noida 201301
+              <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-accent" /> {address}
             </li>
+            {hours && (
+              <li className="flex items-center gap-2.5">
+                <Clock className="h-4 w-4 text-accent" /> {hours}
+              </li>
+            )}
+            {customFields.map((f, i) => (
+              <li key={i} className="flex items-start gap-2.5">
+                <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
+                <span>
+                  {f.label && <span className="font-medium">{f.label}: </span>}
+                  {f.value}
+                </span>
+              </li>
+            ))}
           </ul>
         </div>
       </div>

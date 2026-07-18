@@ -1,5 +1,6 @@
 import { ReactNode } from "react";
 import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 import { AdminSidebar } from "@/components/admin/sidebar";
 import { AdminHeader } from "@/components/admin/header";
 import { getCurrentAdmin } from "@/lib/auth/roles";
@@ -19,9 +20,16 @@ export default async function AdminLayout({ children }: { children: ReactNode })
     return <>{children}</>;
   }
 
-  // Best-effort: used only to tailor the sidebar/header to the signed-in admin.
-  // Never gates access here (middleware + per-route guards do that).
+  // Authorization chokepoint for the WHOLE admin panel. The Edge middleware only
+  // checks that a session cookie exists (it can't hit the DB), so a logged-in
+  // NON-admin (e.g. a public customer) could otherwise reach admin pages that
+  // fetch data server-side (dashboard, bookings…). Verifying here — once, in the
+  // shared layout — protects every admin page in a single place. A real admin
+  // passes through unchanged; anyone else is sent to the login screen.
   const current = await getCurrentAdmin();
+  if (!current) {
+    redirect("/admin/login");
+  }
 
   return (
     <div className="flex min-h-screen bg-[#F8F9FA] text-slate-900 font-sans">

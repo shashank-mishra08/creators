@@ -65,6 +65,11 @@ export default async function RootLayout({
   const isAdminRoute = pathname.startsWith("/admin");
   const maintenance = isAdminRoute ? false : await settingsService.isMaintenanceMode();
 
+  // Public-safe settings drive the footer (contact, social, custom fields).
+  // Fetched only for the public site; the footer falls back to its defaults if
+  // this is null, so nothing breaks when settings are empty or unreadable.
+  const publicSettings = isAdminRoute ? null : await settingsService.getPublic();
+
   if (maintenance) {
     return (
       <html lang="en" suppressHydrationWarning>
@@ -98,7 +103,7 @@ export default async function RootLayout({
               <main id="main-content" className="flex-1">
                 {children}
               </main>
-              <SiteFooter />
+              <SiteFooter settings={publicSettings} />
             </div>
             <Toaster />
           </MotionConfig>

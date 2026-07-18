@@ -21,7 +21,7 @@ export default async function AdminBookingsPage() {
     <div className="p-6 lg:p-8 max-w-7xl mx-auto">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-slate-900">Site Visits</h1>
+        <h1 className="text-2xl font-bold text-slate-900">Contact Query</h1>
         <p className="text-sm text-slate-500 mt-0.5">
           Booking requests submitted by clients from the website.
         </p>
@@ -37,7 +37,7 @@ export default async function AdminBookingsPage() {
           </div>
           <p className="text-3xl font-bold text-slate-900">{bookings.length}</p>
           <p className="text-sm font-medium text-slate-700 mt-0.5">Total Requests</p>
-          <p className="text-xs text-slate-400 mt-0.5">All site visit bookings</p>
+          <p className="text-xs text-slate-400 mt-0.5">All contact queries</p>
         </div>
       </div>
 
@@ -54,7 +54,7 @@ export default async function AdminBookingsPage() {
             </div>
             <p className="text-sm font-medium text-slate-700">No bookings yet</p>
             <p className="text-xs text-slate-400 mt-0.5">
-              Requests from the &ldquo;Book Site Visit&rdquo; form will appear here.
+              Requests from the &ldquo;Contact Query&rdquo; form will appear here.
             </p>
           </div>
         ) : (

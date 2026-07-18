@@ -114,7 +114,7 @@ export function SiteVisitModal({ isOpen, onClose, propertyName }: SiteVisitModal
               {/* Header */}
               <div className="flex items-center justify-between border-b border-border bg-muted/50 px-5 py-4">
                 <h2 className="flex items-center gap-2 font-display text-lg font-bold text-foreground">
-                  <CalendarCheck className="h-5 w-5 text-accent" /> Book Site Visit
+                  <Phone className="h-5 w-5 text-accent" /> Contact Expert
                 </h2>
                 <button
                   onClick={onClose}

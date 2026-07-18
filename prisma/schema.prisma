@@ -363,6 +363,13 @@ model SiteSettings {
   officeAddress    String   @default("")
   mapUrl           String   @default("")
   businessHours    String   @default("")
+  // Footer branding (map existing hardcoded footer content to admin control)
+  websiteUrl       String   @default("")
+  reraNumber       String   @default("")
+  footerTagline    String   @default("")
+  // Extra footer key/value lines added via the "Add field" button.
+  // Shape: [{ "label": string, "value": string }]
+  footerCustomFields Json   @default("[]")
   // Social
   instagramUrl     String   @default("")
   facebookUrl      String   @default("")

@@ -1,5 +1,5 @@
 import { getCurrentAdmin } from "@/lib/auth/roles";
-import { settingsService } from "@/lib/services/settings.service";
+import { settingsService, sanitizeCustomFields } from "@/lib/services/settings.service";
 import { SettingsForm } from "@/components/admin/settings-form";
 
 export const dynamic = "force-dynamic";
@@ -9,8 +9,10 @@ export default async function AdminSettingsPage() {
   const settings = await settingsService.get();
   const canEdit = current?.role === "SUPER_ADMIN";
 
-  // Never send internal fields to the client.
-  const { updatedAt, ...rest } = settings;
+  // Never send internal fields to the client; normalise the JSON custom-fields
+  // column into a clean typed array the form can bind to.
+  const { updatedAt, footerCustomFields, ...rest } = settings;
+  const initial = { ...rest, footerCustomFields: sanitizeCustomFields(footerCustomFields) };
 
   return (
     <div className="p-6 lg:p-8 max-w-4xl mx-auto">
@@ -21,7 +23,7 @@ export default async function AdminSettingsPage() {
           {!canEdit && " (Read-only — only Super Admins can edit.)"}
         </p>
       </div>
-      <SettingsForm initial={rest} canEdit={canEdit} />
+      <SettingsForm initial={initial} canEdit={canEdit} />
     </div>
   );
 }

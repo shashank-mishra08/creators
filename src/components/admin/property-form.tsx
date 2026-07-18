@@ -121,8 +121,8 @@ function ImageField({ label, value, onChange }: { label: string; value: string; 
   );
 }
 
-const INPUT = "w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#7166F0]/20 focus:border-[#7166F0] transition-all bg-white";
-const LABEL = "block text-sm font-medium text-slate-700 mb-1.5";
+const INPUT = "w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#7166F0]/20 focus:border-[#7166F0] transition-all bg-white";
+const LABEL = "block text-sm font-semibold text-slate-700 mb-1.5";
 
 export function PropertyForm({ title, subtitle: formSubtitle, initialData, onSubmit }: PropertyFormProps) {
   const router = useRouter();

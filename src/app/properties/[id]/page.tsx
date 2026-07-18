@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { getDataSource } from "@/lib/data-source";
 import { propertyService } from "@/lib/services/property.service";
 import { reviewService } from "@/lib/services/review.service";
+import { settingsService } from "@/lib/services/settings.service";
 import { PropertyDetail } from "@/components/property/property-detail";
 import { formatPriceLakh } from "@/lib/utils";
 import { SITE_URL } from "@/lib/constants";
@@ -104,10 +105,11 @@ export default async function PropertyDetailPage({
   // sequential round-trips. `getSimilar` fetches only 3 rows at the DB (was
   // `list()` loading all properties with every relation just to slice 3).
   // Reviews are non-critical, so a failure resolves to null rather than throwing.
-  const [property, similar, reviews] = await Promise.all([
+  const [property, similar, reviews, publicSettings] = await Promise.all([
     loadProperty(params.id),
     propertyService.getSimilar([params.id], 3),
     reviewService.listForProperty(params.id).catch(() => null),
+    settingsService.getPublic().catch(() => null),
   ]);
 
   if (!property) notFound();
@@ -128,6 +130,7 @@ export default async function PropertyDetailPage({
         similar={similar}
         reviewAvg={reviews?.averageRating ?? null}
         reviewCount={reviews?.reviews.length ?? 0}
+        contactPhone={publicSettings?.contactPhone || undefined}
       />
     </>
   );

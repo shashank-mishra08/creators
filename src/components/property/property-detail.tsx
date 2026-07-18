@@ -59,12 +59,19 @@ export function PropertyDetail({
   similar,
   reviewAvg,
   reviewCount,
+  contactPhone,
 }: {
   property: Property;
   similar: Property[];
   reviewAvg: number | null;
   reviewCount: number;
+  /** From admin Settings; falls back to the built-in expert number if unset. */
+  contactPhone?: string;
 }) {
+  // Admin-configured contact number (Settings) with a safe fallback so the page
+  // renders exactly as before when no number is set.
+  const expertPhone = contactPhone?.trim() || EXPERT_PHONE;
+  const expertPhoneDisplay = contactPhone?.trim() || "+91 92529 96677";
   const router = useRouter();
   const pathname = usePathname();
   const mounted = useMounted();
@@ -218,13 +225,8 @@ export function PropertyDetail({
           </div>
           <div className="flex flex-col gap-2 sm:flex-row">
             <Button variant="accent" size="sm" className="w-full flex-1" onClick={() => setIsSiteVisitOpen(true)}>
-              <CalendarCheck className="h-4 w-4" /> Book Site Visit
+              <Phone className="h-4 w-4" /> Contact Expert
             </Button>
-            <a href={`tel:${EXPERT_PHONE}`} className="flex-1">
-              <Button variant="outline" size="sm" className="w-full">
-                <Phone className="h-4 w-4" /> Contact Expert
-              </Button>
-            </a>
           </div>
         </div>
       </div>
@@ -521,12 +523,12 @@ export function PropertyDetail({
             Our property experts will help you find the best deal — best price, free
             site visit, detailed cost sheet and home-loan assistance.
           </p>
-          <a href={`tel:${EXPERT_PHONE}`}>
+          <a href={`tel:${expertPhone}`}>
             <Button variant="accent" size="md" className="mt-4 w-full">
               <Phone className="h-4 w-4" /> Get a Callback
             </Button>
           </a>
-          <p className="mt-2 text-center text-[11px] text-muted-foreground">Call us: +91 92529 96677</p>
+          <p className="mt-2 text-center text-[11px] text-muted-foreground">Call us: {expertPhoneDisplay}</p>
         </div>
       </div>
 
