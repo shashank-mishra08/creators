@@ -274,6 +274,13 @@ model User {
   provider         String            @default("email")
   savedPropertyIds String[]          @default([])
   isAdmin          Boolean           @default(false)
+  // ── Admin-panel RBAC (additive; isAdmin remains the gate for existing
+  //    routes, `role` adds finer-grained permissions for new admin routes).
+  //    Public website signups keep the default role "CUSTOMER" + isAdmin=false.
+  role             String            @default("CUSTOMER") // CUSTOMER | AGENT | MANAGER | SUPER_ADMIN
+  isActive         Boolean           @default(true)       // deactivate to lock out instantly (guard checks per request)
+  lastLoginAt      DateTime?
+  invitedAt        DateTime?
   resetTokenHash   String?
   resetTokenExp    DateTime?
   createdAt        DateTime          @default(now())
@@ -341,4 +348,55 @@ model ImportRun {
 
   @@index([sourceFile])
   @@map("import_runs")
+}
+
+// ───────────────────────── Site settings (singleton) ─────────────────────────
+// Global site configuration edited from /admin/settings. A single row keyed by
+// a fixed id ("singleton"). All fields have defaults so the row is safe to
+// read/create at any time; the service uses upsert so it self-heals.
+model SiteSettings {
+  id               String   @id @default("singleton")
+  // Contact
+  contactPhone     String   @default("")
+  contactEmail     String   @default("")
+  whatsappNumber   String   @default("")
+  officeAddress    String   @default("")
+  mapUrl           String   @default("")
+  businessHours    String   @default("")
+  // Social
+  instagramUrl     String   @default("")
+  facebookUrl      String   @default("")
+  linkedinUrl      String   @default("")
+  youtubeUrl       String   @default("")
+  // Leads — comma-separated recipient emails notified on a new site-visit booking
+  leadNotifyEmails String   @default("")
+  // SEO & tracking
+  metaTitle        String   @default("")
+  metaDescription  String   @default("")
+  ogImageUrl       String   @default("")
+  ga4Id            String   @default("")
+  metaPixelId      String   @default("")
+  // Advanced
+  maintenanceMode  Boolean  @default(false)
+  updatedAt        DateTime @updatedAt
+
+  @@map("site_settings")
+}
+
+// ───────────────────────── Audit log ─────────────────────────
+// Append-only record of admin actions. Decoupled from User (nullable actorId,
+// name snapshot) so deleting a user never cascades away their history.
+model AuditLog {
+  id        String   @id @default(uuid()) @db.Uuid
+  actorId   String?  @db.Uuid
+  actorName String   @default("")
+  actorRole String   @default("")
+  action    String // e.g. "user.create", "settings.update", "property.hide"
+  entity    String   @default("")
+  entityId  String   @default("")
+  summary   String   @default("")
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@map("audit_logs")
 }

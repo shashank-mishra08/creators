@@ -19,7 +19,7 @@ export async function POST(req: Request) {
     // Verify admin status
     const dbUser = await prisma.user.findUnique({
       where: { id: user.id },
-      select: { isAdmin: true },
+      select: { isAdmin: true, isActive: true },
     });
     if (!dbUser?.isAdmin) {
       return NextResponse.json(
@@ -27,6 +27,17 @@ export async function POST(req: Request) {
         { status: 403 }
       );
     }
+    if (dbUser.isActive === false) {
+      return NextResponse.json(
+        { error: "This account has been deactivated. Please contact an administrator." },
+        { status: 403 }
+      );
+    }
+
+    // Record last login (best-effort — never block sign-in on this).
+    await prisma.user
+      .update({ where: { id: user.id }, data: { lastLoginAt: new Date() } })
+      .catch(() => {});
 
     setSessionCookie(user.id);
     return json({ user });

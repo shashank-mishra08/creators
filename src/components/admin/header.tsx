@@ -4,9 +4,19 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Menu, Search, Bell, ChevronDown, LogOut } from "lucide-react";
 
-export function AdminHeader() {
+const ROLE_LABEL: Record<string, string> = {
+  SUPER_ADMIN: "Super Admin",
+  MANAGER: "Manager",
+  AGENT: "Agent",
+};
+
+export function AdminHeader({ user }: { user?: { name: string; role: string } }) {
   const router = useRouter();
   const [showMenu, setShowMenu] = useState(false);
+
+  const displayName = user?.name || "Admin";
+  const displayRole = (user && ROLE_LABEL[user.role]) || "Super Admin";
+  const initial = displayName.trim().charAt(0).toUpperCase() || "A";
 
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -44,11 +54,11 @@ export function AdminHeader() {
             onClick={() => setShowMenu((v) => !v)}
           >
             <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-white font-medium group-hover:bg-white/30 transition-colors">
-              A
+              {initial}
             </div>
             <div className="flex flex-col">
-              <span className="text-sm font-semibold text-white">Admin</span>
-              <span className="text-[11px] text-white/70">Super Admin</span>
+              <span className="text-sm font-semibold text-white">{displayName}</span>
+              <span className="text-[11px] text-white/70">{displayRole}</span>
             </div>
             <ChevronDown className="w-4 h-4 text-white/70 group-hover:text-white transition-colors ml-1" />
           </div>

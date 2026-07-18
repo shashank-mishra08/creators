@@ -6,11 +6,21 @@ import {
   Home, Building2, PlusCircle, Users, MapPin, Star,
   LayoutDashboard, Image as ImageIcon, MessageSquare,
   Mail, CalendarCheck, PhoneCall, UserCog, Settings,
-  ChevronLeft, FileSpreadsheet
+  ChevronLeft, FileSpreadsheet, ScrollText
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const navGroups = [
+// `roles` (when present) restricts an item to those roles. Items without a
+// `roles` field are visible to every admin. If no role is passed to the
+// sidebar we fail open (show everything) so nothing disappears unexpectedly.
+type NavItem = {
+  name: string;
+  href: string;
+  icon: typeof Home;
+  roles?: string[];
+};
+
+const navGroups: { title: string; items: NavItem[] }[] = [
   {
     title: "PROPERTY MANAGEMENT",
     items: [
@@ -28,14 +38,22 @@ const navGroups = [
   {
     title: "SETTINGS",
     items: [
-      { name: "Users & Roles", href: "/admin/users", icon: UserCog },
-      { name: "Settings", href: "/admin/settings", icon: Settings },
+      { name: "Users & Roles", href: "/admin/users", icon: UserCog, roles: ["SUPER_ADMIN"] },
+      { name: "Activity Log", href: "/admin/audit", icon: ScrollText, roles: ["SUPER_ADMIN"] },
+      { name: "Settings", href: "/admin/settings", icon: Settings, roles: ["SUPER_ADMIN"] },
     ]
   }
 ];
 
-export function AdminSidebar() {
+export function AdminSidebar({ role }: { role?: string }) {
   const pathname = usePathname();
+
+  const canSee = (item: NavItem) =>
+    !item.roles || !role || item.roles.includes(role);
+
+  const visibleGroups = navGroups
+    .map((g) => ({ ...g, items: g.items.filter(canSee) }))
+    .filter((g) => g.items.length > 0);
 
   return (
     <aside className="w-[280px] bg-white border-r flex flex-col h-screen sticky top-0 shrink-0">
@@ -73,7 +91,7 @@ export function AdminSidebar() {
 
         {/* Navigation Groups */}
         <div className="px-4 space-y-8">
-          {navGroups.map((group) => (
+          {visibleGroups.map((group) => (
             <div key={group.title}>
               <h3 className="px-4 text-[11px] font-semibold text-slate-400 tracking-wider mb-3">
                 {group.title}

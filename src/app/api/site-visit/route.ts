@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db/prisma";
+import { settingsService } from "@/lib/services/settings.service";
+import { sendEmail, siteVisitLeadEmail } from "@/lib/email";
 
 export const runtime = "nodejs";
 
@@ -15,6 +17,22 @@ export async function POST(req: Request) {
     await prisma.siteVisitBooking.create({
       data: { name, phone, propertyName: project, visitDate: date, visitTime: time },
     });
+
+    // Notify staff (best-effort). Wrapped so a mail failure never affects the
+    // submission — the lead is already saved above.
+    try {
+      const recipients = await settingsService.leadNotifyRecipients();
+      if (recipients.length > 0) {
+        const { subject, html } = siteVisitLeadEmail({
+          name, phone, propertyName: project, visitDate: date, visitTime: time,
+        });
+        await Promise.all(
+          recipients.map((to) => sendEmail({ to, subject, html })),
+        );
+      }
+    } catch (notifyErr) {
+      console.error("[site-visit] lead notification failed (non-fatal)", notifyErr);
+    }
 
     const GOOGLE_FORM_URL = process.env.GOOGLE_FORM_URL;
     

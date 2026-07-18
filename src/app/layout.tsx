@@ -1,13 +1,16 @@
 import type { Metadata } from "next";
 import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import { MotionConfig } from "framer-motion";
+import { headers } from "next/headers";
 import "./globals.css";
 import { SITE_URL } from "@/lib/constants";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import { SiteHeader } from "@/components/layout/site-header";
 import { SiteFooter } from "@/components/layout/site-footer";
+import { MaintenanceScreen } from "@/components/layout/maintenance-screen";
 import { Toaster } from "@/components/ui/toaster";
 import { AuthInit } from "@/components/auth/auth-init";
+import { settingsService } from "@/lib/services/settings.service";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -50,11 +53,28 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // Maintenance mode gates the PUBLIC site only. Admin routes (identified by the
+  // x-pathname header the middleware sets for /admin) always bypass it, so staff
+  // can log in and turn it off. isMaintenanceMode() fails open on any error.
+  const pathname = headers().get("x-pathname") ?? "";
+  const isAdminRoute = pathname.startsWith("/admin");
+  const maintenance = isAdminRoute ? false : await settingsService.isMaintenanceMode();
+
+  if (maintenance) {
+    return (
+      <html lang="en" suppressHydrationWarning>
+        <body className={`${inter.variable} ${jakarta.variable} font-sans antialiased`}>
+          <MaintenanceScreen />
+        </body>
+      </html>
+    );
+  }
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} ${jakarta.variable} font-sans antialiased`}>

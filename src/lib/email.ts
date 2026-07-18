@@ -64,3 +64,48 @@ export function passwordResetEmail(resetUrl: string): { subject: string; html: s
       </div>`,
   };
 }
+
+/** Invitation email for a new admin-panel account (set-password link). */
+export function adminInviteEmail(
+  inviteUrl: string,
+  opts: { name: string; roleLabel: string },
+): { subject: string; html: string } {
+  return {
+    subject: "You've been invited to the Creators admin panel",
+    html: `
+      <div style="font-family:system-ui,Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px">
+        <h2 style="color:#4338ca">Welcome, ${opts.name}</h2>
+        <p>You've been added to the Creators admin panel as
+        <strong>${opts.roleLabel}</strong>. Click the button below to set your
+        password and sign in. This link expires in 1 hour.</p>
+        <p style="margin:24px 0">
+          <a href="${inviteUrl}" style="background:#6d28d9;color:#fff;padding:12px 20px;border-radius:10px;text-decoration:none;font-weight:600">Set your password</a>
+        </p>
+        <p style="color:#999;font-size:12px">Or paste this link into your browser:<br>${inviteUrl}</p>
+      </div>`,
+  };
+}
+
+/** Notifies staff that a new site-visit booking (lead) has come in. */
+export function siteVisitLeadEmail(b: {
+  name: string;
+  phone: string;
+  propertyName: string;
+  visitDate: string;
+  visitTime: string;
+}): { subject: string; html: string } {
+  return {
+    subject: `New site-visit request — ${b.propertyName}`,
+    html: `
+      <div style="font-family:system-ui,Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px">
+        <h2 style="color:#4338ca">New site-visit request</h2>
+        <table style="width:100%;border-collapse:collapse;font-size:14px">
+          <tr><td style="padding:6px 0;color:#666">Name</td><td style="padding:6px 0;font-weight:600">${b.name}</td></tr>
+          <tr><td style="padding:6px 0;color:#666">Phone</td><td style="padding:6px 0;font-weight:600">${b.phone}</td></tr>
+          <tr><td style="padding:6px 0;color:#666">Property</td><td style="padding:6px 0;font-weight:600">${b.propertyName}</td></tr>
+          <tr><td style="padding:6px 0;color:#666">Requested</td><td style="padding:6px 0;font-weight:600">${b.visitDate} at ${b.visitTime}</td></tr>
+        </table>
+        <p style="color:#999;font-size:12px;margin-top:16px">This lead is also saved in the admin &ldquo;Site Visits&rdquo; page.</p>
+      </div>`,
+  };
+}

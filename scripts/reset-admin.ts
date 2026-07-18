@@ -7,16 +7,18 @@ async function run() {
   
   await prisma.user.upsert({
     where: { email: "admin@creatorshome.in" },
-    update: { passwordHash, isAdmin: true },
+    update: { passwordHash, isAdmin: true, role: "SUPER_ADMIN", isActive: true },
     create: {
       name: "Admin",
       email: "admin@creatorshome.in",
       passwordHash,
       provider: "email",
       isAdmin: true,
+      role: "SUPER_ADMIN",
+      isActive: true,
     }
   });
-  console.log("Password reset successfully to Admin@123 and isAdmin set to true");
+  console.log("Password reset to Admin@123; isAdmin + SUPER_ADMIN role set, account active.");
 }
 
 run().catch(console.error).finally(() => process.exit(0));
