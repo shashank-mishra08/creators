@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { 
@@ -45,7 +46,16 @@ const navGroups: { title: string; items: NavItem[] }[] = [
   }
 ];
 
-export function AdminSidebar({ role }: { role?: string }) {
+export function AdminSidebar({
+  role,
+  open = false,
+  onClose,
+}: {
+  role?: string;
+  /** Mobile drawer state. Ignored from `lg` up, where the rail is always shown. */
+  open?: boolean;
+  onClose?: () => void;
+}) {
   const pathname = usePathname();
 
   const canSee = (item: NavItem) =>
@@ -55,8 +65,49 @@ export function AdminSidebar({ role }: { role?: string }) {
     .map((g) => ({ ...g, items: g.items.filter(canSee) }))
     .filter((g) => g.items.length > 0);
 
+  // Navigating on mobile should dismiss the drawer, not leave it covering the page.
+  React.useEffect(() => {
+    onClose?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
+
+  // Escape closes, and the page behind must not scroll while the drawer is open.
+  React.useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose?.();
+    };
+    document.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [open, onClose]);
+
   return (
-    <aside className="w-[280px] bg-white flex flex-col h-screen sticky top-0 shrink-0">
+    <>
+      {/* Scrim — mobile only, sits under the drawer. */}
+      <div
+        onClick={onClose}
+        aria-hidden
+        className={cn(
+          "fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-sm transition-opacity lg:hidden",
+          open ? "opacity-100" : "pointer-events-none opacity-0",
+        )}
+      />
+
+      <aside
+        className={cn(
+          "bg-white flex flex-col w-[280px] shrink-0",
+          // Mobile: off-canvas drawer. lg+: the original static rail.
+          "fixed inset-y-0 left-0 z-50 h-screen transition-transform duration-300 ease-out",
+          // Clear the fixed offsets at lg, or `bottom:0` fights sticky positioning.
+          "lg:sticky lg:inset-y-auto lg:left-auto lg:top-0 lg:z-auto lg:translate-x-0 lg:transition-none",
+          open ? "translate-x-0 shadow-2xl" : "-translate-x-full",
+        )}
+      >
       {/* Logo Area */}
       <div className="h-20 flex items-center justify-center bg-[#7166F0] border-b border-[#5a52d5] text-white">
         <Link href="/admin" className="flex items-center justify-center w-full h-full">
@@ -124,13 +175,17 @@ export function AdminSidebar({ role }: { role?: string }) {
         </div>
       </div>
 
-      {/* Collapse Button */}
-      <div className="p-4 border-t border-r">
-        <button className="flex items-center gap-3 px-4 py-2 text-slate-500 hover:text-slate-900 transition-colors text-sm w-full">
+      {/* Closes the mobile drawer. Hidden on lg, where there is nothing to close. */}
+      <div className="p-4 border-t border-r lg:hidden">
+        <button
+          onClick={onClose}
+          className="flex items-center gap-3 px-4 py-2 text-slate-500 hover:text-slate-900 transition-colors text-sm w-full"
+        >
           <ChevronLeft className="w-5 h-5" />
-          <span>Collapse</span>
+          <span>Close menu</span>
         </button>
       </div>
-    </aside>
+      </aside>
+    </>
   );
 }

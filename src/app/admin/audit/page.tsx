@@ -23,7 +23,7 @@ export default async function AdminAuditPage() {
 
   if (!current || current.role !== "SUPER_ADMIN") {
     return (
-      <div className="p-6 lg:p-8 max-w-3xl mx-auto">
+      <div className="p-4 sm:p-6 lg:p-8 max-w-3xl mx-auto">
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-10 text-center">
           <div className="w-12 h-12 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center mx-auto mb-4">
             <ShieldAlert className="w-6 h-6" />
@@ -38,7 +38,7 @@ export default async function AdminAuditPage() {
   const rows = await listRecentAudit(200);
 
   return (
-    <div className="p-6 lg:p-8 max-w-6xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-slate-900">Activity Log</h1>
         <p className="text-sm text-slate-500 mt-0.5">

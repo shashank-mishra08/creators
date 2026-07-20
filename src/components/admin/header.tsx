@@ -10,7 +10,13 @@ const ROLE_LABEL: Record<string, string> = {
   AGENT: "Agent",
 };
 
-export function AdminHeader({ user }: { user?: { name: string; role: string } }) {
+export function AdminHeader({
+  user,
+  onMenuClick,
+}: {
+  user?: { name: string; role: string };
+  onMenuClick?: () => void;
+}) {
   const router = useRouter();
   const [showMenu, setShowMenu] = useState(false);
 
@@ -25,9 +31,19 @@ export function AdminHeader({ user }: { user?: { name: string; role: string } })
   }
 
   return (
-    <header className="h-20 bg-[#7166F0] border-b border-[#5a52d5] px-6 flex items-center justify-between sticky top-0 z-10">
-      <div className="flex items-center gap-6 flex-1">
-        <div className="relative w-full max-w-xl">
+    <header className="h-16 sm:h-20 bg-[#7166F0] border-b border-[#5a52d5] px-3 sm:px-6 flex items-center justify-between gap-2 sticky top-0 z-10">
+      <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
+        <button
+          type="button"
+          onClick={onMenuClick}
+          aria-label="Open navigation menu"
+          className="shrink-0 rounded-lg p-2 text-white/90 transition-colors hover:bg-white/15 hover:text-white lg:hidden"
+        >
+          <Menu className="h-6 w-6" />
+        </button>
+
+        {/* Full search from sm up; below that it would crowd out everything else. */}
+        <div className="relative hidden w-full max-w-xl sm:block">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <Search className="h-5 w-5 text-slate-400" />
           </div>
@@ -39,8 +55,8 @@ export function AdminHeader({ user }: { user?: { name: string; role: string } })
         </div>
       </div>
 
-      <div className="flex items-center gap-6 pl-6">
-        <button className="relative text-white/80 hover:text-white transition-colors">
+      <div className="flex items-center gap-3 sm:gap-6 sm:pl-6">
+        <button className="relative shrink-0 text-white/80 hover:text-white transition-colors">
           <Bell className="w-6 h-6" />
           <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold flex items-center justify-center rounded-full border-2 border-[#7166F0]">
             3
@@ -53,14 +69,15 @@ export function AdminHeader({ user }: { user?: { name: string; role: string } })
             className="flex items-center gap-3 cursor-pointer group"
             onClick={() => setShowMenu((v) => !v)}
           >
-            <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-white font-medium group-hover:bg-white/30 transition-colors">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 shrink-0 bg-white/20 rounded-full flex items-center justify-center text-white font-medium group-hover:bg-white/30 transition-colors">
               {initial}
             </div>
-            <div className="flex flex-col">
-              <span className="text-sm font-semibold text-white">{displayName}</span>
-              <span className="text-[11px] text-white/70">{displayRole}</span>
+            {/* Name/role would overflow a phone header — the avatar carries it there. */}
+            <div className="hidden md:flex flex-col min-w-0">
+              <span className="truncate text-sm font-semibold text-white">{displayName}</span>
+              <span className="truncate text-[11px] text-white/70">{displayRole}</span>
             </div>
-            <ChevronDown className="w-4 h-4 text-white/70 group-hover:text-white transition-colors ml-1" />
+            <ChevronDown className="hidden md:block w-4 h-4 text-white/70 group-hover:text-white transition-colors ml-1" />
           </div>
 
           {showMenu && (
