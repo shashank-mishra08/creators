@@ -61,7 +61,9 @@ export function SiteFooter({ settings }: { settings?: PublicSettings | null }) {
       <div className="container grid gap-12 py-16 md:grid-cols-[1.4fr_1fr_1fr_1.2fr]">
         <div>
           <div className="text-primary-foreground">
-            <Logo />
+            {/* `dark` inverts the navy mark to white — the footer sits on bg-primary.
+                max-w-full guards the ~319px grid column at the widest breakpoint. */}
+            <Logo dark imageClassName="h-40 max-w-full" />
           </div>
           <p className="mt-5 max-w-xs text-sm leading-relaxed text-primary-foreground/70">
             {tagline}

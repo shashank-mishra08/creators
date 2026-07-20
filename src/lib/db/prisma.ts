@@ -26,8 +26,16 @@ function createClient(): PrismaClient {
   });
 }
 
-export const prisma = globalForPrisma.prisma ?? createClient();
+export const prisma = new Proxy({} as PrismaClient, {
+  get(target, prop) {
+    if (!globalForPrisma.prisma) {
+      globalForPrisma.prisma = createClient();
+    }
+    return (globalForPrisma.prisma as any)[prop];
+  }
+});
 
 if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prisma;
+  // Ensure we don't accidentally instantiate during hot reloads unless already instantiated
+  // But globalForPrisma is already handling the persistence.
 }

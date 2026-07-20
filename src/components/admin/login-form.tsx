@@ -57,7 +57,7 @@ export function AdminLoginForm() {
             placeholder="admin@creatorshome.in"
             required
             autoComplete="email"
-            className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-purple/30 focus:border-brand-purple transition-all bg-slate-50 focus:bg-white"
+            className="w-full pl-11 pr-4 py-3.5 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-4 focus:ring-brand-purple/15 focus:border-brand-purple transition-all bg-slate-50/80 hover:bg-slate-50 focus:bg-white"
           />
         </div>
       </div>
@@ -84,7 +84,7 @@ export function AdminLoginForm() {
             placeholder="Enter your password"
             required
             autoComplete="current-password"
-            className="w-full pl-10 pr-11 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-purple/30 focus:border-brand-purple transition-all bg-slate-50 focus:bg-white"
+            className="w-full pl-11 pr-11 py-3.5 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-4 focus:ring-brand-purple/15 focus:border-brand-purple transition-all bg-slate-50/80 hover:bg-slate-50 focus:bg-white"
           />
           <button
             type="button"
@@ -106,7 +106,7 @@ export function AdminLoginForm() {
       <button
         type="submit"
         disabled={loading}
-        className="w-full flex items-center justify-center gap-2 bg-brand-purple text-white py-3 rounded-xl text-sm font-semibold hover:bg-brand-purple/90 transition-colors shadow-md shadow-brand-purple/20 disabled:opacity-60 disabled:cursor-not-allowed"
+        className="w-full flex items-center justify-center gap-2 bg-brand-purple text-white py-3.5 rounded-xl text-sm font-semibold hover:bg-[#5f54e4] active:scale-[0.99] transition-all shadow-lg shadow-brand-purple/30 hover:shadow-xl hover:shadow-brand-purple/35 focus:outline-none focus:ring-4 focus:ring-brand-purple/25 disabled:opacity-60 disabled:cursor-not-allowed disabled:shadow-none disabled:active:scale-100"
       >
         {loading ? (
           <>

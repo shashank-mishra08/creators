@@ -8,6 +8,7 @@ import {
   Building2,
   CalendarCheck,
   Check,
+  ChevronLeft,
   ChevronRight,
   Dumbbell,
   Expand,
@@ -112,6 +113,20 @@ export function PropertyDetail({
   // Gallery side tiles — ONLY real brochure images (no empty placeholder slots).
   const tiles: string[] = [...p.gallery].slice(0, 4);
 
+  // Every real photo, cover first, de-duplicated — this is what the lightbox
+  // pages through. The cover often also appears in p.gallery.
+  const photos: string[] = React.useMemo(
+    () => Array.from(new Set([p.image, ...p.gallery].filter(Boolean) as string[])),
+    [p.image, p.gallery]
+  );
+  const [photoIndex, setPhotoIndex] = React.useState<number | null>(null);
+  // Which photo the big tile is currently showing (the arrows drive this).
+  const [cover, setCover] = React.useState(0);
+  const openPhotos = (src: string) => {
+    const i = photos.indexOf(src);
+    setPhotoIndex(i >= 0 ? i : 0);
+  };
+
   const loc = [
     { icon: Train, label: "Metro Station", value: p.location.metroKm },
     { icon: ShieldCheck, label: "Hospital", value: p.location.hospitalKm },
@@ -162,18 +177,49 @@ export function PropertyDetail({
       {/* Gallery — right column only appears when there are real photos, and it
           stretches to fill so there are never empty placeholder tiles. */}
       <div className={cn("grid gap-3", tiles.length > 0 && "lg:grid-cols-[1.6fr_1fr]")}>
-        <div className="relative h-64 overflow-hidden rounded-2xl sm:h-80 lg:h-[26rem]">
-          <CoverImage src={p.image} alt={p.name} gradient={p.gradient} label={p.name} sizes="(max-width:1024px) 100vw, 60vw" />
-          <span className="absolute left-4 top-4 rounded-lg bg-white/90 px-3 py-1.5 text-xs font-bold text-slate-800 shadow-sm backdrop-blur">
-            View Photos
+        <div className="group relative h-64 overflow-hidden rounded-2xl sm:h-80 lg:h-[26rem]">
+          <button
+            type="button"
+            onClick={() => photos.length > 0 && setPhotoIndex(cover)}
+            disabled={photos.length === 0}
+            aria-label={`View photos of ${p.name}`}
+            className="absolute inset-0 z-[1] cursor-zoom-in focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-default"
+          >
+            <CoverImage src={photos[cover] ?? p.image} alt={p.name} gradient={p.gradient} label={p.name} sizes="(max-width:1024px) 100vw, 60vw" />
+          </button>
+
+          <span className="pointer-events-none absolute left-4 top-4 z-[2] rounded-lg bg-white/90 px-3 py-1.5 text-xs font-bold text-slate-800 shadow-sm backdrop-blur">
+            View Photos{photos.length > 1 && ` (${photos.length})`}
           </span>
+
+          {/* Step through photos without opening the lightbox. */}
+          {photos.length > 1 && (
+            <>
+              <GalleryArrow
+                side="left"
+                label="Previous photo"
+                onClick={() => setCover((c) => (c - 1 + photos.length) % photos.length)}
+              />
+              <GalleryArrow
+                side="right"
+                label="Next photo"
+                onClick={() => setCover((c) => (c + 1) % photos.length)}
+              />
+            </>
+          )}
         </div>
         {tiles.length > 0 && (
           <div className="flex flex-col gap-3 lg:h-[26rem]">
             {tiles.map((src, i) => (
-              <div key={i} className="relative h-32 flex-1 overflow-hidden rounded-xl">
+              <button
+                key={i}
+                type="button"
+                onClick={() => openPhotos(src)}
+                aria-label={`View ${p.name} photo ${i + 1}`}
+                className="relative h-32 flex-1 cursor-zoom-in overflow-hidden rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              >
                 <CoverImage src={src} alt={`${p.name} view ${i + 1}`} gradient={p.gradient} sizes="30vw" />
-              </div>
+              </button>
             ))}
           </div>
         )}
@@ -186,9 +232,6 @@ export function PropertyDetail({
         <a href={mapsLink} target="_blank" rel="noreferrer">
           <ActionButton icon={MapPin} label="Get Location" />
         </a>
-        <Link href="/compare">
-          <ActionButton icon={GitCompareArrows} label="Go to Compare" />
-        </Link>
       </div>
 
       {/* Header card */}
@@ -524,7 +567,7 @@ export function PropertyDetail({
             site visit, detailed cost sheet and home-loan assistance.
           </p>
           <a href={`tel:${expertPhone}`}>
-            <Button variant="accent" size="md" className="mt-4 w-full">
+            <Button variant="accent" size="md" className="mt-12 w-full">
               <Phone className="h-4 w-4" /> Get a Callback
             </Button>
           </a>
@@ -533,7 +576,17 @@ export function PropertyDetail({
       </div>
 
       {/* Floor-plan lightbox */}
-      {zoom && <Lightbox src={zoom} onClose={() => setZoom(null)} />}
+      {zoom && <Lightbox images={[zoom]} alt="Floor plan" onClose={() => setZoom(null)} />}
+
+      {/* Photo gallery lightbox */}
+      {photoIndex !== null && (
+        <Lightbox
+          images={photos}
+          startIndex={photoIndex}
+          alt={`${p.name} photo`}
+          onClose={() => setPhotoIndex(null)}
+        />
+      )}
       
       <SiteVisitModal 
         isOpen={isSiteVisitOpen} 
@@ -541,6 +594,35 @@ export function PropertyDetail({
         propertyName={p.name} 
       />
     </div>
+  );
+}
+
+/** Prev/next control overlaid on the main gallery tile. */
+function GalleryArrow({
+  side,
+  label,
+  onClick,
+}: {
+  side: "left" | "right";
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      onClick={onClick}
+      className={cn(
+        "absolute top-1/2 z-[2] flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full",
+        "bg-white/85 text-slate-800 shadow-md backdrop-blur transition hover:bg-white",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
+        // Revealed on hover/focus on pointer devices; always visible on touch.
+        "opacity-0 group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100",
+        side === "left" ? "left-3" : "right-3",
+      )}
+    >
+      {side === "left" ? <ChevronLeft className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
+    </button>
   );
 }
 

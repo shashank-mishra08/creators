@@ -573,7 +573,7 @@ export function ComparisonView({
       </div>
 
       {/* Floor-plan lightbox */}
-      {zoom && <Lightbox src={zoom} onClose={() => setZoom(null)} />}
+      {zoom && <Lightbox images={[zoom]} alt="Floor plan" onClose={() => setZoom(null)} />}
     </div>
   );
 }
