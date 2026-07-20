@@ -16,7 +16,7 @@ export default function AdminLoginPage() {
         className="
           w-full bg-white
           p-0 sm:p-2.5 lg:p-3
-          grid grid-cols-1 lg:grid-cols-[minmax(0,44%)_minmax(0,1fr)]
+          grid grid-cols-1 lg:grid-cols-[minmax(0,52%)_minmax(0,1fr)]
           gap-0 lg:gap-4
         "
       >
@@ -27,8 +27,11 @@ export default function AdminLoginPage() {
             alt="Manage your properties, smarter — the Creators admin panel"
             fill
             priority
-            sizes="(max-width: 1024px) 0px, 44vw"
-            className="object-cover object-center"
+            sizes="(max-width: 1024px) 0px, 52vw"
+            // Artwork content sits between 17% and 93.5% of its height, so the
+            // bottom has far less crop budget than the top. Biasing the focal
+            // point downward throws most of the crop into the empty top band.
+            className="object-cover object-[center_65%]"
           />
 
           {/* Logo over the artwork's empty top-left corner */}
@@ -43,11 +46,11 @@ export default function AdminLoginPage() {
         </div>
 
         {/* ── Right column: the form card fills it, matching the artwork's height ── */}
-        <div className="flex items-stretch justify-center px-4 py-10 sm:px-6 sm:py-12 lg:py-10 lg:px-10">
+        <div className="flex items-stretch justify-center px-4 py-10 sm:px-6 sm:py-12 lg:py-10 lg:px-6">
           {/* ── Inner form card ── */}
           <div
             className="
-              relative w-full max-w-[560px] overflow-hidden
+              relative w-full max-w-[620px] overflow-hidden
               flex flex-col justify-center
               lg:rounded-2xl lg:border lg:border-slate-200/80
               lg:shadow-sm lg:bg-white
