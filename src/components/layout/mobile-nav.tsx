@@ -90,7 +90,7 @@ export function MobileNav({ nav }: { nav: NavItem[] }) {
         >
           <div className="flex items-center justify-between border-b border-border px-5 py-4">
             <span className="text-primary dark:text-foreground">
-              <Logo />
+              <Logo imageClassName="h-11 mt-0" />
             </span>
             <button
               type="button"

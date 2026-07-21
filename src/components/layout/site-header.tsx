@@ -47,8 +47,10 @@ export function SiteHeader() {
       )}
     >
       <div className="container flex h-16 items-center gap-6">
-        <Link href="/" className="text-primary dark:text-foreground">
-          <Logo />
+        <Link href="/" className="shrink-0 text-primary dark:text-foreground">
+          {/* Logo defaults to h-28, which overflows this h-16 bar and eats ~168px
+              of a phone viewport. Size it to the bar instead. */}
+          <Logo imageClassName="h-11 sm:h-14 mt-0" />
         </Link>
 
         <nav className="ml-2 hidden items-center gap-1 lg:flex">
