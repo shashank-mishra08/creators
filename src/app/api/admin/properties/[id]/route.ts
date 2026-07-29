@@ -182,7 +182,15 @@ export async function PATCH(
   }
 }
 
-/** DELETE /api/admin/properties/[id] — permanently delete (requires name confirmation) */
+/**
+ * DELETE /api/admin/properties/[id] — move to Recently Deleted.
+ *
+ * Soft delete: a hard `property.delete()` cascades across pricing,
+ * configurations, media, amenities, towers, reviews and attributes, and there
+ * is no way back — the audit log stores a summary string, not the data. Stamping
+ * `deletedAt` keeps every related row intact so a restore is a one-field update.
+ * Purging for real lives at /[id]/purge, behind its own name confirmation.
+ */
 export async function DELETE(
   req: NextRequest,
   { params }: { params: { id: string } }
@@ -204,14 +212,16 @@ export async function DELETE(
       );
     }
 
-    // Cascade deletes handle all related records (as defined in schema)
-    await prisma.property.delete({ where: { id: params.id } });
+    await prisma.property.update({
+      where: { id: params.id },
+      data: { deletedAt: new Date() },
+    });
     await logAction({
       actorId,
       action: "property.delete",
       entity: "property",
       entityId: params.id,
-      summary: `Deleted property "${property.name}"`,
+      summary: `Moved property "${property.name}" to Recently Deleted`,
     });
     return json({ success: true, deleted: property.name });
   } catch (err) {

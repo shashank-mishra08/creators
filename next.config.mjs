@@ -2,8 +2,8 @@
 const nextConfig = {
   reactStrictMode: true,
   images: {
-    // Local assets for now. When media moves to a CDN/CMS, add the host here.
-    remotePatterns: [],
+    // Admin uploads go to Cloudinary; legacy media still resolves from public/.
+    remotePatterns: [{ protocol: "https", hostname: "res.cloudinary.com" }],
     unoptimized: true,
   },
   // Keep the Prisma client + pg driver out of the bundler (server-only natives).

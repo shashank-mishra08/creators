@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import { AdminLoginForm } from "@/components/admin/login-form";
+import { AdminLoginArtwork } from "@/components/admin/login-artwork";
 
 export const metadata: Metadata = {
   title: "Admin Login | Creators",
@@ -21,21 +21,13 @@ export default function AdminLoginPage() {
         "
       >
         {/* ── Left artwork, inset inside the shell ── */}
+        {/* Rendered in code rather than as a JPEG, so the copy is real text and
+            the scene never gets cropped by object-fit at odd panel sizes. */}
         <div className="relative hidden lg:block rounded-2xl overflow-hidden bg-[#0B0718]">
-          <Image
-            src="/brand/admin-login.jpg"
-            alt="Manage your properties, smarter — the Creators admin panel"
-            fill
-            priority
-            sizes="(max-width: 1024px) 0px, 52vw"
-            // Artwork content sits between 17% and 93.5% of its height, so the
-            // bottom has far less crop budget than the top. Biasing the focal
-            // point downward throws most of the crop into the empty top band.
-            className="object-cover object-[center_65%]"
-          />
+          <AdminLoginArtwork />
 
           {/* Logo over the artwork's empty top-left corner */}
-          <div className="absolute top-7 left-7 z-10">
+          <div className="absolute top-7 left-7 z-20">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/brand/creators-logo.png"

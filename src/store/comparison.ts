@@ -10,6 +10,8 @@ interface ComparisonState {
   selected: string[]; // property ids
   toast: string | null;
   toggle: (id: string) => void;
+  /** Swap one selection for another in place, keeping its column position. */
+  replace: (oldId: string, newId: string) => void;
   remove: (id: string) => void;
   clear: () => void;
   isSelected: (id: string) => boolean;
@@ -33,6 +35,19 @@ export const useComparison = create<ComparisonState>()(
           return;
         }
         set({ selected: [...selected, id] });
+      },
+      replace: (oldId, newId) => {
+        const { selected } = get();
+        const at = selected.indexOf(oldId);
+        if (at === -1) return;
+        // Already compared elsewhere — swapping would duplicate a column.
+        if (selected.includes(newId)) {
+          set({ toast: "That property is already in the comparison." });
+          return;
+        }
+        const next = [...selected];
+        next[at] = newId;
+        set({ selected: next });
       },
       remove: (id) =>
         set((s) => ({ selected: s.selected.filter((x) => x !== id) })),

@@ -47,3 +47,25 @@ export type CreateSavedComparisonInput = z.infer<
 export const deleteSavedComparisonSchema = z.object({
   id: z.string().uuid(),
 });
+
+/** Admin banner payload. Dates arrive as ISO strings or empty/null. */
+const optionalDate = z
+  .string()
+  .trim()
+  .optional()
+  .nullable()
+  .transform((v) => (v ? v : null))
+  .refine((v) => v === null || !Number.isNaN(Date.parse(v)), {
+    message: "Invalid date",
+  });
+
+export const bannerSchema = z.object({
+  title: z.string().trim().max(120).default(""),
+  subtitle: z.string().trim().max(240).default(""),
+  imageUrl: z.string().trim().min(1, "An image is required"),
+  linkUrl: z.string().trim().max(500).default(""),
+  sortOrder: z.coerce.number().int().min(0).max(9999).default(0),
+  active: z.boolean().default(true),
+  startsAt: optionalDate,
+  endsAt: optionalDate,
+});

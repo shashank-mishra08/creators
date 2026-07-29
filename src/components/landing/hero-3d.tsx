@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import Image from "next/image";
 import Link from "next/link";
 import {
   motion,
@@ -19,15 +18,59 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { CoverImage } from "@/components/ui/cover-image";
+
+/** One property as rendered on a hero card. Built server-side in `page.tsx`. */
+export type HeroCard = {
+  id: string;
+  name: string;
+  meta: string;
+  price: string;
+  image: string;
+  gradient: [string, string];
+  score: number;
+};
+
+/** A trio of real properties: two on the deck, the top-scoring one centred. */
+export type HeroSlide = { deck: [HeroCard, HeroCard]; winner: HeroCard };
+
+/** Rotations after the initial slide. Capped so the hero settles, never loops. */
+const MAX_ROTATIONS = 3;
+const ROTATE_MS = 5000;
 
 /**
  * Interactive 3D hero. The whole stage reacts to the cursor: a perspective
  * tilt on the deck plus per-layer parallax (different translateZ depths move by
  * different amounts). Everything is visible at rest — the motion is enhancement,
  * not a gate — so it never depends on an animation finishing to show content.
+ *
+ * The cards show real properties from the database (passed in as `slides`) and
+ * rotate a few times before settling. With no slides the stage still renders —
+ * just the ambient panel and chips — so an empty database degrades quietly.
  */
-export function Hero3D() {
+export function Hero3D({ slides = [] }: { slides?: HeroSlide[] }) {
   const stage = React.useRef<HTMLDivElement>(null);
+  const [slideIdx, setSlideIdx] = React.useState(0);
+
+  // Rotate a limited number of times, then stop. Skipped entirely when the user
+  // asked for reduced motion, or when there's nothing to rotate to.
+  React.useEffect(() => {
+    if (slides.length < 2) return;
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+
+    const rotations = Math.min(MAX_ROTATIONS, slides.length - 1);
+    let done = 0;
+    const timer = setInterval(() => {
+      done += 1;
+      setSlideIdx((i) => (i + 1) % slides.length);
+      if (done >= rotations) clearInterval(timer);
+    }, ROTATE_MS);
+    return () => clearInterval(timer);
+  }, [slides.length]);
+
+  const slide = slides[slideIdx];
+  // Only the first slide preloads; later ones must not compete for LCP.
+  const eager = slideIdx === 0;
   const mx = useMotionValue(0); // -0.5 .. 0.5
   const my = useMotionValue(0);
   const sx = useSpring(mx, { stiffness: 110, damping: 16, mass: 0.5 });
@@ -124,39 +167,37 @@ export function Hero3D() {
               <GlowPanel />
             </Layer>
 
-            <Layer sx={sx} sy={sy} depth={20} z={10} className="left-[2%] top-[26%]">
-              <DeckCard
-                image="/properties/villa-aerial.jpg"
-                name="The Estate"
-                meta="Yamuna Exp · Villa"
-                price="₹6.5 Cr"
-                score={66}
-                rotate={-7}
-                float="animate-float-slow"
-              />
-            </Layer>
+            {slide && (
+              <>
+                <Layer sx={sx} sy={sy} depth={20} z={10} className="left-[2%] top-[26%]">
+                  <DeckCard
+                    card={slide.deck[0]}
+                    eager={eager}
+                    rotate={-7}
+                    float="animate-float-slow"
+                  />
+                </Layer>
 
-            <Layer sx={sx} sy={sy} depth={70} z={70} className="right-[2%] top-[14%]">
-              <DeckCard
-                image="/properties/arihant-cover.jpg"
-                name="Arihant Aspire"
-                meta="Gr. Noida · Ready"
-                price="₹65 L"
-                score={62}
-                rotate={6}
-                float="animate-float"
-              />
-            </Layer>
+                <Layer sx={sx} sy={sy} depth={70} z={70} className="right-[2%] top-[14%]">
+                  <DeckCard
+                    card={slide.deck[1]}
+                    eager={eager}
+                    rotate={6}
+                    float="animate-float"
+                  />
+                </Layer>
 
-            <Layer
-              sx={sx}
-              sy={sy}
-              depth={130}
-              z={150}
-              className="left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
-            >
-              <WinnerCard />
-            </Layer>
+                <Layer
+                  sx={sx}
+                  sy={sy}
+                  depth={130}
+                  z={150}
+                  className="left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+                >
+                  <WinnerCard card={slide.winner} eager={eager} />
+                </Layer>
+              </>
+            )}
 
             <Layer sx={sx} sy={sy} depth={180} z={210} className="right-[6%] top-[2%]">
               <FloatingChip
@@ -213,19 +254,13 @@ function Layer({
 }
 
 function DeckCard({
-  image,
-  name,
-  meta,
-  price,
-  score,
+  card,
+  eager,
   rotate,
   float,
 }: {
-  image: string;
-  name: string;
-  meta: string;
-  price: string;
-  score: number;
+  card: HeroCard;
+  eager: boolean;
   rotate: number;
   float: string;
 }) {
@@ -233,21 +268,27 @@ function DeckCard({
     <div className={float} style={{ transform: `rotate(${rotate}deg)` }}>
       <div className="glass w-60 overflow-hidden rounded-2xl shadow-lift">
         <div className="relative h-28 w-full">
-          <Image src={image} alt={name} fill priority unoptimized className="object-cover" sizes="240px" />
+          <CoverImage
+            src={card.image}
+            alt={card.name}
+            gradient={card.gradient}
+            sizes="240px"
+            priority={eager}
+          />
           <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full bg-black/55 px-2 py-0.5 text-[10px] font-bold text-white backdrop-blur">
             <Star className="h-2.5 w-2.5 fill-accent text-accent" />
-            {score}
+            {card.score}
           </span>
         </div>
         <div className="flex items-center justify-between gap-2 p-3">
           <div className="min-w-0">
             <div className="flex items-center gap-1 truncate text-sm font-bold">
               <Building2 className="h-3.5 w-3.5 shrink-0 text-accent" />
-              <span className="truncate">{name}</span>
+              <span className="truncate">{card.name}</span>
             </div>
-            <div className="truncate text-[11px] text-muted-foreground">{meta}</div>
+            <div className="truncate text-[11px] text-muted-foreground">{card.meta}</div>
           </div>
-          <div className="shrink-0 text-sm font-extrabold text-accent">{price}</div>
+          <div className="shrink-0 text-sm font-extrabold text-accent">{card.price}</div>
         </div>
       </div>
     </div>
@@ -255,36 +296,37 @@ function DeckCard({
 }
 
 /* The central "winner" card — slightly larger, glowing accent ring. */
-function WinnerCard() {
+function WinnerCard({ card, eager }: { card: HeroCard; eager: boolean }) {
   return (
     <div className="animate-float-slow">
       <div className="w-64 overflow-hidden rounded-2xl border-2 border-accent bg-card shadow-glow">
         <div className="relative h-32 w-full">
-          <Image
-            src="/properties/chrysalis-cover.jpg"
-            alt="Chrysalis"
-            fill
-            priority
-            unoptimized
-            className="object-cover"
+          <CoverImage
+            src={card.image}
+            alt={card.name}
+            gradient={card.gradient}
             sizes="256px"
+            priority={eager}
           />
           <span className="absolute left-2 top-2 rounded-full bg-accent px-2 py-0.5 text-[10px] font-bold text-accent-foreground">
             ★ Top pick
           </span>
         </div>
         <div className="p-3.5">
-          <div className="flex items-center justify-between">
-            <div className="text-sm font-extrabold text-primary dark:text-foreground">
-              Chrysalis
+          <div className="flex items-center justify-between gap-2">
+            <div className="truncate text-sm font-extrabold text-primary dark:text-foreground">
+              {card.name}
             </div>
-            <div className="text-sm font-extrabold text-accent">₹3.2 Cr</div>
+            <div className="shrink-0 text-sm font-extrabold text-accent">{card.price}</div>
           </div>
           <div className="mt-2 flex items-center gap-2">
             <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
-              <div className="h-full w-[92%] rounded-full bg-gradient-to-r from-accent to-[hsl(280_84%_68%)]" />
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-accent to-[hsl(280_84%_68%)] transition-all duration-700"
+                style={{ width: `${card.score}%` }}
+              />
             </div>
-            <span className="text-xs font-bold text-accent">92</span>
+            <span className="text-xs font-bold text-accent">{card.score}</span>
           </div>
         </div>
       </div>

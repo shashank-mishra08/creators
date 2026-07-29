@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import {
   Plus, Search, Eye, EyeOff, Pencil, Trash2,
-  Building2, RefreshCw, FileSpreadsheet
+  Building2, RefreshCw, FileSpreadsheet, Undo2
 } from "lucide-react";
 import { DeleteConfirmModal } from "@/components/admin/delete-confirm-modal";
 
@@ -17,6 +17,8 @@ interface AdminProperty {
   kind: string;
   possession: string;
   hidden: boolean;
+  /** Non-null = in Recently Deleted (soft-deleted, restorable). */
+  deletedAt: string | null;
   builderName: string;
   priceRangeLabel: string;
   coverImage: string;
@@ -30,8 +32,11 @@ export default function AdminPropertiesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "hidden">("all");
+  const [statusFilter, setStatusFilter] = useState<
+    "all" | "active" | "hidden" | "deleted"
+  >("all");
   const [deleteTarget, setDeleteTarget] = useState<AdminProperty | null>(null);
+  const [purgeTarget, setPurgeTarget] = useState<AdminProperty | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
 
   const fetchProperties = useCallback(async () => {
@@ -57,12 +62,20 @@ export default function AdminPropertiesPage() {
       p.name.toLowerCase().includes(search.toLowerCase()) ||
       p.builderName.toLowerCase().includes(search.toLowerCase()) ||
       p.locality.toLowerCase().includes(search.toLowerCase());
+    // Deleted rows are their own bucket — they must never bleed into all/
+    // active/hidden, otherwise "All" would silently list the trash.
+    const isDeleted = Boolean(p.deletedAt);
     const matchStatus =
-      statusFilter === "all" ||
-      (statusFilter === "active" && !p.hidden) ||
-      (statusFilter === "hidden" && p.hidden);
+      statusFilter === "deleted"
+        ? isDeleted
+        : !isDeleted &&
+          (statusFilter === "all" ||
+            (statusFilter === "active" && !p.hidden) ||
+            (statusFilter === "hidden" && p.hidden));
     return matchSearch && matchStatus;
   });
+
+  const deletedCount = properties.filter((p) => p.deletedAt).length;
 
   async function toggleVisibility(prop: AdminProperty) {
     setTogglingId(prop.id);
@@ -83,6 +96,7 @@ export default function AdminPropertiesPage() {
     }
   }
 
+  /** Moves the property to Recently Deleted — reversible via `restore`. */
   async function handleDelete(prop: AdminProperty) {
     const res = await fetch(`/api/admin/properties/${prop.id}`, {
       method: "DELETE",
@@ -93,11 +107,53 @@ export default function AdminPropertiesPage() {
       const data = await res.json();
       throw new Error(data.error ?? "Delete failed");
     }
-    setProperties((prev) => prev.filter((p) => p.id !== prop.id));
+    // Keep the row in state, now flagged as deleted, so it appears under the
+    // Deleted filter immediately instead of vanishing.
+    setProperties((prev) =>
+      prev.map((p) =>
+        p.id === prop.id ? { ...p, deletedAt: new Date().toISOString() } : p,
+      ),
+    );
     setDeleteTarget(null);
   }
 
+  async function handleRestore(prop: AdminProperty) {
+    setTogglingId(prop.id);
+    try {
+      const res = await fetch(`/api/admin/properties/${prop.id}/restore`, {
+        method: "POST",
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error ?? "Restore failed");
+      }
+      setProperties((prev) =>
+        prev.map((p) => (p.id === prop.id ? { ...p, deletedAt: null } : p)),
+      );
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Restore failed");
+    } finally {
+      setTogglingId(null);
+    }
+  }
+
+  /** Irreversible. Only reachable for rows already in Recently Deleted. */
+  async function handlePurge(prop: AdminProperty) {
+    const res = await fetch(`/api/admin/properties/${prop.id}/purge`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ confirmName: prop.name }),
+    });
+    if (!res.ok) {
+      const data = await res.json();
+      throw new Error(data.error ?? "Delete failed");
+    }
+    setProperties((prev) => prev.filter((p) => p.id !== prop.id));
+    setPurgeTarget(null);
+  }
+
   const statusBadge = (p: AdminProperty) => {
+    if (p.deletedAt) return { label: "Deleted", cls: "bg-red-100 text-red-700" };
     if (p.hidden) return { label: "Hidden", cls: "bg-slate-100 text-slate-500" };
     if (p.possession === "Ready to Move") return { label: "Active", cls: "bg-green-100 text-green-700" };
     if (p.possession === "Under Construction") return { label: "Under Construction", cls: "bg-orange-100 text-orange-700" };
@@ -146,7 +202,7 @@ export default function AdminPropertiesPage() {
           />
         </div>
         <div className="flex gap-2">
-          {(["all", "active", "hidden"] as const).map((f) => (
+          {(["all", "active", "hidden", "deleted"] as const).map((f) => (
             <button
               key={f}
               onClick={() => setStatusFilter(f)}
@@ -156,7 +212,18 @@ export default function AdminPropertiesPage() {
                   : "border border-slate-200 text-slate-600 hover:bg-slate-50"
               }`}
             >
-              {f}
+              {f === "deleted" ? "Recently Deleted" : f}
+              {f === "deleted" && deletedCount > 0 && (
+                <span
+                  className={`ml-1.5 rounded-md px-1.5 py-0.5 text-[11px] font-semibold ${
+                    statusFilter === f
+                      ? "bg-white/20 text-white"
+                      : "bg-slate-100 text-slate-500"
+                  }`}
+                >
+                  {deletedCount}
+                </span>
+              )}
             </button>
           ))}
           <button
@@ -247,32 +314,54 @@ export default function AdminPropertiesPage() {
                       </td>
                       <td className="px-5 py-4">
                         <div className="flex items-center justify-center gap-1.5">
-                          <Link
-                            href={`/admin/properties/${prop.id}/edit`}
-                            title="Edit"
-                            className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-[#7166F0] hover:text-white hover:border-[#7166F0] transition-all"
-                          >
-                            <Pencil className="w-3.5 h-3.5" />
-                          </Link>
-                          <button
-                            onClick={() => toggleVisibility(prop)}
-                            disabled={isToggling}
-                            title={prop.hidden ? "Show property" : "Hide property"}
-                            className={`w-8 h-8 flex items-center justify-center rounded-lg border transition-all disabled:opacity-50 ${
-                              prop.hidden
-                                ? "border-red-200 text-red-500 hover:bg-red-500 hover:text-white hover:border-red-500"
-                                : "border-green-200 text-green-500 hover:bg-green-500 hover:text-white hover:border-green-500"
-                            }`}
-                          >
-                            {prop.hidden ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                          </button>
-                          <button
-                            onClick={() => setDeleteTarget(prop)}
-                            title="Delete property"
-                            className="w-8 h-8 flex items-center justify-center rounded-lg border border-red-200 text-red-500 hover:bg-red-500 hover:text-white hover:border-red-500 transition-all"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                          {prop.deletedAt ? (
+                            <>
+                              <button
+                                onClick={() => handleRestore(prop)}
+                                disabled={isToggling}
+                                className="inline-flex items-center gap-1.5 px-3 h-8 rounded-lg border border-green-200 text-green-600 text-xs font-semibold hover:bg-green-500 hover:text-white hover:border-green-500 transition-all disabled:opacity-50"
+                              >
+                                <Undo2 className="w-3.5 h-3.5" />
+                                Restore
+                              </button>
+                              <button
+                                onClick={() => setPurgeTarget(prop)}
+                                title="Delete permanently"
+                                className="w-8 h-8 flex items-center justify-center rounded-lg border border-red-200 text-red-500 hover:bg-red-500 hover:text-white hover:border-red-500 transition-all"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <Link
+                                href={`/admin/properties/${prop.id}/edit`}
+                                title="Edit"
+                                className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-[#7166F0] hover:text-white hover:border-[#7166F0] transition-all"
+                              >
+                                <Pencil className="w-3.5 h-3.5" />
+                              </Link>
+                              <button
+                                onClick={() => toggleVisibility(prop)}
+                                disabled={isToggling}
+                                title={prop.hidden ? "Show property" : "Hide property"}
+                                className={`w-8 h-8 flex items-center justify-center rounded-lg border transition-all disabled:opacity-50 ${
+                                  prop.hidden
+                                    ? "border-red-200 text-red-500 hover:bg-red-500 hover:text-white hover:border-red-500"
+                                    : "border-green-200 text-green-500 hover:bg-green-500 hover:text-white hover:border-green-500"
+                                }`}
+                              >
+                                {prop.hidden ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                              </button>
+                              <button
+                                onClick={() => setDeleteTarget(prop)}
+                                title="Delete property"
+                                className="w-8 h-8 flex items-center justify-center rounded-lg border border-red-200 text-red-500 hover:bg-red-500 hover:text-white hover:border-red-500 transition-all"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -284,12 +373,21 @@ export default function AdminPropertiesPage() {
         )}
       </div>
 
-      {/* Delete Modal */}
+      {/* Delete Modal — soft delete, recoverable from Recently Deleted */}
       {deleteTarget && (
         <DeleteConfirmModal
           propertyName={deleteTarget.name}
           onConfirm={() => handleDelete(deleteTarget)}
           onCancel={() => setDeleteTarget(null)}
+        />
+      )}
+
+      {/* Purge Modal — permanent, cascades across all related records */}
+      {purgeTarget && (
+        <DeleteConfirmModal
+          propertyName={purgeTarget.name}
+          onConfirm={() => handlePurge(purgeTarget)}
+          onCancel={() => setPurgeTarget(null)}
         />
       )}
     </div>

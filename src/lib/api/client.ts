@@ -1,4 +1,4 @@
-import type { Property } from "@/lib/types";
+import type { Property, PropertyOption } from "@/lib/types";
 import type { ComparisonPayload } from "@/lib/services/comparison.service";
 
 /**
@@ -20,6 +20,11 @@ export const api = {
     if (ids.length === 0) return Promise.resolve([]);
     const qs = ids.map((id) => `ids=${encodeURIComponent(id)}`).join("&");
     return getJson<Property[]>(`/api/properties?${qs}`);
+  },
+
+  /** Slim catalogue for property pickers — see PropertyOption. */
+  propertyOptions(): Promise<PropertyOption[]> {
+    return getJson<PropertyOption[]>("/api/properties?slim=1");
   },
 
   compare(ids: string[]): Promise<ComparisonPayload> {

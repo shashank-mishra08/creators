@@ -396,6 +396,16 @@ export function PropertyExplorer({ initial, seed, title, subtitle }: { initial: 
                   {t.label}
                 </button>
               ))}
+              {/* Location sits beside the tabs rather than becoming one: a city
+                  cuts across both Apartments and Luxury Homes, so it has to
+                  compose with the active tab instead of replacing it. Bound to
+                  the same `locations` state as the sidebar group. */}
+              <LocationSelect
+                selected={locations}
+                onToggle={(c) => setLocations((s) => toggle(s, c))}
+                onClear={() => setLocations(new Set())}
+                count={(c) => count((p) => p.city === c)}
+              />
             </div>
             <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
               {/* Mobile/tablet: opens the filter drawer (sidebar is hidden < lg). */}
@@ -445,6 +455,9 @@ export function PropertyExplorer({ initial, seed, title, subtitle }: { initial: 
             <div>
               <h2 className="font-display text-3xl font-extrabold tracking-tight text-primary dark:text-foreground">
                 {TABS[tab].label}
+                {locations.size === 1 && (
+                  <span className="text-muted-foreground"> in {[...locations][0]}</span>
+                )}
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 <strong className="text-foreground">{filtered.length}</strong> Properties Found
@@ -692,6 +705,120 @@ function BudgetRange({
         <span>{fmtBudget(min)}</span>
         <span>{fmtBudget(max)}</span>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Location picker for the tab row — a quick-access mirror of the sidebar's
+ * Location group. Multi-select, so it shares the sidebar's `Set<City>` state
+ * exactly; whichever control the user touches, both stay in sync.
+ */
+function LocationSelect({
+  selected,
+  onToggle,
+  onClear,
+  count,
+}: {
+  selected: Set<City>;
+  onToggle: (city: City) => void;
+  onClear: () => void;
+  count: (city: City) => number;
+}) {
+  const [open, setOpen] = React.useState(false);
+  const ref = React.useRef<HTMLDivElement>(null);
+
+  // Close on outside click / ESC. Only bound while open.
+  React.useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  const label =
+    selected.size === 0
+      ? "All Locations"
+      : selected.size === 1
+        ? [...selected][0]
+        : `${selected.size} Locations`;
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        className={cn(
+          "inline-flex items-center gap-1.5 rounded-xl border px-4 py-2.5 text-sm font-semibold transition-colors",
+          selected.size
+            ? "border-accent bg-accent text-accent-foreground"
+            : "border-border bg-card text-foreground hover:bg-muted",
+        )}
+      >
+        <MapPin className="h-4 w-4" />
+        <span className="max-w-[11rem] truncate">{label}</span>
+        <ChevronDown
+          className={cn("h-4 w-4 transition-transform", open && "rotate-180")}
+        />
+      </button>
+
+      {open && (
+        <div
+          role="listbox"
+          aria-label="Filter by location"
+          aria-multiselectable
+          className="absolute left-0 top-full z-30 mt-2 w-64 rounded-xl border border-border bg-card p-2 shadow-lift"
+        >
+          {CITIES.map((c) => {
+            const checked = selected.has(c);
+            return (
+              <button
+                key={c}
+                type="button"
+                role="option"
+                aria-selected={checked}
+                onClick={() => onToggle(c)}
+                className="flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left text-sm transition-colors hover:bg-muted"
+              >
+                <span
+                  className={cn(
+                    "flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors",
+                    checked
+                      ? "border-accent bg-accent text-accent-foreground"
+                      : "border-border",
+                  )}
+                >
+                  {checked && <Check className="h-3 w-3" />}
+                </span>
+                <span className="flex-1 truncate text-foreground">{c}</span>
+                <span className="shrink-0 text-xs text-muted-foreground">
+                  {count(c)}
+                </span>
+              </button>
+            );
+          })}
+          {selected.size > 0 && (
+            <button
+              type="button"
+              onClick={onClear}
+              className="mt-1 w-full rounded-lg px-2 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              Clear locations
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

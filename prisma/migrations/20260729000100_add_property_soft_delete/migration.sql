@@ -1,0 +1,6 @@
+-- AlterTable
+ALTER TABLE "properties" ADD COLUMN     "deletedAt" TIMESTAMP(3);
+
+-- CreateIndex
+CREATE INDEX "properties_deletedAt_hidden_idx" ON "properties"("deletedAt", "hidden");
+

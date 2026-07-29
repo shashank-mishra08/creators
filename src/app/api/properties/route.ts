@@ -10,6 +10,7 @@ export const dynamic = "force-dynamic";
 /**
  * GET /api/properties
  *   ?ids=a,b,c            → fetch specific properties (order preserved)
+ *   ?slim=1               → minimal rows for pickers (id/name/builder/image…)
  *   ?city=&kind=&builder=&possession=&maxPriceLakh=&query=  → filtered list
  */
 export async function GET(req: NextRequest) {
@@ -19,6 +20,12 @@ export async function GET(req: NextRequest) {
     const ids = collectParams(params, "ids", "id");
     if (ids.length > 0) {
       return json(await propertyService.getByIds(ids));
+    }
+
+    // Checked before filter parsing: pickers want the whole catalogue, and the
+    // slim payload is a different shape from the full `Property` list.
+    if (params.get("slim") === "1") {
+      return json(await propertyService.options());
     }
 
     const parsed = propertyFiltersSchema.parse(

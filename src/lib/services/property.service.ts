@@ -1,7 +1,7 @@
 import { propertyRepository } from "@/lib/repositories/property.repository";
 import { NotFoundError } from "@/lib/errors";
 import type { PropertyFilters } from "@/lib/data-source";
-import type { Property } from "@/lib/types";
+import type { Property, PropertyOption } from "@/lib/types";
 
 const bhkNums = (p: Property) =>
   new Set((p.configs.match(/\d+/g) ?? []).map(Number));
@@ -86,6 +86,11 @@ export const propertyService = {
       )
       .slice(0, take)
       .map((x) => x.c);
+  },
+
+  /** Slim list used to populate property pickers (e.g. the compare swap menu). */
+  options(): Promise<PropertyOption[]> {
+    return propertyRepository.findOptions();
   },
 
   builderNames(): Promise<string[]> {

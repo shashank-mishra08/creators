@@ -8,6 +8,7 @@ import type {
   PropertyKind,
   Possession,
   Property,
+  PropertyOption,
 } from "@/lib/types";
 
 /**
@@ -58,6 +59,24 @@ const propertyInclude = {
 
 type PropertyRow = Prisma.PropertyGetPayload<{ include: typeof propertyInclude }>;
 type BuilderRow = Prisma.BuilderGetPayload<object>;
+
+/** Canonical UUID (8-4-4-4-12 hex). Postgres @db.Uuid rejects anything else. */
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** True when `value` is safe to pass into a Prisma UUID column. */
+export function isUuid(value: string): boolean {
+  return UUID_RE.test(value);
+}
+
+/**
+ * Keep only valid UUIDs. Drop image filenames / junk that would otherwise crash
+ * Postgres with "invalid input syntax for type uuid" (e.g. missing static files
+ * falling through to /properties/[id] as empire-cover.jpg).
+ */
+function onlyUuids(ids: string[]): string[] {
+  return ids.filter((id) => typeof id === "string" && isUuid(id));
+}
 
 /* ---------------------------------- mappers ---------------------------------- */
 
@@ -163,9 +182,18 @@ function mapProperty(p: PropertyRow): Property {
 
 /* --------------------------------- queries ---------------------------------- */
 
+/**
+ * The public visibility rule, in one place.
+ *
+ * Every public read path MUST spread this. It is not enough to apply it in
+ * `buildWhere`: a property is also reachable by id/slug (detail page), by id
+ * list (comparison) and as a "similar" suggestion, and those bypass filters
+ * entirely — so a hidden or deleted property would leak through them.
+ */
+const PUBLIC_VISIBILITY = { hidden: false, deletedAt: null } as const;
+
 function buildWhere(filters?: PropertyFilters): Prisma.PropertyWhereInput {
-  // Always exclude hidden properties from public queries.
-  const where: Prisma.PropertyWhereInput = { hidden: false };
+  const where: Prisma.PropertyWhereInput = { ...PUBLIC_VISIBILITY };
   if (!filters) return where;
 
   if (filters.city && filters.city !== "All") where.city = filters.city;
@@ -201,26 +229,47 @@ export const propertyRepository = {
   },
 
   async findById(id: string): Promise<Property | null> {
-    const row = await prisma.property.findUnique({
-      where: { id },
+    if (!id || typeof id !== "string") return null;
+
+    // Static-looking paths (missing cover images) must never hit the UUID column.
+    if (/\.(jpe?g|png|webp|gif|svg|pdf|ico)$/i.test(id)) return null;
+
+    // findFirst (not findUnique) so the visibility rule can be part of the
+    // filter — a hidden or deleted property must 404 on its direct URL too.
+    if (isUuid(id)) {
+      const row = await prisma.property.findFirst({
+        where: { id, ...PUBLIC_VISIBILITY },
+        include: propertyInclude,
+      });
+      return row ? mapProperty(row) : null;
+    }
+
+    // Non-UUID: treat as slug (pretty URLs) rather than crashing on UUID cast.
+    const bySlug = await prisma.property.findFirst({
+      where: { slug: id, ...PUBLIC_VISIBILITY },
       include: propertyInclude,
     });
-    return row ? mapProperty(row) : null;
+    return bySlug ? mapProperty(bySlug) : null;
   },
 
   async findByIds(ids: string[]): Promise<Property[]> {
-    if (ids.length === 0) return [];
+    const valid = onlyUuids(ids);
+    if (valid.length === 0) return [];
     const rows = await prisma.property.findMany({
-      where: { id: { in: ids } },
+      where: { id: { in: valid }, ...PUBLIC_VISIBILITY },
       include: propertyInclude,
     });
     const map = new Map(rows.map((r) => [r.id, mapProperty(r)]));
-    return ids.map((id) => map.get(id)).filter((p): p is Property => Boolean(p));
+    // Preserve caller's order, but only for ids that were valid UUIDs.
+    return valid.map((id) => map.get(id)).filter((p): p is Property => Boolean(p));
   },
 
   async findExcluding(excludeIds: string[], take = 3): Promise<Property[]> {
+    const validExclude = onlyUuids(excludeIds);
     const rows = await prisma.property.findMany({
-      where: excludeIds.length ? { id: { notIn: excludeIds } } : {},
+      where: validExclude.length
+        ? { id: { notIn: validExclude }, ...PUBLIC_VISIBILITY }
+        : { ...PUBLIC_VISIBILITY },
       include: propertyInclude,
       orderBy: { createdAt: "asc" },
       take,
@@ -228,9 +277,52 @@ export const propertyRepository = {
     return rows.map(mapProperty);
   },
 
+  /**
+   * Slim list for pickers. Selects only the columns a picker row renders, so
+   * opening a dropdown doesn't pull every property's media/amenities/configs.
+   * Honours the same public visibility rule as `buildWhere`.
+   */
+  async findOptions(): Promise<PropertyOption[]> {
+    const rows = await prisma.property.findMany({
+      where: { ...PUBLIC_VISIBILITY },
+      select: {
+        id: true,
+        name: true,
+        city: true,
+        locality: true,
+        gradientFrom: true,
+        gradientTo: true,
+        builder: { select: { name: true } },
+        pricing: { select: { startingPriceLakh: true } },
+        media: {
+          where: { type: { in: ["cover", "gallery"] } },
+          select: { type: true, url: true },
+        },
+      },
+      orderBy: { name: "asc" },
+    });
+
+    return rows.map((p) => ({
+      id: p.id,
+      name: p.name,
+      builderName: p.builder.name,
+      city: p.city as City,
+      locality: p.locality,
+      // Same precedence as `mapProperty`: cover first, else a gallery shot,
+      // else "" so the UI falls back to the gradient placeholder.
+      image:
+        p.media.find((m) => m.type === "cover")?.url ??
+        p.media.find((m) => m.type === "gallery")?.url ??
+        "",
+      priceLakh: p.pricing?.startingPriceLakh ?? 0,
+      gradient: [p.gradientFrom, p.gradientTo] as [string, string],
+    }));
+  },
+
   async distinctBuilderNames(): Promise<string[]> {
     const builders = await prisma.builder.findMany({
-      where: { properties: { some: {} } },
+      // Only brands that still have a publicly visible project.
+      where: { properties: { some: { ...PUBLIC_VISIBILITY } } },
       select: { name: true },
       orderBy: { name: "asc" },
     });

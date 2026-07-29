@@ -28,6 +28,7 @@ const navGroups: { title: string; items: NavItem[] }[] = [
       { name: "Properties", href: "/admin/properties", icon: Home },
       { name: "Add Property", href: "/admin/properties/add", icon: PlusCircle },
       { name: "Import from Excel", href: "/admin/import", icon: FileSpreadsheet },
+      { name: "Home Banners", href: "/admin/banners", icon: ImageIcon },
     ]
   },
   {

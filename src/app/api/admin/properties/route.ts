@@ -7,7 +7,9 @@ export const dynamic = "force-dynamic";
 
 /**
  * GET /api/admin/properties
- * Returns ALL properties (including hidden) with stats for the dashboard.
+ * Returns ALL properties (including hidden AND soft-deleted) with stats.
+ * `deletedAt` tells the UI which bucket each row belongs in; stats count only
+ * live rows so the dashboard totals don't include the trash.
  */
 export async function GET() {
   try {
@@ -22,13 +24,16 @@ export async function GET() {
       orderBy: { createdAt: "desc" },
     });
 
-    // Stats for dashboard
+    const live = properties.filter((p) => !p.deletedAt);
+
+    // Stats for dashboard — deleted properties are excluded from every count.
     const stats = {
-      total: properties.length,
-      active: properties.filter((p) => !p.hidden && p.possession !== "Under Construction").length,
-      hidden: properties.filter((p) => p.hidden).length,
-      underConstruction: properties.filter((p) => p.possession === "Under Construction" && !p.hidden).length,
-      soldOut: properties.filter((p) => p.possession === "Ready to Move" && !p.hidden).length,
+      total: live.length,
+      active: live.filter((p) => !p.hidden && p.possession !== "Under Construction").length,
+      hidden: live.filter((p) => p.hidden).length,
+      underConstruction: live.filter((p) => p.possession === "Under Construction" && !p.hidden).length,
+      soldOut: live.filter((p) => p.possession === "Ready to Move" && !p.hidden).length,
+      deleted: properties.length - live.length,
     };
 
     const list = properties.map((p) => ({
@@ -40,6 +45,7 @@ export async function GET() {
       kind: p.kind,
       possession: p.possession,
       hidden: p.hidden,
+      deletedAt: p.deletedAt ? p.deletedAt.toISOString() : null,
       builderName: p.builder.name,
       priceRangeLabel: p.pricing?.priceRangeLabel ?? "",
       coverImage: p.media[0]?.url ?? "",

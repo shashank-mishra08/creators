@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { requireAdminSession } from "@/lib/auth/admin-session";
 import { handleError, json } from "@/lib/api/http";
 import { AppError } from "@/lib/errors";
+import { isConfigured, uploadImage } from "@/lib/storage/cloudinary";
 import { writeFile, mkdir } from "node:fs/promises";
 import path from "node:path";
 
@@ -13,8 +14,13 @@ const MAX_SIZE_MB = 10;
 
 /**
  * POST /api/admin/upload
- * Accepts a single file via multipart/form-data.
- * Saves to public/properties/ and returns the public path.
+ * Accepts a single file via multipart/form-data and returns the URL to store
+ * on the media row.
+ *
+ * With Cloudinary credentials set, the file goes to object storage and the
+ * returned URL works from every environment. Without them we fall back to
+ * writing into public/properties/, which only serves from the machine that
+ * received the upload — fine for local dev, broken once deployed.
  */
 export async function POST(req: NextRequest) {
   try {
@@ -42,7 +48,18 @@ export async function POST(req: NextRequest) {
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/(^-|-$)/g, "");
-    const filename = `${safeName}-${Date.now()}.${ext}`;
+    const stem = `${safeName}-${Date.now()}`;
+    const filename = `${stem}.${ext}`;
+
+    if (isConfigured()) {
+      const url = await uploadImage(file, stem);
+      return json({ path: url, filename });
+    }
+
+    console.warn(
+      "[upload] Cloudinary not configured — writing to public/properties/. " +
+        "This file will not be visible on other machines or after a redeploy.",
+    );
 
     const dir = path.join(process.cwd(), "public", "properties");
     await mkdir(dir, { recursive: true });

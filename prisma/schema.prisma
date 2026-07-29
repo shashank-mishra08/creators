@@ -23,7 +23,7 @@ datasource db {
 model Builder {
   id                   String     @id @default(uuid()) @db.Uuid
   name                 String     @unique
-  rating               Float?     // 0–5 (often blank in source sheets)
+  rating               Float? // 0–5 (often blank in source sheets)
   yearEstablished      Int? // parsed from "from 1990"
   yearsInMarketRaw     String? // original "from 1990" / "from 2024"
   deliveredProjects    Int? // parsed from "100+"
@@ -41,32 +41,36 @@ model Builder {
 
 // ───────────────────────── Properties ─────────────────────────
 model Property {
-  id              String    @id @default(uuid()) @db.Uuid
-  slug            String    @unique // builder+project, stable import key
-  name            String
-  subtitle        String    @default("")
-  builderId       String    @db.Uuid
-  projectType     String? // Residential | Commercial
-  category        String? // Luxury | Premium | ...
-  city            String
-  locality        String
-  kind            String // Apartment | Villa | Plot | Builder Floor
-  possession      String // normalised: Ready to Move | Under Construction | New Launch
-  possessionDate  String // display label
-  description     String?
-  reraId          String? // dirty in source; not unique
+  id               String    @id @default(uuid()) @db.Uuid
+  slug             String    @unique // builder+project, stable import key
+  name             String
+  subtitle         String    @default("")
+  builderId        String    @db.Uuid
+  projectType      String? // Residential | Commercial
+  category         String? // Luxury | Premium | ...
+  city             String
+  locality         String
+  kind             String // Apartment | Villa | Plot | Builder Floor
+  possession       String // normalised: Ready to Move | Under Construction | New Launch
+  possessionDate   String // display label
+  description      String?
+  reraId           String? // dirty in source; not unique
   reraRegisteredAt DateTime?
   reraCompletionAt DateTime?
-  areaAcres       Float     @default(0)
-  towers          Int       @default(0) // count (detail in Tower[])
-  totalUnits      Int?
-  clubSizeSqft    Int?
-  configsLabel    String    @default("") // e.g. "2 / 3 / 4 BHK" (derived)
-  gradientFrom    String    @default("#0f3460")
-  gradientTo      String    @default("#16697a")
-  hidden          Boolean   @default(false) // admin can hide without deleting
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  areaAcres        Float     @default(0)
+  towers           Int       @default(0) // count (detail in Tower[])
+  totalUnits       Int?
+  clubSizeSqft     Int?
+  configsLabel     String    @default("") // e.g. "2 / 3 / 4 BHK" (derived)
+  gradientFrom     String    @default("#0f3460")
+  gradientTo       String    @default("#16697a")
+  hidden           Boolean   @default(false) // admin can hide without deleting
+  // Soft delete. A hard delete cascades across ~10 related tables and cannot be
+  // undone, so "Delete" stamps this instead and the row moves to Recently
+  // Deleted. EVERY public read path must exclude rows where this is non-null.
+  deletedAt        DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   builder        Builder                   @relation(fields: [builderId], references: [id], onDelete: Restrict)
   pricing        Pricing?
@@ -86,6 +90,8 @@ model Property {
   @@index([city])
   @@index([kind])
   @@index([possession])
+  // Every public listing filters on these two together.
+  @@index([deletedAt, hidden])
   @@map("properties")
 }
 
@@ -108,18 +114,18 @@ model Pricing {
 
 // ───────────── Configurations / unit types (1:many) ─────────────
 model Configuration {
-  id              String   @id @default(uuid()) @db.Uuid
-  propertyId      String   @db.Uuid
-  label           String // unit type, e.g. "4BHK+S"
-  areaSqFt        Int      @default(0) // headline (saleable) area
+  id               String   @id @default(uuid()) @db.Uuid
+  propertyId       String   @db.Uuid
+  label            String // unit type, e.g. "4BHK+S"
+  areaSqFt         Int      @default(0) // headline (saleable) area
   saleableAreaSqft Int?
-  carpetAreaSqft  Float?
-  balconyAreaSqft Float?
-  builtUpAreaSqft Float?
-  priceLabel      String   @default("")
-  floorPlanImage  String   @default("")
-  sortOrder       Int      @default(0)
-  property        Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  carpetAreaSqft   Float?
+  balconyAreaSqft  Float?
+  builtUpAreaSqft  Float?
+  priceLabel       String   @default("")
+  floorPlanImage   String   @default("")
+  sortOrder        Int      @default(0)
+  property         Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 
   @@index([propertyId])
   @@map("configurations")
@@ -205,14 +211,14 @@ model InvestmentMetric {
 
 // ───────────────── Internal analysis / scoring (1:1) — feeds AI ─────────────────
 model InternalAnalysis {
-  id                   String   @id @default(uuid()) @db.Uuid
-  propertyId           String   @unique @db.Uuid
-  locationScore        Int?
-  amenitiesScore       Int?
-  builderScore         Int?
-  investmentScore      Int?
+  id                    String   @id @default(uuid()) @db.Uuid
+  propertyId            String   @unique @db.Uuid
+  locationScore         Int?
+  amenitiesScore        Int?
+  builderScore          Int?
+  investmentScore       Int?
   overallRecommendation String?
-  property             Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  property              Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 
   @@map("internal_analysis")
 }
@@ -278,7 +284,7 @@ model User {
   //    routes, `role` adds finer-grained permissions for new admin routes).
   //    Public website signups keep the default role "CUSTOMER" + isAdmin=false.
   role             String            @default("CUSTOMER") // CUSTOMER | AGENT | MANAGER | SUPER_ADMIN
-  isActive         Boolean           @default(true)       // deactivate to lock out instantly (guard checks per request)
+  isActive         Boolean           @default(true) // deactivate to lock out instantly (guard checks per request)
   lastLoginAt      DateTime?
   invitedAt        DateTime?
   resetTokenHash   String?
@@ -355,37 +361,37 @@ model ImportRun {
 // a fixed id ("singleton"). All fields have defaults so the row is safe to
 // read/create at any time; the service uses upsert so it self-heals.
 model SiteSettings {
-  id               String   @id @default("singleton")
+  id                 String   @id @default("singleton")
   // Contact
-  contactPhone     String   @default("")
-  contactEmail     String   @default("")
-  whatsappNumber   String   @default("")
-  officeAddress    String   @default("")
-  mapUrl           String   @default("")
-  businessHours    String   @default("")
+  contactPhone       String   @default("")
+  contactEmail       String   @default("")
+  whatsappNumber     String   @default("")
+  officeAddress      String   @default("")
+  mapUrl             String   @default("")
+  businessHours      String   @default("")
   // Footer branding (map existing hardcoded footer content to admin control)
-  websiteUrl       String   @default("")
-  reraNumber       String   @default("")
-  footerTagline    String   @default("")
+  websiteUrl         String   @default("")
+  reraNumber         String   @default("")
+  footerTagline      String   @default("")
   // Extra footer key/value lines added via the "Add field" button.
   // Shape: [{ "label": string, "value": string }]
-  footerCustomFields Json   @default("[]")
+  footerCustomFields Json     @default("[]")
   // Social
-  instagramUrl     String   @default("")
-  facebookUrl      String   @default("")
-  linkedinUrl      String   @default("")
-  youtubeUrl       String   @default("")
+  instagramUrl       String   @default("")
+  facebookUrl        String   @default("")
+  linkedinUrl        String   @default("")
+  youtubeUrl         String   @default("")
   // Leads — comma-separated recipient emails notified on a new site-visit booking
-  leadNotifyEmails String   @default("")
+  leadNotifyEmails   String   @default("")
   // SEO & tracking
-  metaTitle        String   @default("")
-  metaDescription  String   @default("")
-  ogImageUrl       String   @default("")
-  ga4Id            String   @default("")
-  metaPixelId      String   @default("")
+  metaTitle          String   @default("")
+  metaDescription    String   @default("")
+  ogImageUrl         String   @default("")
+  ga4Id              String   @default("")
+  metaPixelId        String   @default("")
   // Advanced
-  maintenanceMode  Boolean  @default(false)
-  updatedAt        DateTime @updatedAt
+  maintenanceMode    Boolean  @default(false)
+  updatedAt          DateTime @updatedAt
 
   @@map("site_settings")
 }
@@ -406,4 +412,26 @@ model AuditLog {
 
   @@index([createdAt])
   @@map("audit_logs")
+}
+
+// ───────────────────────── Promo banners ─────────────────────────
+// Admin-managed marketing strip on the home page (new launches, offers).
+// Independent of Property so a banner can promote anything — a project, an
+// event, a campaign — without needing a listing to exist first.
+model Banner {
+  id        String    @id @default(uuid()) @db.Uuid
+  title     String    @default("")
+  subtitle  String    @default("")
+  imageUrl  String // required for display; rows without one are skipped
+  linkUrl   String    @default("") // optional click-through
+  sortOrder Int       @default(0)
+  active    Boolean   @default(true)
+  // Optional scheduling window. Null = no bound on that side.
+  startsAt  DateTime?
+  endsAt    DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([active, sortOrder])
+  @@map("banners")
 }

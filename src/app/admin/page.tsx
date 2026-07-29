@@ -6,7 +6,9 @@ import {
 } from "lucide-react";
 
 async function getDashboardData() {
+  // Soft-deleted properties live in Recently Deleted, not on the dashboard.
   const properties = await prisma.property.findMany({
+    where: { deletedAt: null },
     include: {
       builder: { select: { name: true } },
       pricing: { select: { priceRangeLabel: true } },

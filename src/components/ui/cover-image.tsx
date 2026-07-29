@@ -1,11 +1,17 @@
+"use client";
+
+import { useState } from "react";
 import Image from "next/image";
 import { Building2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
- * Renders a property photo when one exists in the database, otherwise a branded
- * gradient placeholder (using the property's own gradient) with a building icon.
- * This keeps the UI honest: no stock/dummy imagery stands in for a real listing.
+ * Renders a property photo when one exists, otherwise a branded gradient
+ * placeholder (property gradient + building icon).
+ *
+ * If the src 404s (common when DB points at a missing /properties/*.jpg file),
+ * we fall back to the placeholder instead of a broken image — and never hit the
+ * dynamic /properties/[id] route as a failed static asset cascade again.
  *
  * Must be placed inside a `relative` parent with a defined height (uses `fill`).
  */
@@ -16,6 +22,7 @@ export function CoverImage({
   sizes,
   className,
   label,
+  priority,
 }: {
   src?: string | null;
   alt: string;
@@ -23,8 +30,13 @@ export function CoverImage({
   sizes?: string;
   className?: string;
   label?: string;
+  /** Preload this image (above-the-fold only — one or two per page at most). */
+  priority?: boolean;
 }) {
-  if (src) {
+  const [failed, setFailed] = useState(false);
+  const showImage = Boolean(src) && !failed;
+
+  if (showImage && src) {
     return (
       <Image
         src={src}
@@ -32,6 +44,9 @@ export function CoverImage({
         fill
         className={cn("object-cover", className)}
         sizes={sizes}
+        priority={priority}
+        onError={() => setFailed(true)}
+        unoptimized
       />
     );
   }

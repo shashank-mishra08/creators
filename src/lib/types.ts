@@ -202,3 +202,36 @@ export interface ComparisonResult {
   bestFamilyId: string;
   bestInvestmentId: string;
 }
+
+/**
+ * Minimal property shape for pickers (compare swap dropdown, etc.). Deliberately
+ * tiny: the full `Property` carries media, amenities and configurations, which
+ * is far too heavy to ship for a list the user only skims.
+ */
+export interface PropertyOption {
+  id: string;
+  name: string;
+  builderName: string;
+  city: City;
+  locality: string;
+  image: string;
+  priceLakh: number;
+  gradient: [string, string];
+}
+
+/** Admin-managed promotional banner shown on the home page. */
+export interface Banner {
+  id: string;
+  title: string;
+  subtitle: string;
+  imageUrl: string;
+  linkUrl: string;
+  sortOrder: number;
+  active: boolean;
+  /** ISO strings (or null for "no bound"), so they cross the API cleanly. */
+  startsAt: string | null;
+  endsAt: string | null;
+}
+
+/** Writable banner fields, as accepted by the admin API. */
+export type BannerInput = Omit<Banner, "id">;
