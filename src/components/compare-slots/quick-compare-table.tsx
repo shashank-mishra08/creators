@@ -223,6 +223,36 @@ export function QuickCompareTable({
   const [expanded, setExpanded] = React.useState(false);
   const n = properties.length;
 
+  const headRef = React.useRef<HTMLDivElement>(null);
+  const bodyRef = React.useRef<HTMLDivElement>(null);
+
+  /**
+   * Keep the header strip and the rows in step horizontally.
+   *
+   * They are two separate scrollers on purpose (see the markup below), so the
+   * only thing tying them together is this: whichever one the visitor scrolls,
+   * the other follows. No lock flag is needed — the echoed scroll event finds
+   * the values already equal and does nothing.
+   */
+  React.useEffect(() => {
+    const head = headRef.current;
+    const body = bodyRef.current;
+    if (!head || !body) return;
+
+    const follow = (from: HTMLElement, to: HTMLElement) => () => {
+      if (Math.abs(to.scrollLeft - from.scrollLeft) > 0.5) to.scrollLeft = from.scrollLeft;
+    };
+    const headFollowsBody = follow(body, head);
+    const bodyFollowsHead = follow(head, body);
+
+    body.addEventListener("scroll", headFollowsBody, { passive: true });
+    head.addEventListener("scroll", bodyFollowsHead, { passive: true });
+    return () => {
+      body.removeEventListener("scroll", headFollowsBody);
+      head.removeEventListener("scroll", bodyFollowsHead);
+    };
+  }, []);
+
   const rows = React.useMemo(
     () => (expanded ? [...CORE_ROWS, ...extraRows(result)] : CORE_ROWS),
     [expanded, result],
@@ -272,21 +302,32 @@ export function QuickCompareTable({
   };
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-glass">
+    // No `overflow-hidden` on the card: it would make the card a scroll
+    // container, and the sticky header below would then stick to the card
+    // instead of the viewport. The header strip rounds its own top corners.
+    <div className="rounded-2xl border border-border bg-card shadow-glass">
       {/*
-        The scroll container is capped in height and scrolls on BOTH axes on
-        purpose. `overflow-x: auto` alone makes this element the scrollport for
-        the vertical axis too (per spec, an `overflow-y: visible` sibling
-        computes to `auto`), so a `sticky top-…` header inside it would be
-        measured against a box that never scrolls — it would simply drift away
-        with the page. Giving the container its own height makes it the real
-        scrollport, and then the header row and the label column both freeze.
-        Short tables never reach the cap, so nothing changes for them.
+        The header is its own scroller, sitting outside the one that holds the
+        rows, so that it can be `sticky` against the *page*.
+
+        It cannot live inside the rows' container: `overflow-x: auto` there
+        makes that element the scrollport for the vertical axis too (per spec an
+        `overflow-y: visible` sibling computes to `auto`), so a `sticky top-…`
+        header inside it is measured against a box that never scrolls and drifts
+        away with the page. Capping that container's height fixes the sticking
+        but costs the page its scroll — the table then scrolls inside a window
+        of its own instead of running down to the footer. Two scrollers kept in
+        sync (see the effect above) give both: page scroll all the way down, and
+        a header that stays put.
+
+        `top-16` clears the site header, which is `sticky top-0 h-16`.
       */}
-      <div className="max-h-[78vh] overflow-auto overscroll-contain">
+      <div
+        ref={headRef}
+        className="no-scrollbar sticky top-16 z-20 overflow-x-auto rounded-t-2xl border-b border-border bg-card"
+      >
         <div style={grid} className="grid">
-          {/* ── header: frozen on both axes ────────────────────────────── */}
-          <div className="sticky left-0 top-0 z-[4] flex items-center bg-card px-4 py-4">
+          <div className="sticky left-0 z-[1] flex items-center bg-card px-4 py-4">
             <span className="text-xs font-bold uppercase tracking-wider text-accent">
               Overview
             </span>
@@ -297,19 +338,12 @@ export function QuickCompareTable({
             return (
               <div
                 key={p.id}
-                // No `relative` here: it would fight `sticky` for the position
-                // property, and sticky already anchors absolute children.
-                className="sticky top-0 z-[3] border-l border-border bg-card p-3.5"
-              >
-                {/* Tint as an overlay, not the cell's own background: a
-                    translucent sticky cell would show rows sliding under it. */}
-                {isTop && (
-                  <span
-                    aria-hidden
-                    className="pointer-events-none absolute inset-0 bg-accent/[0.05]"
-                  />
+                className={cn(
+                  "border-l border-border p-3.5",
+                  isTop && "bg-accent/[0.05]",
                 )}
-                <div className="relative flex items-start gap-3">
+              >
+                <div className="flex items-start gap-3">
                   <span className="relative h-16 w-20 shrink-0 overflow-hidden rounded-lg">
                     <CoverImage src={p.image} alt={p.name} gradient={p.gradient} sizes="80px" />
                   </span>
@@ -350,8 +384,13 @@ export function QuickCompareTable({
               </div>
             );
           })}
+        </div>
+      </div>
 
-          {/* ── rows ───────────────────────────────────────────────────── */}
+      {/* Rows. Same column template and the same container width as the header
+          strip, so the two grids resolve to identical column widths. */}
+      <div ref={bodyRef} className="overflow-x-auto">
+        <div style={grid} className="grid">
           {visibleRows.map((row) => {
             const Icon = row.icon;
             const winner = winners.get(row.key);
