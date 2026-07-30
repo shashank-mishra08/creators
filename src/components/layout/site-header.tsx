@@ -3,7 +3,9 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { GitCompareArrows } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
+import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { AuthNav } from "@/components/auth/auth-nav";
 import { MobileNav } from "@/components/layout/mobile-nav";
@@ -63,26 +65,28 @@ export function SiteHeader() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground",
+                  "rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground",
                   active && "text-foreground",
                 )}
               >
                 {item.label}
-                {/* The selection count rides on this link now. There used to be
-                    a second "Compare" button on the right of the bar, but it
-                    only linked to /properties — two controls with the same word
-                    and different destinations. */}
-                {item.href === "/compare" && badge > 0 && (
-                  <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1.5 text-[11px] font-bold text-accent-foreground">
-                    {badge}
-                  </span>
-                )}
               </Link>
             );
           })}
         </nav>
 
         <div className="ml-auto flex items-center gap-2">
+          <Link href="/properties" className="hidden sm:block">
+            <Button variant="ghost" size="sm" className="gap-1.5">
+              <GitCompareArrows className="h-4 w-4" />
+              Compare
+              {badge > 0 && (
+                <span className="ml-0.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1.5 text-[11px] font-bold text-accent-foreground">
+                  {badge}
+                </span>
+              )}
+            </Button>
+          </Link>
           <ThemeToggle />
           {/* Desktop auth cluster; tablet/mobile use the drawer below. */}
           <div className="hidden lg:block">
