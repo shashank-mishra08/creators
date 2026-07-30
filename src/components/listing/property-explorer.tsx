@@ -119,11 +119,24 @@ function hashString(str: string, seed: number) {
 
 let globalSeed: number | null = null;
 
-export function PropertyExplorer({ initial, seed, title, subtitle }: { initial: Property[]; seed?: number; title?: string; subtitle?: string }) {
+/**
+ * Which surface this is rendered on.
+ *
+ * "featured" is the home-page section and is the default, so a caller that says
+ * nothing keeps the behaviour it always had. "browse" is the /properties page:
+ * filter groups start collapsed, the Location group is dropped (the picker in
+ * the search bar and Trending Localities still set the same city filter), the
+ * groups are ordered brand-first, the search bar is compact, and the segment
+ * tabs become a dropdown. Filtering itself is identical on both.
+ */
+type ExplorerVariant = "featured" | "browse";
+
+export function PropertyExplorer({ initial, seed, title, subtitle, variant = "featured" }: { initial: Property[]; seed?: number; title?: string; subtitle?: string; variant?: ExplorerVariant }) {
   if (typeof window !== "undefined" && globalSeed === null && seed !== undefined) {
     globalSeed = seed;
   }
   const activeSeed = typeof window !== "undefined" ? (globalSeed ?? seed) : seed;
+  const browse = variant === "browse";
 
   const shuffledInitial = React.useMemo(() => {
     if (activeSeed === undefined) return initial;
@@ -284,108 +297,147 @@ export function PropertyExplorer({ initial, seed, title, subtitle }: { initial: 
 
   // The filter controls, rendered in BOTH the desktop sidebar and the mobile
   // drawer — a single definition bound to the state above (no duplicated logic).
-  const filterGroups = (
+  //
+  // Each group is a variable so the two variants can order them differently
+  // without the markup being written twice. `open` starts collapsed on browse;
+  // `active` puts the number of applied filters on the header, so a collapsed
+  // group can never hide the fact that it is filtering the list.
+  const groupsOpen = !browse;
+
+  const gLocation = (
+    <FilterGroup title="Location" defaultOpen={groupsOpen} active={locations.size + (locQuery ? 1 : 0)}>
+      <div className="relative mb-2">
+        <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+        <input
+          value={locQuery}
+          onChange={(e) => setLocQuery(e.target.value)}
+          placeholder="Search property, builder, location"
+          className="h-9 w-full rounded-lg border border-border bg-background pl-8 pr-2 text-xs outline-none ring-accent/40 focus:ring-2"
+        />
+      </div>
+      {cityNames.map((c) => (
+        <CheckRow
+          key={c}
+          label={c}
+          count={count((p) => p.city === c)}
+          checked={locations.has(c)}
+          onChange={() => setLocations((s) => toggle(s, c))}
+        />
+      ))}
+    </FilterGroup>
+  );
+
+  const gBrand = (
+    <FilterGroup title="Brand" defaultOpen={groupsOpen} active={builders.size}>
+      {builderNames.map((b) => (
+        <CheckRow
+          key={b}
+          label={b}
+          count={count((p) => p.builder.name === b)}
+          checked={builders.has(b)}
+          onChange={() => setBuilders((s) => toggle(s, b))}
+        />
+      ))}
+    </FilterGroup>
+  );
+
+  const gPossession = (
+    <FilterGroup title="Possession Status" defaultOpen={groupsOpen} active={possessions.size}>
+      {POSSESSIONS.map((ps) => (
+        <CheckRow
+          key={ps}
+          label={ps}
+          count={count((p) => p.possession === ps)}
+          checked={possessions.has(ps)}
+          onChange={() => setPossessions((s) => toggle(s, ps))}
+        />
+      ))}
+    </FilterGroup>
+  );
+
+  const gBudget = (
+    <FilterGroup title="Budget" defaultOpen={groupsOpen} active={budgetActive ? 1 : 0}>
+      {priceBounds.max > priceBounds.min ? (
+        <BudgetRange
+          min={priceBounds.min}
+          max={priceBounds.max}
+          value={budgetRange}
+          onChange={setBudget}
+        />
+      ) : (
+        <p className="text-xs text-muted-foreground">Price range unavailable.</p>
+      )}
+    </FilterGroup>
+  );
+
+  const gBhk = (
+    <FilterGroup title="BHK Configuration" defaultOpen={groupsOpen} active={bhks.size}>
+      {BHK_OPTS.map((b) => (
+        <CheckRow
+          key={b}
+          label={`${b} BHK`}
+          count={count((p) => bhkNums(p).includes(b))}
+          checked={bhks.has(b)}
+          onChange={() => setBhks((s) => toggle(s, b))}
+        />
+      ))}
+    </FilterGroup>
+  );
+
+  const gArea = (
+    <FilterGroup title="Area (sq.ft)" defaultOpen={groupsOpen} active={areaIdx != null ? 1 : 0}>
+      <div className="grid grid-cols-2 gap-2">
+        {AREAS.map((a, i) => (
+          <button
+            key={a.label}
+            onClick={() => setAreaIdx(areaIdx === i ? null : i)}
+            className={cn(
+              "rounded-lg border px-2 py-1.5 text-xs font-semibold transition-colors",
+              areaIdx === i
+                ? "border-accent bg-accent/10 text-accent"
+                : "border-border text-foreground hover:border-accent/50",
+            )}
+          >
+            {a.label}
+          </button>
+        ))}
+      </div>
+    </FilterGroup>
+  );
+
+  // `last` drops the bottom rule. Amenities is last in both orders below.
+  const gAmenities = (
+    <FilterGroup title="Amenities" defaultOpen={groupsOpen} active={amenities.size} last>
+      {AMENITY_OPTS.map((a) => (
+        <CheckRow
+          key={a.key}
+          label={a.label}
+          count={count((p) => p.amenities[a.key])}
+          checked={amenities.has(a.key)}
+          onChange={() => setAmenities((s) => toggle(s, a.key))}
+        />
+      ))}
+    </FilterGroup>
+  );
+
+  const filterGroups = browse ? (
     <>
-      <FilterGroup title="Location">
-        <div className="relative mb-2">
-          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-          <input
-            value={locQuery}
-            onChange={(e) => setLocQuery(e.target.value)}
-            placeholder="Search property, builder, location"
-            className="h-9 w-full rounded-lg border border-border bg-background pl-8 pr-2 text-xs outline-none ring-accent/40 focus:ring-2"
-          />
-        </div>
-        {cityNames.map((c) => (
-          <CheckRow
-            key={c}
-            label={c}
-            count={count((p) => p.city === c)}
-            checked={locations.has(c)}
-            onChange={() => setLocations((s) => toggle(s, c))}
-          />
-        ))}
-      </FilterGroup>
-
-      <FilterGroup title="Brand">
-        {builderNames.map((b) => (
-          <CheckRow
-            key={b}
-            label={b}
-            count={count((p) => p.builder.name === b)}
-            checked={builders.has(b)}
-            onChange={() => setBuilders((s) => toggle(s, b))}
-          />
-        ))}
-      </FilterGroup>
-
-      <FilterGroup title="Budget">
-        {priceBounds.max > priceBounds.min ? (
-          <BudgetRange
-            min={priceBounds.min}
-            max={priceBounds.max}
-            value={budgetRange}
-            onChange={setBudget}
-          />
-        ) : (
-          <p className="text-xs text-muted-foreground">Price range unavailable.</p>
-        )}
-      </FilterGroup>
-
-      <FilterGroup title="Area (sq.ft)">
-        <div className="grid grid-cols-2 gap-2">
-          {AREAS.map((a, i) => (
-            <button
-              key={a.label}
-              onClick={() => setAreaIdx(areaIdx === i ? null : i)}
-              className={cn(
-                "rounded-lg border px-2 py-1.5 text-xs font-semibold transition-colors",
-                areaIdx === i
-                  ? "border-accent bg-accent/10 text-accent"
-                  : "border-border text-foreground hover:border-accent/50",
-              )}
-            >
-              {a.label}
-            </button>
-          ))}
-        </div>
-      </FilterGroup>
-
-      <FilterGroup title="BHK Configuration">
-        {BHK_OPTS.map((b) => (
-          <CheckRow
-            key={b}
-            label={`${b} BHK`}
-            count={count((p) => bhkNums(p).includes(b))}
-            checked={bhks.has(b)}
-            onChange={() => setBhks((s) => toggle(s, b))}
-          />
-        ))}
-      </FilterGroup>
-
-      <FilterGroup title="Possession Status">
-        {POSSESSIONS.map((ps) => (
-          <CheckRow
-            key={ps}
-            label={ps}
-            count={count((p) => p.possession === ps)}
-            checked={possessions.has(ps)}
-            onChange={() => setPossessions((s) => toggle(s, ps))}
-          />
-        ))}
-      </FilterGroup>
-
-      <FilterGroup title="Amenities" last>
-        {AMENITY_OPTS.map((a) => (
-          <CheckRow
-            key={a.key}
-            label={a.label}
-            count={count((p) => p.amenities[a.key])}
-            checked={amenities.has(a.key)}
-            onChange={() => setAmenities((s) => toggle(s, a.key))}
-          />
-        ))}
-      </FilterGroup>
+      {gBrand}
+      {gPossession}
+      {gBudget}
+      {gBhk}
+      {gArea}
+      {gAmenities}
+    </>
+  ) : (
+    <>
+      {gLocation}
+      {gBrand}
+      {gBudget}
+      {gArea}
+      {gBhk}
+      {gPossession}
+      {gAmenities}
     </>
   );
 
@@ -409,26 +461,28 @@ export function PropertyExplorer({ initial, seed, title, subtitle }: { initial: 
 
         {/* ───────────── MAIN ───────────── */}
         <div>
-          {/* ── Row 1: segment tabs ── */}
-          <div className="mb-3 flex flex-wrap gap-2">
-            {TABS.map((t, i) => (
-              <button
-                key={t.label}
-                onClick={() => setTab(i)}
-                className={cn(
-                  "rounded-xl border px-4 py-2.5 text-sm font-semibold transition-colors",
-                  tab === i
-                    ? "border-accent bg-accent text-accent-foreground"
-                    : "border-border bg-card text-foreground hover:bg-muted",
-                )}
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
+          {/* ── Row 1: segment tabs (browse offers these as a dropdown below) ── */}
+          {!browse && (
+            <div className="mb-3 flex flex-wrap gap-2">
+              {TABS.map((t, i) => (
+                <button
+                  key={t.label}
+                  onClick={() => setTab(i)}
+                  className={cn(
+                    "rounded-xl border px-4 py-2.5 text-sm font-semibold transition-colors",
+                    tab === i
+                      ? "border-accent bg-accent text-accent-foreground"
+                      : "border-border bg-card text-foreground hover:bg-muted",
+                  )}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          )}
 
-          {/* ── Row 2: full-width search, with the location picker on the end ── */}
-          <div className="relative mb-3">
+          {/* ── Row 2: search, with the location picker on the end ── */}
+          <div className={cn("relative mb-3", browse && "max-w-xl")}>
             <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <input
               value={projectQuery}
@@ -447,7 +501,15 @@ export function PropertyExplorer({ initial, seed, title, subtitle }: { initial: 
                 <X className="h-4 w-4" />
               </button>
             )}
-            <div className="absolute right-2 top-1/2 -translate-y-1/2">
+            {/*
+              `z-30` is load-bearing, not decoration. `-translate-y-1/2` makes
+              this a transformed element, which starts its own stacking context
+              and traps the picker panel's own z-index inside it. Without a
+              z-index of its own the whole thing paints at "auto" level, so the
+              property cards — later in the DOM — covered the open panel.
+              Stays under the site header (z-50) and the filter drawer (z-70).
+            */}
+            <div className="absolute right-2 top-1/2 z-30 -translate-y-1/2">
               <LocationPickerButton
                 cities={cityNames}
                 selected={locations}
@@ -457,8 +519,25 @@ export function PropertyExplorer({ initial, seed, title, subtitle }: { initial: 
             </div>
           </div>
 
-          {/* ── Row 3: sort + filters, left-aligned under the search ── */}
+          {/* ── Row 3: apartment type + sort + filters, left-aligned ── */}
           <div className="mb-5 flex flex-wrap items-center gap-2">
+            {browse && (
+              <select
+                value={tab}
+                onChange={(e) => setTab(Number(e.target.value))}
+                aria-label="Apartment type"
+                className="h-10 rounded-xl border border-border bg-card pl-3 pr-8 text-sm font-medium outline-none ring-accent/40 focus:ring-2"
+              >
+                {/* Driven by TABS, so this can never drift from the segments
+                    the filter actually understands. */}
+                {TABS.map((t, i) => (
+                  <option key={t.label} value={i}>
+                    Apartment Type: {t.label}
+                  </option>
+                ))}
+              </select>
+            )}
+
             <select
               value={sort}
               onChange={(e) => setSort(e.target.value)}
@@ -973,20 +1052,35 @@ function FilterGroup({
   title,
   children,
   last,
+  defaultOpen = true,
+  active = 0,
 }: {
   title: string;
   children: React.ReactNode;
   last?: boolean;
+  /** Initial state only — read once, so toggling stays the visitor's to control. */
+  defaultOpen?: boolean;
+  /** How many filters in this group are applied; shown so a collapsed group
+   *  cannot hide the fact that it is narrowing the list. */
+  active?: number;
 }) {
-  const [open, setOpen] = React.useState(true);
+  const [open, setOpen] = React.useState(defaultOpen);
   return (
     <div className={cn("py-3", !last && "border-b border-border")}>
       <button
         onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center justify-between"
+        aria-expanded={open}
+        className="flex w-full items-center justify-between gap-2"
       >
-        <span className="text-xs font-bold uppercase tracking-wide text-foreground">{title}</span>
-        <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", !open && "-rotate-90")} />
+        <span className="flex min-w-0 items-center gap-1.5">
+          <span className="truncate text-xs font-bold uppercase tracking-wide text-foreground">{title}</span>
+          {active > 0 && (
+            <span className="inline-flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold text-accent-foreground">
+              {active}
+            </span>
+          )}
+        </span>
+        <ChevronDown className={cn("h-4 w-4 shrink-0 text-muted-foreground transition-transform", !open && "-rotate-90")} />
       </button>
       {open && <div className="mt-2.5 space-y-1">{children}</div>}
     </div>

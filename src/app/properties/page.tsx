@@ -26,6 +26,10 @@ export default async function PropertiesPage() {
       <h1 className="sr-only">Browse and compare NCR residential properties</h1>
       <PropertyExplorer
         initial={properties}
+        // Browse layout: collapsed filter groups, brand-first order, no Location
+        // group (the picker in the search bar covers it), compact search bar and
+        // the segment tabs as a dropdown. The home page keeps the default.
+        variant="browse"
         title="Select properties to compare"
         subtitle="Pick 2–4 homes and hit Compare to see a full side-by-side analysis with a recommendation score."
       />
