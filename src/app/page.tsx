@@ -72,6 +72,9 @@ export default async function HomePage() {
       <PropertyExplorer
         initial={properties}
         seed={seed}
+        // Same browse layout as /properties: this section is the one visitors
+        // actually land on, so the two should not behave differently.
+        variant="browse"
         title="Featured properties by location"
         subtitle="Browse live NCR projects grouped by location, then shortlist 2–4 to compare."
       />
