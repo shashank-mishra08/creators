@@ -130,6 +130,7 @@ export default async function PropertyDetailPage({
         similar={similar}
         reviewAvg={reviews?.averageRating ?? null}
         reviewCount={reviews?.reviews.length ?? 0}
+        reviews={reviews?.reviews ?? []}
         contactPhone={publicSettings?.contactPhone || undefined}
       />
     </>

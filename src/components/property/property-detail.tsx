@@ -21,7 +21,7 @@ import {
   Train,
   Waves,
 } from "lucide-react";
-import type { AmenityKey, Property } from "@/lib/types";
+import type { AmenityKey, Property, PropertyReview } from "@/lib/types";
 import { useComparison } from "@/store/comparison";
 import { useAuth } from "@/store/auth";
 import { useMounted } from "@/lib/use-mounted";
@@ -31,6 +31,7 @@ import { Button } from "@/components/ui/button";
 import { CoverImage } from "@/components/ui/cover-image";
 import { Lightbox } from "@/components/ui/lightbox";
 import { SiteVisitModal } from "@/components/property/site-visit-modal";
+import { PropertyReviews } from "@/components/reviews/property-reviews";
 import { cn, formatPriceLakh } from "@/lib/utils";
 
 const EXPERT_PHONE = "+919252996677";
@@ -61,12 +62,15 @@ export function PropertyDetail({
   similar,
   reviewAvg,
   reviewCount,
+  reviews = [],
   contactPhone,
 }: {
   property: Property;
   similar: Property[];
   reviewAvg: number | null;
   reviewCount: number;
+  /** Full review list for the section at the foot of the page. */
+  reviews?: PropertyReview[];
   /** From admin Settings; falls back to the built-in expert number if unset. */
   contactPhone?: string;
 }) {
@@ -581,6 +585,13 @@ export function PropertyDetail({
           <p className="mt-2 text-center text-[11px] text-muted-foreground">Call us: {expertPhoneDisplay}</p>
         </div>
       </div>
+
+      {/* Reviews — last block, so the buying information comes first. */}
+      <PropertyReviews
+        reviews={reviews}
+        averageRating={reviewAvg}
+        propertyName={p.name}
+      />
 
       {/* Floor-plan lightbox */}
       {zoom && <Lightbox images={[zoom]} alt="Floor plan" onClose={() => setZoom(null)} />}

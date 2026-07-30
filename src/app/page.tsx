@@ -5,6 +5,7 @@ import { BannerCarousel } from "@/components/landing/banner-carousel";
 import { PropertyExplorer } from "@/components/listing/property-explorer";
 import { ReviewSection } from "@/components/landing/review-section";
 import { bannerService } from "@/lib/services/banner.service";
+import { reviewService } from "@/lib/services/review.service";
 import { compareProperties } from "@/lib/scoring";
 import { formatPriceLakh } from "@/lib/utils";
 import type { Property } from "@/lib/types";
@@ -53,9 +54,12 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const [properties, banners] = await Promise.all([
+  // Reviews are decorative here: a failure falls back to the curated copy
+  // rather than taking down the home page.
+  const [properties, banners, recentReviews] = await Promise.all([
     getDataSource().list(),
     bannerService.live(),
+    reviewService.listRecent(12).catch(() => []),
   ]);
   const seed = Math.random();
   return (
@@ -71,7 +75,8 @@ export default async function HomePage() {
         title="Featured properties by location"
         subtitle="Browse live NCR projects grouped by location, then shortlist 2–4 to compare."
       />
-      <ReviewSection />
+      {/* Real reviews once any exist; the curated launch copy until then. */}
+      <ReviewSection reviews={recentReviews} />
     </>
   );
 }

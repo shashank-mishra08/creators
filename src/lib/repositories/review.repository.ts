@@ -79,6 +79,16 @@ export const reviewRepository = {
     return rows.map(mapReview);
   },
 
+  /** The newest reviews across every property (powers the home page strip). */
+  async findRecent(take: number): Promise<PropertyReview[]> {
+    const rows = await prisma.review.findMany({
+      select: selectReview,
+      orderBy: { createdAt: "desc" },
+      take,
+    });
+    return rows.map(mapReview);
+  },
+
   /** Reviews written by one user, newest first (powers "Your reviews"). */
   async findByUserId(userId: string): Promise<PropertyReview[]> {
     const rows = await prisma.review.findMany({
