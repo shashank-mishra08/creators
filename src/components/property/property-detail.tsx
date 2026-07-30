@@ -26,6 +26,7 @@ import { useComparison } from "@/store/comparison";
 import { useAuth } from "@/store/auth";
 import { useMounted } from "@/lib/use-mounted";
 import { setPendingAction } from "@/lib/pending-action";
+import { rememberProperty } from "@/lib/recent-properties";
 import { Button } from "@/components/ui/button";
 import { CoverImage } from "@/components/ui/cover-image";
 import { Lightbox } from "@/components/ui/lightbox";
@@ -94,6 +95,12 @@ export function PropertyDetail({
   };
 
   const rating = reviewAvg ?? p.builder.rating;
+
+  // Feeds the "Recent Properties" shortlist in the review form. localStorage
+  // only — no request, no database write, and harmless if it fails.
+  React.useEffect(() => {
+    rememberProperty(p.id);
+  }, [p.id]);
 
   const [isSiteVisitOpen, setIsSiteVisitOpen] = React.useState(false);
   const [activePlan, setActivePlan] = React.useState(0);

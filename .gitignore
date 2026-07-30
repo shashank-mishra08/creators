@@ -22,3 +22,9 @@ tsconfig.tsbuildinfo
 # Raw source datasets — large brochure PDFs, not app assets
 creators data/
 creators_new/
+
+# Visitor-uploaded review photos (local-disk fallback when Cloudinary is unset).
+# Served by /api/review-photos/[name], not statically: a production build only
+# serves the public/ files that existed at build time, so an upload written
+# afterwards would 404. User content either way — it belongs in object storage.
+.uploads/

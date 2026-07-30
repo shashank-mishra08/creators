@@ -39,6 +39,15 @@ export const MIN_COMPARE = 2;
 export const MAX_COMPARE = 4;
 
 /**
+ * Review limits, shared by the form's character counter and the server-side
+ * zod schema so the two can never disagree about what will be accepted.
+ */
+export const REVIEW_COMMENT_MAX = 1000;
+export const REVIEW_PHOTO_MAX = 4;
+/** Per-photo upload ceiling, in megabytes (matches the form's helper text). */
+export const REVIEW_PHOTO_MAX_MB = 5;
+
+/**
  * Absolute site origin, used server-side for SEO (metadataBase, canonical URLs,
  * sitemap, robots). Override with APP_URL in production; falls back to the
  * public domain. Only read on the server — safe as a plain constant.

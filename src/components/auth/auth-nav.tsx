@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Heart, LogOut } from "lucide-react";
+import { Heart, LogOut, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth, selectShortlistIds } from "@/store/auth";
 import { useMounted } from "@/lib/use-mounted";
@@ -100,6 +100,13 @@ export function AuthNav() {
                 <Heart className="h-4 w-4 text-accent" /> Saved properties
               </span>
               <span className="text-xs text-muted-foreground">{savedCount}</span>
+            </Link>
+            <Link
+              href="/shortlist?tab=review"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-foreground hover:bg-muted"
+            >
+              <Star className="h-4 w-4 text-accent" /> Write a review
             </Link>
             <button
               onClick={() => {

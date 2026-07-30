@@ -261,15 +261,26 @@ model PropertyAttribute {
 
 // ───────────────────────── Reviews (1:many) ─────────────────────────
 model Review {
-  id         String   @id @default(uuid()) @db.Uuid
-  propertyId String   @db.Uuid
-  userId     String?  @db.Uuid
-  authorName String
-  rating     Int
-  comment    String
-  createdAt  DateTime @default(now())
-  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  id                 String   @id @default(uuid()) @db.Uuid
+  propertyId         String   @db.Uuid
+  userId             String?  @db.Uuid
+  authorName         String
+  rating             Int
+  comment            String
+  createdAt          DateTime @default(now())
+  // Optional per-aspect ratings (1–5). Nullable on purpose: the overall rating
+  // is the only required one, and a reviewer who skips an aspect must not be
+  // recorded as having scored it 0 — that would drag every average down.
+  ratingLocation     Int?
+  ratingAmenities    Int?
+  ratingConstruction Int?
+  ratingValue        Int?
+  ratingConnectivity Int?
+  // Reviewer-uploaded photo URLs. Empty array, never null, so read paths never
+  // have to null-check before mapping.
+  photos             String[] @default([])
+  property           Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  user               User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([propertyId])
   @@index([userId])

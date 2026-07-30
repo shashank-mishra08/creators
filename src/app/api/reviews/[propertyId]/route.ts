@@ -39,11 +39,15 @@ export async function POST(
     if (!user) throw new UnauthorizedError("Please sign in to write a review.");
 
     // Identity comes from the session — the client cannot spoof authorName/userId.
-    const { rating, comment } = submitReviewSchema.parse(await parseJsonBody(req));
+    const { rating, comment, aspects, photos } = submitReviewSchema.parse(
+      await parseJsonBody(req),
+    );
     const review = await reviewService.create(params.propertyId, {
       authorName: user.name,
       rating,
       comment,
+      aspects,
+      photos,
       userId,
     });
     return json(review, 201);

@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { GitCompareArrows, Heart, LogOut, Menu, X } from "lucide-react";
+import { GitCompareArrows, Heart, LogOut, Menu, Star, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/brand/logo";
 import { useAuth, selectShortlistIds } from "@/store/auth";
@@ -135,6 +135,12 @@ export function MobileNav({ nav }: { nav: NavItem[] }) {
                   {savedCount}
                 </span>
               )}
+            </Link>
+            <Link
+              href="/shortlist?tab=review"
+              className="flex items-center gap-2 rounded-xl px-4 py-3 text-base font-semibold text-foreground transition-colors hover:bg-muted"
+            >
+              <Star className="h-4 w-4 text-accent" /> Write a review
             </Link>
           </nav>
 

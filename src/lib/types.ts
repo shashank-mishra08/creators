@@ -155,6 +155,28 @@ export interface Property {
   highlights: string[];
 }
 
+/**
+ * Optional per-aspect scores on a review. Each is 1–5, or null when the
+ * reviewer skipped it — null and 0 are NOT the same thing here, since a skipped
+ * aspect must be excluded from averages rather than counted as the worst score.
+ */
+export interface ReviewAspects {
+  location: number | null;
+  amenities: number | null;
+  construction: number | null;
+  value: number | null;
+  connectivity: number | null;
+}
+
+/** The five aspects, in display order, with their labels. */
+export const REVIEW_ASPECTS: { key: keyof ReviewAspects; label: string }[] = [
+  { key: "location", label: "Location" },
+  { key: "amenities", label: "Amenities" },
+  { key: "construction", label: "Construction Quality" },
+  { key: "value", label: "Value for Money" },
+  { key: "connectivity", label: "Connectivity" },
+];
+
 /** A user/visitor review of a property. */
 export interface PropertyReview {
   id: string;
@@ -164,6 +186,9 @@ export interface PropertyReview {
   rating: number;
   comment: string;
   createdAt: string; // ISO timestamp
+  aspects: ReviewAspects;
+  /** Reviewer-uploaded photo URLs; empty when none. */
+  photos: string[];
 }
 
 /** A user's saved comparison (a named set of properties). */

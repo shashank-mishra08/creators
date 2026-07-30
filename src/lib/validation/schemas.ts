@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { REVIEW_COMMENT_MAX, REVIEW_PHOTO_MAX } from "@/lib/constants";
+import { REVIEW_PHOTO_URL_PREFIX } from "@/lib/storage/review-photo-store";
 
 /** Query params for listing properties (all optional). */
 export const propertyFiltersSchema = z.object({
@@ -19,11 +21,39 @@ const idList = z
 
 export const compareSchema = z.object({ ids: idList });
 
+/** Optional 1–5 aspect score. `null` means "reviewer skipped it". */
+const aspectScore = z.number().int().min(1).max(5).nullable().optional();
+
+/**
+ * A stored photo URL. Only paths this app produced (the local-disk fallback's
+ * `/api/review-photos/...`) or absolute https URLs (Cloudinary) are accepted —
+ * the value ends up in an `<img src>`, so anything else (`javascript:`, `data:`,
+ * an off-site tracker) must never reach the database.
+ */
+const photoUrl = z
+  .string()
+  .trim()
+  .max(500)
+  .refine(
+    (v) => v.startsWith(REVIEW_PHOTO_URL_PREFIX) || v.startsWith("https://"),
+    "Unsupported photo URL",
+  );
+
 /** Client-supplied review body. `authorName`/`userId` are set server-side from
  *  the authenticated session, never trusted from the request. */
 export const submitReviewSchema = z.object({
   rating: z.number().int().min(1).max(5),
-  comment: z.string().trim().min(1).max(2000),
+  comment: z.string().trim().min(1).max(REVIEW_COMMENT_MAX),
+  aspects: z
+    .object({
+      location: aspectScore,
+      amenities: aspectScore,
+      construction: aspectScore,
+      value: aspectScore,
+      connectivity: aspectScore,
+    })
+    .optional(),
+  photos: z.array(photoUrl).max(REVIEW_PHOTO_MAX).optional(),
 });
 export type SubmitReviewInput = z.infer<typeof submitReviewSchema>;
 
@@ -33,6 +63,8 @@ export interface CreateReviewInput {
   rating: number;
   comment: string;
   userId?: string;
+  aspects?: SubmitReviewInput["aspects"];
+  photos?: string[];
 }
 
 /** `userId` is derived from the session, so it is NOT accepted from the body. */
