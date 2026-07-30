@@ -19,6 +19,7 @@ import {
   Phone,
   Plus,
   Share2,
+  Scale,
   Sparkles,
   TrendingUp,
   Users,
@@ -26,17 +27,21 @@ import {
 } from "lucide-react";
 import type { AmenityKey, ComparisonResult, Property } from "@/lib/types";
 import { compareProperties, scoreTier } from "@/lib/scoring";
-import { useComparison } from "@/store/comparison";
+import { MAX_COMPARE, useComparison } from "@/store/comparison";
 import { useAuth, selectShortlistIds } from "@/store/auth";
 import { useMounted } from "@/lib/use-mounted";
 import { setPendingAction } from "@/lib/pending-action";
 import { LocationMap } from "@/components/comparison/location-map";
 import { PropertyPicker } from "@/components/comparison/property-picker";
 import { CompareSelectionBar } from "@/components/comparison/compare-selection-bar";
+import { AtAGlance } from "@/components/comparison/at-a-glance";
 import { Button } from "@/components/ui/button";
 import { CoverImage } from "@/components/ui/cover-image";
 import { Lightbox } from "@/components/ui/lightbox";
 import { cn, formatPriceLakh } from "@/lib/utils";
+
+const EXPERT_PHONE = "+919252996677";
+const EXPERT_PHONE_DISPLAY = "Call us: +91 92529 96677";
 
 const NAV = [
   { id: "overview", icon: ClipboardList, label: "Overview" },
@@ -148,13 +153,24 @@ export function ComparisonView({
   const selPlan = (id: string) => planIdx[id] ?? 0;
   const [zoom, setZoom] = React.useState<string | null>(null);
 
+  // The detailed sections start collapsed: the summary table above answers most
+  // questions in one screen, and the full breakdown is several screens long.
+  const [showDetails, setShowDetails] = React.useState(false);
+  const detailsRef = React.useRef<HTMLDivElement>(null);
+  const toggleDetails = () => {
+    const next = !showDetails;
+    setShowDetails(next);
+    // Scroll once the block is actually in the layout, not before.
+    if (next) {
+      requestAnimationFrame(() =>
+        detailsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
+      );
+    }
+  };
+
   return (
     <div className="bg-muted/30">
-      {/* Page heading for a11y/SEO; the visible design leads with the top bar. */}
-      <h1 className="sr-only">
-        Compare {properties.map((p) => p.name).join(" vs ")}
-      </h1>
-      {/* Top bar */}
+      {/* Utility bar */}
       <div className="border-b border-border bg-card">
         <div className="container flex h-14 items-center justify-between lg:px-10">
           <Link
@@ -191,11 +207,89 @@ export function ComparisonView({
         </div>
       </div>
 
+      <div className="container py-8 text-center lg:px-10">
+        <h1 className="inline-flex items-center gap-2.5 font-display text-2xl font-extrabold tracking-tight text-primary dark:text-foreground sm:text-3xl">
+          <Scale className="h-7 w-7 text-accent" />
+          Compare Properties
+        </h1>
+        <p className="mt-1.5 text-sm text-muted-foreground">
+          {n} of {MAX_COMPARE} selected — every comparable detail in one view,
+          then open the full breakdown below.
+        </p>
+        {/* Machine-readable heading: what is actually being compared. */}
+        <span className="sr-only">
+          Comparing {properties.map((p) => p.name).join(" versus ")}
+        </span>
+      </div>
+
       {/* Selection lives in a bar across the top now — visible on every screen
           size, unlike the desktop-only sidebar card it replaces. */}
       <CompareSelectionBar properties={properties} />
 
-      <div className="container grid grid-cols-1 gap-8 py-6 lg:grid-cols-[248px_1fr] lg:px-10">
+      <div className="container pt-5 lg:px-10">
+        <AtAGlance
+          properties={properties}
+          result={result}
+          expanded={showDetails}
+          onToggleExpanded={toggleDetails}
+        />
+
+        {/* Guidance + the expert CTA. Both sit outside the collapsible block so
+            they are on screen in the default (summary) view — the expert card
+            used to live in the sidebar, which only exists once expanded. */}
+        <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_260px]">
+          <div className="flex items-start gap-3.5 rounded-2xl border border-accent/25 bg-accent/[0.07] p-4">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-card">
+              <Scale className="h-5 w-5 text-accent" />
+            </span>
+            <div>
+              <h2 className="font-display text-sm font-bold text-primary dark:text-foreground">
+                Compare and Decide Better
+              </h2>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Side-by-side comparison helps you choose the property that fits
+                your needs and budget. Cells marked{" "}
+                <span className="font-bold text-success">Best</span> are the
+                objectively stronger value in that row — hover one to see why.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3.5 rounded-2xl border border-accent/30 bg-accent/10 p-4 lg:flex-col lg:gap-2 lg:text-center">
+            <Image
+              src="/art/support.png"
+              alt=""
+              width={120}
+              height={90}
+              className="h-14 w-auto shrink-0 object-contain lg:h-16"
+            />
+            <div className="min-w-0 flex-1">
+              <h2 className="font-display text-sm font-bold text-primary dark:text-foreground">
+                Need Expert Advice?
+              </h2>
+              <a href={`tel:${EXPERT_PHONE}`}>
+                <Button variant="accent" size="sm" className="mt-2 w-full">
+                  Talk to an Expert
+                </Button>
+              </a>
+              <p className="mt-1.5 text-[11px] text-muted-foreground">
+                {EXPERT_PHONE_DISPLAY}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* The detailed sections. Kept mounted but hidden so printing (Download
+          PDF) still captures the full comparison, and so the sidebar's anchor
+          links have something to scroll to once expanded. */}
+      <div
+        ref={detailsRef}
+        className={cn(
+          "container grid grid-cols-1 gap-8 py-6 lg:grid-cols-[248px_1fr] lg:px-10",
+          !showDetails && "hidden print:grid",
+        )}
+      >
         {/* ───────────── LEFT SIDEBAR ───────────── */}
         <aside className="hidden h-fit flex-col gap-4 lg:sticky lg:top-20 lg:flex">
           {/* Section nav */}
@@ -214,31 +308,6 @@ export function ComparisonView({
               );
             })}
           </nav>
-
-          {/* Expert card */}
-          <div className="rounded-2xl border border-accent/30 bg-accent/10 p-4 text-center">
-            <Image
-              src="/art/support.png"
-              alt=""
-              width={120}
-              height={90}
-              className="mx-auto h-20 w-auto object-contain"
-            />
-            <h3 className="mt-2 font-display text-sm font-bold text-primary dark:text-foreground">
-              Need Expert Advice?
-            </h3>
-            <p className="mt-1 text-[11px] text-muted-foreground">
-              Our property experts can help you choose the right property.
-            </p>
-            <a href="tel:+919252996677">
-              <Button variant="accent" size="sm" className="mt-3 w-full">
-                Talk to an Expert
-              </Button>
-            </a>
-            <p className="mt-2 text-[11px] text-muted-foreground">
-              Call us: +91 92529 96677
-            </p>
-          </div>
         </aside>
 
         {/* ───────────── RIGHT CONTENT ───────────── */}
