@@ -273,10 +273,20 @@ export function QuickCompareTable({
 
   return (
     <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-glass">
-      <div className="overflow-x-auto">
+      {/*
+        The scroll container is capped in height and scrolls on BOTH axes on
+        purpose. `overflow-x: auto` alone makes this element the scrollport for
+        the vertical axis too (per spec, an `overflow-y: visible` sibling
+        computes to `auto`), so a `sticky top-…` header inside it would be
+        measured against a box that never scrolls — it would simply drift away
+        with the page. Giving the container its own height makes it the real
+        scrollport, and then the header row and the label column both freeze.
+        Short tables never reach the cap, so nothing changes for them.
+      */}
+      <div className="max-h-[78vh] overflow-auto overscroll-contain">
         <div style={grid} className="grid">
-          {/* ── header ─────────────────────────────────────────────────── */}
-          <div className="sticky left-0 z-[2] flex items-center bg-card px-4 py-4">
+          {/* ── header: frozen on both axes ────────────────────────────── */}
+          <div className="sticky left-0 top-0 z-[4] flex items-center bg-card px-4 py-4">
             <span className="text-xs font-bold uppercase tracking-wider text-accent">
               Overview
             </span>
@@ -287,9 +297,19 @@ export function QuickCompareTable({
             return (
               <div
                 key={p.id}
-                className={cn("border-l border-border p-3.5", isTop && "bg-accent/[0.05]")}
+                // No `relative` here: it would fight `sticky` for the position
+                // property, and sticky already anchors absolute children.
+                className="sticky top-0 z-[3] border-l border-border bg-card p-3.5"
               >
-                <div className="flex items-start gap-3">
+                {/* Tint as an overlay, not the cell's own background: a
+                    translucent sticky cell would show rows sliding under it. */}
+                {isTop && (
+                  <span
+                    aria-hidden
+                    className="pointer-events-none absolute inset-0 bg-accent/[0.05]"
+                  />
+                )}
+                <div className="relative flex items-start gap-3">
                   <span className="relative h-16 w-20 shrink-0 overflow-hidden rounded-lg">
                     <CoverImage src={p.image} alt={p.name} gradient={p.gradient} sizes="80px" />
                   </span>

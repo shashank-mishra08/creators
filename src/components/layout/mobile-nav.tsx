@@ -192,9 +192,13 @@ export function MobileNav({ nav }: { nav: NavItem[] }) {
                 </Link>
               </div>
             )}
+            {/* "Compare selected", not "Compare": the nav list above already has
+                a Compare item, and that one goes to /compare/quick to start a
+                fresh comparison. This one opens the selection built while
+                browsing, which is why it carries the count. */}
             <Link href="/compare" className="mt-3 block">
               <Button variant="ghost" size="sm" className="w-full justify-start gap-1.5">
-                <GitCompareArrows className="h-4 w-4" /> Compare
+                <GitCompareArrows className="h-4 w-4" /> Compare selected
                 {compareBadge > 0 && (
                   <span className="ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1.5 text-[11px] font-bold text-accent-foreground">
                     {compareBadge}

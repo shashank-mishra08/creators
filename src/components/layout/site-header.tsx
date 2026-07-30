@@ -3,30 +3,25 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { GitCompareArrows } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
-import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { AuthNav } from "@/components/auth/auth-nav";
 import { MobileNav } from "@/components/layout/mobile-nav";
-import { useComparison } from "@/store/comparison";
-import { useMounted } from "@/lib/use-mounted";
 import { cn } from "@/lib/utils";
 
 const NAV = [
   { href: "/", label: "Home" },
   { href: "/properties", label: "Properties" },
-  { href: "/compare", label: "Compare" },
+  // The slot-based compare: it starts empty and is driven by its own
+  // dropdowns, which is what a visitor arriving from the nav wants. The
+  // selection-based /compare is reached from the tray on the listing page,
+  // where the selection is actually built.
+  { href: "/compare/quick", label: "Compare" },
 ];
 
 export function SiteHeader() {
   const pathname = usePathname();
-  const mounted = useMounted();
   const [scrolled, setScrolled] = React.useState(false);
-  // Persisted (localStorage) store — only trust it after mount so the first
-  // client render matches the server HTML and hydration doesn't mismatch.
-  const count = useComparison((s) => s.selected.length);
-  const badge = mounted ? count : 0;
 
   React.useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
@@ -76,17 +71,6 @@ export function SiteHeader() {
         </nav>
 
         <div className="ml-auto flex items-center gap-2">
-          <Link href="/properties" className="hidden sm:block">
-            <Button variant="ghost" size="sm" className="gap-1.5">
-              <GitCompareArrows className="h-4 w-4" />
-              Compare
-              {badge > 0 && (
-                <span className="ml-0.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1.5 text-[11px] font-bold text-accent-foreground">
-                  {badge}
-                </span>
-              )}
-            </Button>
-          </Link>
           <ThemeToggle />
           {/* Desktop auth cluster; tablet/mobile use the drawer below. */}
           <div className="hidden lg:block">
