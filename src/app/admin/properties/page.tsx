@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   Plus, Search, Eye, EyeOff, Pencil, Trash2,
@@ -32,9 +33,14 @@ export default function AdminPropertiesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  // The sidebar links here with ?status=deleted, so Recently Deleted is
+  // reachable as its own destination rather than only as a chip on this page.
+  const searchParams = useSearchParams();
+  const initialStatus =
+    searchParams.get("status") === "deleted" ? "deleted" : "all";
   const [statusFilter, setStatusFilter] = useState<
     "all" | "active" | "hidden" | "deleted"
-  >("all");
+  >(initialStatus);
   const [deleteTarget, setDeleteTarget] = useState<AdminProperty | null>(null);
   const [purgeTarget, setPurgeTarget] = useState<AdminProperty | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);

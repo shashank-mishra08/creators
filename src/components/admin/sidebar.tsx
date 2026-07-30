@@ -7,7 +7,7 @@ import {
   Home, Building2, PlusCircle, Users, MapPin, Star,
   LayoutDashboard, Image as ImageIcon, MessageSquare,
   Mail, CalendarCheck, PhoneCall, UserCog, Settings,
-  ChevronLeft, FileSpreadsheet, ScrollText
+  ChevronLeft, FileSpreadsheet, ScrollText, Trash2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -29,6 +29,7 @@ const navGroups: { title: string; items: NavItem[] }[] = [
       { name: "Add Property", href: "/admin/properties/add", icon: PlusCircle },
       { name: "Import from Excel", href: "/admin/import", icon: FileSpreadsheet },
       { name: "Home Banners", href: "/admin/banners", icon: ImageIcon },
+      { name: "Recently Deleted", href: "/admin/properties?status=deleted", icon: Trash2 },
     ]
   },
   {

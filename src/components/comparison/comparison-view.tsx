@@ -32,6 +32,7 @@ import { useMounted } from "@/lib/use-mounted";
 import { setPendingAction } from "@/lib/pending-action";
 import { LocationMap } from "@/components/comparison/location-map";
 import { PropertyPicker } from "@/components/comparison/property-picker";
+import { CompareSelectionBar } from "@/components/comparison/compare-selection-bar";
 import { Button } from "@/components/ui/button";
 import { CoverImage } from "@/components/ui/cover-image";
 import { Lightbox } from "@/components/ui/lightbox";
@@ -190,139 +191,13 @@ export function ComparisonView({
         </div>
       </div>
 
-      <div className="container grid grid-cols-1 gap-8 py-6 lg:grid-cols-[248px_1fr] lg:px-10">
-        {/* Mobile/tablet counterpart to the sidebar's compare list, which is
-            desktop-only — without this there is no way to change the compared
-            set on a phone. */}
-        <div className="rounded-2xl border border-border bg-card p-3 shadow-glass lg:hidden">
-          <div className="mb-2 flex items-center justify-between">
-            <h2 className="font-display text-sm font-bold text-primary dark:text-foreground">
-              Comparing
-            </h2>
-            <span className="text-xs text-muted-foreground">{n}/4</span>
-          </div>
-          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
-            {properties.map((p) => (
-              <div
-                key={p.id}
-                className="flex shrink-0 items-center gap-2 rounded-xl border border-border py-1.5 pl-1.5 pr-2"
-              >
-                <span className="relative h-8 w-8 shrink-0 overflow-hidden rounded-lg">
-                  <CoverImage src={p.image} alt={p.name} gradient={p.gradient} sizes="32px" />
-                </span>
-                <span className="max-w-[7.5rem] truncate text-xs font-bold text-foreground">
-                  {p.name}
-                </span>
-                <PropertyPicker
-                  mode="swap"
-                  currentId={p.id}
-                  trigger={({ open, toggle }) => (
-                    <button
-                      onClick={toggle}
-                      aria-expanded={open}
-                      aria-label={`Change ${p.name}`}
-                      className="shrink-0 rounded-lg px-1.5 py-1 text-[11px] font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-accent"
-                    >
-                      Change
-                    </button>
-                  )}
-                />
-                {n > 2 && (
-                  <button
-                    onClick={() => remove(p.id)}
-                    aria-label={`Remove ${p.name}`}
-                    className="shrink-0 text-muted-foreground hover:text-danger"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                )}
-              </div>
-            ))}
-            {n < 4 && (
-              <PropertyPicker
-                mode="add"
-                align="right"
-                trigger={({ open, toggle }) => (
-                  <button
-                    onClick={toggle}
-                    aria-expanded={open}
-                    className="inline-flex shrink-0 items-center gap-1 rounded-xl border border-dashed border-border px-3 py-2.5 text-xs font-semibold text-muted-foreground hover:border-accent/60 hover:text-accent"
-                  >
-                    <Plus className="h-3.5 w-3.5" /> Add
-                  </button>
-                )}
-              />
-            )}
-          </div>
-        </div>
+      {/* Selection lives in a bar across the top now — visible on every screen
+          size, unlike the desktop-only sidebar card it replaces. */}
+      <CompareSelectionBar properties={properties} />
 
+      <div className="container grid grid-cols-1 gap-8 py-6 lg:grid-cols-[248px_1fr] lg:px-10">
         {/* ───────────── LEFT SIDEBAR ───────────── */}
         <aside className="hidden h-fit flex-col gap-4 lg:sticky lg:top-20 lg:flex">
-          {/* Compare list */}
-          <div className="rounded-2xl border border-border bg-card p-4 shadow-glass">
-            <h2 className="font-display text-sm font-bold text-primary dark:text-foreground">
-              Compare Properties
-            </h2>
-            <p className="mb-3 text-xs text-muted-foreground">{n}/4 Selected</p>
-            <div className="space-y-2">
-              {properties.map((p) => (
-                <div
-                  key={p.id}
-                  className="flex items-center gap-2.5 rounded-xl border border-border p-2"
-                >
-                  <span className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg">
-                    <CoverImage src={p.image} alt={p.name} gradient={p.gradient} sizes="40px" />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-xs font-bold text-foreground">{p.builder.name} {p.name}</div>
-                    <div className="truncate text-[11px] text-muted-foreground">{p.locality}</div>
-                  </div>
-                  {/* Swap this column without leaving the comparison. */}
-                  <PropertyPicker
-                    mode="swap"
-                    currentId={p.id}
-                    align="right"
-                    trigger={({ open, toggle }) => (
-                      <button
-                        onClick={toggle}
-                        aria-expanded={open}
-                        aria-label={`Change ${p.name}`}
-                        className="shrink-0 rounded-lg px-1.5 py-1 text-[11px] font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-accent"
-                      >
-                        Change
-                      </button>
-                    )}
-                  />
-                  {n > 2 && (
-                    <button
-                      onClick={() => remove(p.id)}
-                      aria-label="Remove"
-                      className="shrink-0 text-muted-foreground hover:text-danger"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-            {n < 4 && (
-              <div className="mt-3">
-                <PropertyPicker
-                  mode="add"
-                  trigger={({ open, toggle }) => (
-                    <button
-                      onClick={toggle}
-                      aria-expanded={open}
-                      className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-border py-2 text-xs font-semibold text-muted-foreground hover:border-accent/60 hover:text-accent"
-                    >
-                      <Plus className="h-3.5 w-3.5" /> Add New Property
-                    </button>
-                  )}
-                />
-              </div>
-            )}
-          </div>
-
           {/* Section nav */}
           <nav className="rounded-2xl border border-border bg-card p-2 shadow-glass">
             {NAV.map((item) => {
@@ -388,6 +263,16 @@ export function ComparisonView({
                         ★ Top pick
                       </span>
                     )}
+                    {/* Drop a column straight from its own card. Mirrors the X on
+                        the chips in the top bar, so removal is reachable from
+                        wherever the user happens to be looking. */}
+                    <button
+                      onClick={() => remove(p.id)}
+                      aria-label={`Remove ${p.builder.name} ${p.name} from the comparison`}
+                      className="absolute right-3 top-3 z-[2] flex h-7 w-7 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur transition-colors hover:bg-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
                   </div>
                   <div className="p-4">
                     <h3 className="font-display text-base font-bold text-primary dark:text-foreground">

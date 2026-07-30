@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Minus, Upload, X, ChevronLeft, ChevronRight, Check, Loader2 } from "lucide-react";
+import { CITIES } from "@/lib/constants";
 
 // ─────────── Types ───────────
 export interface Config { label: string; areaSqFt: string; carpetAreaSqft: string; balconyAreaSqft: string; builtUpAreaSqft: string; priceLabel: string; floorPlanImage: string; }
@@ -23,6 +24,7 @@ export interface PropertyFormData {
   
   // Location
   metroMin?: number; schoolMin?: number; hospitalMin?: number; expresswayMin?: number; mapsUrl?: string;
+  latitude?: number | null; longitude?: number | null;
   
   // Amenities
   amenities?: Amenity[];
@@ -68,7 +70,9 @@ const COMMON_AMENITIES = [
   { key: "spa", label: "Spa & Sauna" },
 ];
 
-const CITIES = ["Greater Noida East", "Greater Noida West", "Yamuna Expressway"];
+// Sourced from the shared constant rather than a local copy — this list had
+// drifted to three cities while the database held five, so two markets could
+// not be selected when adding a property.
 const KINDS = ["Apartment", "Villa", "Plot", "Builder Floor"];
 const POSSESSIONS = ["Ready to Move", "Under Construction", "New Launch"];
 
@@ -164,6 +168,14 @@ export function PropertyForm({ title, subtitle: formSubtitle, initialData, onSub
   const [hospitalMin, setHospitalMin] = useState(initialData?.hospitalMin ? String(initialData.hospitalMin) : "");
   const [expresswayMin, setExpresswayMin] = useState(initialData?.expresswayMin ? String(initialData.expresswayMin) : "");
   const [mapsUrl, setMapsUrl] = useState(initialData?.mapsUrl || "");
+  // Left blank when unknown — an invented coordinate would send a buyer to
+  // the wrong site, so the listing falls back to city-level matching.
+  const [latitude, setLatitude] = useState(
+    initialData?.latitude != null ? String(initialData.latitude) : "",
+  );
+  const [longitude, setLongitude] = useState(
+    initialData?.longitude != null ? String(initialData.longitude) : "",
+  );
 
   // Amenities
   const [amenities, setAmenities] = useState<Amenity[]>(
@@ -252,6 +264,8 @@ export function PropertyForm({ title, subtitle: formSubtitle, initialData, onSub
           hospitalMin: hospitalMin ? Number(hospitalMin) : undefined,
           expresswayMin: expresswayMin ? Number(expresswayMin) : undefined,
           mapsUrl: mapsUrl || undefined,
+          latitude: latitude.trim() ? Number(latitude) : null,
+          longitude: longitude.trim() ? Number(longitude) : null,
         },
         investment: {
           appreciationPct: appreciationPct ? Number(appreciationPct) : undefined,
@@ -494,6 +508,19 @@ export function PropertyForm({ title, subtitle: formSubtitle, initialData, onSub
                 <label className={LABEL}>Google Maps URL</label>
                 <input type="url" value={mapsUrl} onChange={(e) => setMapsUrl(e.target.value)} placeholder="https://maps.google.com/..." className={INPUT} />
               </div>
+              <div>
+                <label className={LABEL}>Latitude</label>
+                <input type="number" step="any" value={latitude} onChange={(e) => setLatitude(e.target.value)} placeholder="e.g. 28.476889" className={INPUT} />
+              </div>
+              <div>
+                <label className={LABEL}>Longitude</label>
+                <input type="number" step="any" value={longitude} onChange={(e) => setLongitude(e.target.value)} placeholder="e.g. 77.537821" className={INPUT} />
+              </div>
+              <p className="md:col-span-2 -mt-1 text-xs text-slate-500">
+                Powers &ldquo;properties near me&rdquo;. Open the project in Google Maps,
+                right-click the pin and copy the two numbers. Leave blank if unsure &mdash;
+                the site then matches on city instead of guessing a position.
+              </p>
             </div>
           </div>
         )}

@@ -65,6 +65,8 @@ export default function EditPropertyPage({ params }: { params: { id: string } })
           hospitalMin: data.location?.hospitalMin,
           expresswayMin: data.location?.expresswayMin,
           mapsUrl: data.location?.mapsUrl || "",
+          latitude: data.location?.latitude ?? null,
+          longitude: data.location?.longitude ?? null,
 
           // Amenities
           amenities: data.amenities?.map((a: any) => ({

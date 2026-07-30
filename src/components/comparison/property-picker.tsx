@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { createPortal } from "react-dom";
 import { Check, Loader2, Search, X } from "lucide-react";
 import { api } from "@/lib/api/client";
 import { useComparison } from "@/store/comparison";
@@ -17,7 +18,7 @@ import type { PropertyOption } from "@/lib/types";
 let optionsCache: PropertyOption[] | null = null;
 let optionsInFlight: Promise<PropertyOption[]> | null = null;
 
-function loadOptions(): Promise<PropertyOption[]> {
+export function loadOptions(): Promise<PropertyOption[]> {
   if (optionsCache) return Promise.resolve(optionsCache);
   if (!optionsInFlight) {
     optionsInFlight = api
@@ -45,13 +46,11 @@ export function PropertyPicker({
   mode,
   currentId,
   trigger,
-  align = "left",
   onDone,
 }: {
   mode: "swap" | "add";
   currentId?: string;
   trigger: (props: { open: boolean; toggle: () => void }) => React.ReactNode;
-  align?: "left" | "right";
   onDone?: () => void;
 }) {
   const selected = useComparison((s) => s.selected);
@@ -64,7 +63,9 @@ export function PropertyPicker({
     optionsCache,
   );
   const [failed, setFailed] = React.useState(false);
-  const ref = React.useRef<HTMLDivElement>(null);
+  // document.body only exists client-side; gate the portal on mount.
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => setMounted(true), []);
   const searchRef = React.useRef<HTMLInputElement>(null);
 
   // Fetch lazily — the catalogue is only needed once a picker is actually opened.
@@ -80,21 +81,20 @@ export function PropertyPicker({
     };
   }, [open, options]);
 
-  // Close on outside click / ESC; focus the search box on open.
+  // ESC closes; the backdrop handles click-away. Body scroll is locked so the
+  // page behind doesn't move under the dialog.
   React.useEffect(() => {
     if (!open) return;
     searchRef.current?.focus();
-    const onPointerDown = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setOpen(false);
     };
-    document.addEventListener("mousedown", onPointerDown);
     document.addEventListener("keydown", onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
     return () => {
-      document.removeEventListener("mousedown", onPointerDown);
       document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
     };
   }, [open]);
 
@@ -125,18 +125,45 @@ export function PropertyPicker({
   }
 
   return (
-    <div ref={ref} className="relative">
+    <div className="relative">
       {trigger({ open, toggle: () => setOpen((o) => !o) })}
 
-      {open && (
+      {/* Rendered through a portal on <body>, NOT in place.
+          
+          The triggers live inside the compare sidebar, which is `position:
+          sticky` — and a sticky element establishes its own stacking context.
+          A dialog nested inside it is trapped there, so its z-index is only
+          ever compared against that subtree and the comparison cards outside
+          painted straight over it. A portal escapes every ancestor stacking
+          context and containing block, whatever those ancestors later become. */}
+      {open &&
+        mounted &&
+        createPortal(
+          <>
+            <div
+              className="fixed inset-0 z-[100] bg-slate-900/50 backdrop-blur-sm"
+              onClick={() => setOpen(false)}
+            />
+            <div className="fixed inset-0 z-[101] flex items-start justify-center overflow-y-auto p-4 sm:items-center">
         <div
           role="dialog"
+          aria-modal="true"
           aria-label={mode === "swap" ? "Change property" : "Add property"}
-          className={cn(
-            "absolute top-full z-40 mt-2 w-[19rem] max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-border bg-card shadow-lift",
-            align === "right" ? "right-0" : "left-0",
-          )}
+          className="w-full max-w-md overflow-hidden rounded-2xl border border-border bg-card shadow-lift"
         >
+          <div className="flex items-center justify-between border-b border-border px-4 py-3">
+            <h2 className="text-sm font-bold text-foreground">
+              {mode === "swap" ? "Change property" : "Add a property to compare"}
+            </h2>
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              aria-label="Close"
+              className="rounded-lg p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
           <div className="relative border-b border-border p-2">
             <Search className="pointer-events-none absolute left-4 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
             <input
@@ -159,7 +186,7 @@ export function PropertyPicker({
             )}
           </div>
 
-          <div className="max-h-72 overflow-y-auto p-1.5">
+          <div className="max-h-[55vh] overflow-y-auto p-1.5">
             {failed ? (
               <p className="px-2 py-6 text-center text-xs text-muted-foreground">
                 Couldn&apos;t load properties.{" "}
@@ -230,7 +257,10 @@ export function PropertyPicker({
             )}
           </div>
         </div>
-      )}
+            </div>
+          </>,
+          document.body,
+        )}
     </div>
   );
 }

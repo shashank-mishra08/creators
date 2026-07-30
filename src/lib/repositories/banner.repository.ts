@@ -9,7 +9,9 @@ type BannerRow = {
   id: string;
   title: string;
   subtitle: string;
+  mediaType: string;
   imageUrl: string;
+  videoUrl: string;
   linkUrl: string;
   sortOrder: number;
   active: boolean;
@@ -22,7 +24,9 @@ function mapBanner(b: BannerRow): Banner {
     id: b.id,
     title: b.title,
     subtitle: b.subtitle,
+    mediaType: b.mediaType === "video" ? "video" : "image",
     imageUrl: b.imageUrl,
+    videoUrl: b.videoUrl,
     linkUrl: b.linkUrl,
     sortOrder: b.sortOrder,
     active: b.active,
@@ -36,7 +40,9 @@ const selectBanner = {
   id: true,
   title: true,
   subtitle: true,
+  mediaType: true,
   imageUrl: true,
+  videoUrl: true,
   linkUrl: true,
   sortOrder: true,
   active: true,
@@ -50,7 +56,11 @@ export const bannerRepository = {
     const rows = await prisma.banner.findMany({
       where: {
         active: true,
-        imageUrl: { not: "" },
+        // A row with no media at all would render an empty slide.
+        OR: [
+          { mediaType: "image", imageUrl: { not: "" } },
+          { mediaType: "video", videoUrl: { not: "" } },
+        ],
         // A null bound means "no limit on that side".
         AND: [
           { OR: [{ startsAt: null }, { startsAt: { lte: now } }] },
@@ -98,7 +108,9 @@ function toData(input: BannerInput) {
   return {
     title: input.title,
     subtitle: input.subtitle,
+    mediaType: input.mediaType,
     imageUrl: input.imageUrl,
+    videoUrl: input.videoUrl,
     linkUrl: input.linkUrl,
     sortOrder: input.sortOrder,
     active: input.active,

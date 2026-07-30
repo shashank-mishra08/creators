@@ -21,7 +21,9 @@ const LABEL = "block text-xs font-semibold text-slate-600 mb-1.5";
 const EMPTY: BannerInput = {
   title: "",
   subtitle: "",
+  mediaType: "image",
   imageUrl: "",
+  videoUrl: "",
   linkUrl: "",
   sortOrder: 0,
   active: true,
@@ -65,8 +67,13 @@ export default function AdminBannersPage() {
 
   async function save() {
     if (!editing) return;
-    if (!editing.input.imageUrl) {
-      setError("An image is required before saving.");
+    const needsVideo = editing.input.mediaType === "video";
+    if (needsVideo ? !editing.input.videoUrl : !editing.input.imageUrl) {
+      setError(
+        needsVideo
+          ? "Add a video before saving."
+          : "Add an image before saving.",
+      );
       return;
     }
     setBusy(true);
@@ -174,6 +181,11 @@ export default function AdminBannersPage() {
             {banners.map((b) => (
               <li key={b.id} className="flex items-center gap-4 p-4">
                 <div className="relative h-14 w-24 shrink-0 overflow-hidden rounded-lg bg-slate-100">
+                  {b.mediaType === "video" && !b.imageUrl && (
+                    <span className="flex h-full w-full items-center justify-center text-[10px] font-semibold uppercase text-slate-400">
+                      Video
+                    </span>
+                  )}
                   {b.imageUrl && (
                     <Image
                       src={b.imageUrl}
@@ -204,6 +216,9 @@ export default function AdminBannersPage() {
                     </span>
                     <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[11px] text-slate-500">
                       Order {b.sortOrder}
+                    </span>
+                    <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[11px] capitalize text-slate-500">
+                      {b.mediaType}
                     </span>
                     {(b.startsAt || b.endsAt) && (
                       <span className="rounded-md bg-blue-50 px-1.5 py-0.5 text-[11px] text-blue-700">
@@ -323,11 +338,34 @@ function BannerEditor({
   return (
     <Modal onClose={onCancel} title={isNew ? "Add banner" : "Edit banner"} wide>
       <div className="space-y-4">
-        <div>
-          <label className={LABEL}>Banner image *</label>
-          <div className="flex items-center gap-3">
+        {/* ── Media ──
+            One block, one decision. Previously an upload button, a raw image
+            URL box and the click-through "Link URL" sat next to each other and
+            read as three interchangeable URL fields. */}
+        <div className="rounded-xl border border-slate-200 p-3.5">
+          <div className="mb-3 flex items-center gap-2">
+            <span className={`${LABEL} !mb-0`}>Banner media *</span>
+            <div className="ml-auto inline-flex rounded-lg border border-slate-200 p-0.5">
+              {(["image", "video"] as const).map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => set("mediaType", t)}
+                  className={`rounded-md px-3 py-1 text-xs font-semibold capitalize transition-colors ${
+                    value.mediaType === t
+                      ? "bg-[#7166F0] text-white"
+                      : "text-slate-500 hover:bg-slate-50"
+                  }`}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-start gap-3">
             <div className="relative h-20 w-36 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
-              {value.imageUrl && (
+              {value.imageUrl ? (
                 <Image
                   src={value.imageUrl}
                   alt=""
@@ -336,8 +374,13 @@ function BannerEditor({
                   sizes="144px"
                   className="object-cover"
                 />
+              ) : (
+                <span className="flex h-full w-full items-center justify-center text-[11px] text-slate-400">
+                  {value.mediaType === "video" ? "Poster" : "Preview"}
+                </span>
               )}
             </div>
+
             <div className="min-w-0 flex-1">
               <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-[#7166F0] px-3 py-2 text-sm font-semibold text-[#7166F0] transition-colors hover:bg-[#7166F0]/5">
                 {uploading ? (
@@ -345,7 +388,11 @@ function BannerEditor({
                 ) : (
                   <Upload className="h-4 w-4" />
                 )}
-                {uploading ? "Uploading…" : "Upload image"}
+                {uploading
+                  ? "Uploading…"
+                  : value.mediaType === "video"
+                    ? "Upload poster image"
+                    : "Upload image"}
                 <input
                   type="file"
                   accept="image/*"
@@ -360,17 +407,35 @@ function BannerEditor({
               <input
                 value={value.imageUrl}
                 onChange={(e) => set("imageUrl", e.target.value)}
-                placeholder="…or paste an image URL"
+                placeholder="…or paste the image address"
                 className={`${INPUT} mt-2`}
               />
               <p className="mt-1 text-[11px] text-slate-400">
-                Wide artwork works best — roughly 1600×420.
+                {value.mediaType === "video"
+                  ? "Shown while the video loads. Optional but recommended."
+                  : "Wide artwork works best — roughly 1600×420."}
               </p>
               {uploadError && (
                 <p className="mt-1 text-[11px] text-red-600">{uploadError}</p>
               )}
             </div>
           </div>
+
+          {value.mediaType === "video" && (
+            <div className="mt-3">
+              <label className={LABEL}>Video address *</label>
+              <input
+                value={value.videoUrl}
+                onChange={(e) => set("videoUrl", e.target.value)}
+                placeholder="https://…/promo.mp4"
+                className={INPUT}
+              />
+              <p className="mt-1 text-[11px] text-slate-400">
+                Plays muted and on loop. MP4 works everywhere; keep it short and
+                well compressed.
+              </p>
+            </div>
+          )}
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
@@ -384,13 +449,16 @@ function BannerEditor({
             />
           </div>
           <div>
-            <label className={LABEL}>Link URL</label>
+            <label className={LABEL}>Where clicking the banner goes</label>
             <input
               value={value.linkUrl}
               onChange={(e) => set("linkUrl", e.target.value)}
               placeholder="/properties/some-project"
               className={INPUT}
             />
+            <p className="mt-1 text-[11px] text-slate-400">
+              Optional. Leave blank for a banner that isn&apos;t clickable.
+            </p>
           </div>
         </div>
 
@@ -455,7 +523,11 @@ function BannerEditor({
         </button>
         <button
           onClick={onSave}
-          disabled={busy || uploading || !value.imageUrl}
+          disabled={
+            busy ||
+            uploading ||
+            (value.mediaType === "video" ? !value.videoUrl : !value.imageUrl)
+          }
           className="rounded-xl bg-[#7166F0] px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-[#7166F0]/30 transition-colors hover:bg-[#5a52d5] disabled:opacity-60"
         >
           {busy ? "Saving…" : isNew ? "Create banner" : "Save changes"}

@@ -128,6 +128,7 @@ function mapProperty(p: PropertyRow): Property {
     builder: mapBuilder(p.builder),
     city: p.city as City,
     locality: p.locality,
+    category: p.category ?? "",
     kind: p.kind as PropertyKind,
     configs: p.configsLabel,
     possession: p.possession as Possession,
@@ -152,6 +153,8 @@ function mapProperty(p: PropertyRow): Property {
       schoolKm: p.location?.schoolMin ?? 0,
       airportKm: p.location?.expresswayMin ?? 0, // expressway in the 4th slot
       connectivityIndex: p.location?.connectivityIndex ?? 0,
+      latitude: p.location?.latitude ?? null,
+      longitude: p.location?.longitude ?? null,
     },
     investment: {
       appreciationPct: p.investment?.appreciationPct ?? 0,

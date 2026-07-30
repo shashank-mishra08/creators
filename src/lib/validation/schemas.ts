@@ -62,10 +62,17 @@ const optionalDate = z
 export const bannerSchema = z.object({
   title: z.string().trim().max(120).default(""),
   subtitle: z.string().trim().max(240).default(""),
-  imageUrl: z.string().trim().min(1, "An image is required"),
+  mediaType: z.enum(["image", "video"]).default("image"),
+  imageUrl: z.string().trim().default(""),
+  videoUrl: z.string().trim().default(""),
   linkUrl: z.string().trim().max(500).default(""),
   sortOrder: z.coerce.number().int().min(0).max(9999).default(0),
   active: z.boolean().default(true),
   startsAt: optionalDate,
   endsAt: optionalDate,
-});
+})
+  // Whichever media type is chosen, that URL is the one that must be present.
+  .refine((b) => (b.mediaType === "video" ? b.videoUrl : b.imageUrl), {
+    message: "Add the media for this banner before saving",
+    path: ["imageUrl"],
+  });

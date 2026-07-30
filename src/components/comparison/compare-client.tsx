@@ -56,7 +56,20 @@ export function CompareClient() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hydrated, key]);
 
-  if (!hydrated || loading) {
+  // What to render right now. Removing a property changes `selected`
+  // immediately but the refetch takes a moment, so filtering the last payload
+  // against the selection drops the column on click instead of showing either a
+  // stale column or a full-page spinner. `result` is a superset for that moment
+  // (it still scores the removed property), which is harmless — every rendered
+  // property still has a score, and the next payload corrects the ranking.
+  const shown = React.useMemo(
+    () => properties.filter((p) => selected.includes(p.id)),
+    [properties, selected],
+  );
+
+  // Spinner only when there is nothing worth showing — never over a comparison
+  // that is already on screen.
+  if (!hydrated || (loading && shown.length < MIN_COMPARE)) {
     return (
       <div className="container flex min-h-[60vh] items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-border border-t-accent" />
@@ -64,22 +77,28 @@ export function CompareClient() {
     );
   }
 
-  if (properties.length < MIN_COMPARE) {
+  if (shown.length < MIN_COMPARE) {
     return (
       <div className="container flex min-h-[60vh] flex-col items-center justify-center text-center">
         <div className="mb-5 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-muted">
           <Scale className="h-7 w-7 text-accent" />
         </div>
         <h1 className="font-display text-2xl font-extrabold text-primary dark:text-foreground">
-          Pick at least {MIN_COMPARE} properties
+          {selected.length === 1
+            ? "Add one more to compare"
+            : `Pick at least ${MIN_COMPARE} properties`}
         </h1>
         <p className="mt-2 max-w-sm text-sm text-muted-foreground">
-          Head to the selection page and choose the homes you&apos;d like to
-          compare.
+          {selected.length === 1
+            ? // Reached by removing a column from a 2-way comparison; say the
+              // remaining pick is still held so it doesn't read as data loss.
+              "Your other selection is still saved. Choose one more property and the comparison comes right back."
+            : "Head to the selection page and choose the homes you'd like to compare."}
         </p>
         <Link href="/properties" className="mt-6">
           <Button variant="accent" size="md">
-            <GitCompareArrows className="h-4 w-4" /> Select properties
+            <GitCompareArrows className="h-4 w-4" />
+            {selected.length === 1 ? "Add a property" : "Select properties"}
           </Button>
         </Link>
       </div>
@@ -88,7 +107,7 @@ export function CompareClient() {
 
   return (
     <ComparisonView
-      properties={properties}
+      properties={shown}
       similar={similar}
       result={result ?? undefined}
     />

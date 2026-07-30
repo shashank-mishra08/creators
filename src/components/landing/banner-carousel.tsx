@@ -95,22 +95,54 @@ function BannerSlide({
   hidden: boolean;
   eager: boolean;
 }) {
+  const isVideo = banner.mediaType === "video" && banner.videoUrl;
+
   const content = (
     <>
-      <Image
-        src={banner.imageUrl}
-        alt={banner.title || "Promotional banner"}
-        fill
-        unoptimized
-        priority={eager}
-        sizes="(max-width: 1280px) 100vw, 1280px"
-        className="object-cover"
-      />
+      {/* Blurred copy of the artwork fills whatever the contained media doesn't,
+          so a banner whose ratio differs from the slide reads as designed rather
+          than letterboxed. */}
+      {banner.imageUrl && (
+        <Image
+          src={banner.imageUrl}
+          alt=""
+          aria-hidden
+          fill
+          unoptimized
+          sizes="(max-width: 1440px) 100vw, 1440px"
+          className="scale-110 object-cover blur-2xl"
+        />
+      )}
+      {isVideo ? (
+        // Muted + playsInline so mobile browsers allow autoplay; the image doubles
+        // as the poster so there is never a blank frame while it buffers.
+        <video
+          src={banner.videoUrl}
+          poster={banner.imageUrl || undefined}
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="metadata"
+          aria-label={banner.title || "Promotional banner"}
+          className="absolute inset-0 z-[1] h-full w-full object-contain"
+        />
+      ) : (
+        <Image
+          src={banner.imageUrl}
+          alt={banner.title || "Promotional banner"}
+          fill
+          unoptimized
+          priority={eager}
+          sizes="(max-width: 1440px) 100vw, 1440px"
+          className="z-[1] object-contain"
+        />
+      )}
       {(banner.title || banner.subtitle) && (
         <>
           {/* Scrim only where text sits, so the artwork stays readable. */}
-          <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/30 to-transparent" />
-          <div className="absolute inset-y-0 left-0 flex max-w-[36rem] flex-col justify-center gap-1.5 p-5 sm:p-8">
+          <div className="absolute inset-0 z-[2] bg-gradient-to-r from-black/70 via-black/30 to-transparent" />
+          <div className="absolute inset-y-0 left-0 z-[3] flex max-w-[36rem] flex-col justify-center gap-1.5 p-5 sm:p-8">
             {banner.title && (
               <h2 className="font-display text-xl font-extrabold leading-tight text-white drop-shadow sm:text-3xl">
                 {banner.title}
@@ -127,8 +159,12 @@ function BannerSlide({
     </>
   );
 
+  // Sized by aspect ratio rather than fixed pixel heights: at 160–256px tall a
+  // wide banner lost most of its artwork to the crop. `object-contain` on a
+  // dark plate then guarantees nothing is ever cut, whatever ratio is uploaded
+  // — banners are designed creatives, so losing an edge loses the message.
   const className =
-    "relative block h-40 w-full shrink-0 basis-full sm:h-56 lg:h-64";
+    "relative block w-full shrink-0 basis-full bg-[#0B0718] aspect-[16/10] sm:aspect-[1600/500] lg:aspect-[1600/470]";
 
   // Off-screen slides stay in the track (the transform needs them) but are
   // taken out of the tab order and the accessibility tree.

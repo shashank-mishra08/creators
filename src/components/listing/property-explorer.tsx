@@ -14,6 +14,7 @@ import {
   Headset,
   Heart,
   Lock,
+  LocateFixed,
   MapPin,
   Search,
   ShieldCheck,
@@ -23,7 +24,8 @@ import {
   X,
 } from "lucide-react";
 import type { AmenityKey, City, Possession, Property } from "@/lib/types";
-import { CITIES, POSSESSIONS } from "@/lib/constants";
+import { POSSESSIONS } from "@/lib/constants";
+import { NEARBY_RADIUS_KM, formatKm, nearestCity } from "@/lib/geo";
 import { MIN_COMPARE, useComparison } from "@/store/comparison";
 import { useAuth } from "@/store/auth";
 import { useMounted } from "@/lib/use-mounted";
@@ -64,9 +66,27 @@ const AMENITY_OPTS: { key: AmenityKey; label: string }[] = [
   { key: "kidsArea", label: "Kids Play Area" },
   { key: "coworking", label: "Co-working Space" },
 ];
+/**
+ * Segment as typed in the source sheet, normalised.
+ *
+ * The data contains a "Primium" misspelling on one project; without folding it
+ * into "Premium" that property would match no tab at all and disappear from the
+ * listing. Anything unrecognised returns "" and is only reachable via All, so a
+ * new segment can never silently hide a property either.
+ */
+function segmentOf(p: Property): string {
+  const v = (p.category ?? "").trim().toLowerCase().replace(/\s+/g, " ");
+  if (v === "premium" || v === "primium") return "Premium";
+  if (v === "ultra luxury" || v === "ultraluxury") return "Ultra Luxury";
+  if (v === "luxury") return "Luxury";
+  return "";
+}
+
 const TABS: { label: string; test: (p: Property) => boolean }[] = [
-  { label: "Apartments", test: (p) => p.kind === "Apartment" },
-  { label: "Luxury Homes", test: (p) => p.priceLakh >= 250 || p.kind === "Villa" },
+  { label: "All", test: () => true },
+  { label: "Premium", test: (p) => segmentOf(p) === "Premium" },
+  { label: "Luxury", test: (p) => segmentOf(p) === "Luxury" },
+  { label: "Ultra Luxury", test: (p) => segmentOf(p) === "Ultra Luxury" },
 ];
 const FEATURES = [
   { icon: "/icons/price.png", label: "Price & Configuration" },
@@ -135,6 +155,13 @@ export function PropertyExplorer({ initial, seed, title, subtitle }: { initial: 
     [shuffledInitial],
   );
 
+  // Cities likewise. A hardcoded list here had drifted to three entries while
+  // the data held five, so 18 of 38 properties could not be filtered by city.
+  const cityNames = React.useMemo(
+    () => [...new Set(shuffledInitial.map((p) => p.city).filter(Boolean))].sort(),
+    [shuffledInitial],
+  );
+
   // Budget bounds derived from real priced properties (rounded to ₹5 L steps).
   const priceBounds = React.useMemo(() => {
     const ps = shuffledInitial.map((p) => p.priceLakh).filter((n) => n > 0);
@@ -161,10 +188,13 @@ export function PropertyExplorer({ initial, seed, title, subtitle }: { initial: 
           .toLowerCase()
           .includes(q),
       );
+    // The toolbar search now covers location too, matching its placeholder.
     const pq = projectQuery.trim().toLowerCase();
     if (pq)
       list = list.filter((p) =>
-        `${p.name} ${p.builder.name}`.toLowerCase().includes(pq),
+        `${p.name} ${p.builder.name} ${p.locality} ${p.city}`
+          .toLowerCase()
+          .includes(pq),
       );
     if (budgetActive)
       list = list.filter(
@@ -266,7 +296,7 @@ export function PropertyExplorer({ initial, seed, title, subtitle }: { initial: 
             className="h-9 w-full rounded-lg border border-border bg-background pl-8 pr-2 text-xs outline-none ring-accent/40 focus:ring-2"
           />
         </div>
-        {CITIES.map((c) => (
+        {cityNames.map((c) => (
           <CheckRow
             key={c}
             label={c}
@@ -379,75 +409,99 @@ export function PropertyExplorer({ initial, seed, title, subtitle }: { initial: 
 
         {/* ───────────── MAIN ───────────── */}
         <div>
-          {/* Tabs + sort */}
-          <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-            <div className="flex flex-wrap gap-2">
-              {TABS.map((t, i) => (
-                <button
-                  key={t.label}
-                  onClick={() => setTab(i)}
-                  className={cn(
-                    "rounded-xl border px-4 py-2.5 text-sm font-semibold transition-colors",
-                    tab === i
-                      ? "border-accent bg-accent text-accent-foreground"
-                      : "border-border bg-card text-foreground hover:bg-muted",
-                  )}
-                >
-                  {t.label}
-                </button>
-              ))}
-              {/* Location sits beside the tabs rather than becoming one: a city
-                  cuts across both Apartments and Luxury Homes, so it has to
-                  compose with the active tab instead of replacing it. Bound to
-                  the same `locations` state as the sidebar group. */}
-              <LocationSelect
+          {/* ── Row 1: segment tabs ── */}
+          <div className="mb-3 flex flex-wrap gap-2">
+            {TABS.map((t, i) => (
+              <button
+                key={t.label}
+                onClick={() => setTab(i)}
+                className={cn(
+                  "rounded-xl border px-4 py-2.5 text-sm font-semibold transition-colors",
+                  tab === i
+                    ? "border-accent bg-accent text-accent-foreground"
+                    : "border-border bg-card text-foreground hover:bg-muted",
+                )}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          {/* ── Row 2: full-width search, with the location picker on the end ── */}
+          <div className="relative mb-3">
+            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              value={projectQuery}
+              onChange={(e) => setProjectQuery(e.target.value)}
+              placeholder="Search by project, builder or location..."
+              aria-label="Search by project, builder or location"
+              className="h-12 w-full rounded-xl border border-border bg-card pl-11 pr-14 text-sm outline-none ring-accent/40 focus:ring-2"
+            />
+            {projectQuery && (
+              <button
+                type="button"
+                onClick={() => setProjectQuery("")}
+                aria-label="Clear search"
+                className="absolute right-14 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+            <div className="absolute right-2 top-1/2 -translate-y-1/2">
+              <LocationPickerButton
+                cities={cityNames}
                 selected={locations}
-                onToggle={(c) => setLocations((s) => toggle(s, c))}
-                onClear={() => setLocations(new Set())}
+                onApply={(next) => setLocations(next)}
                 count={(c) => count((p) => p.city === c)}
               />
             </div>
-            <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
-              {/* Mobile/tablet: opens the filter drawer (sidebar is hidden < lg). */}
+          </div>
+
+          {/* ── Row 3: sort + filters, left-aligned under the search ── */}
+          <div className="mb-5 flex flex-wrap items-center gap-2">
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value)}
+              aria-label="Sort properties"
+              className="h-10 rounded-xl border border-border bg-card pl-3 pr-8 text-sm font-medium outline-none ring-accent/40 focus:ring-2"
+            >
+              <option value="recommended">Sort by: Recommended</option>
+              <option value="price-asc">Price: Low to High</option>
+              <option value="price-desc">Price: High to Low</option>
+              <option value="rating">Builder rating</option>
+            </select>
+
+            {/* Mobile/tablet: opens the filter drawer (sidebar is hidden < lg). */}
+            <button
+              type="button"
+              onClick={() => setFiltersOpen(true)}
+              aria-haspopup="dialog"
+              aria-expanded={filtersOpen}
+              aria-controls="filter-drawer"
+              className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-border bg-card px-3 text-sm font-semibold text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:hidden"
+            >
+              <SlidersHorizontal className="h-4 w-4 text-accent" />
+              Filters
+              {activeFilterCount > 0 && (
+                <span className="ml-0.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1.5 text-[11px] font-bold text-accent-foreground">
+                  {activeFilterCount}
+                </span>
+              )}
+            </button>
+
+            {/* Active location chips — the picker lives in the search bar now,
+                so this is the only on-page signal that a filter is applied. */}
+            {[...locations].map((c) => (
               <button
-                type="button"
-                onClick={() => setFiltersOpen(true)}
-                aria-haspopup="dialog"
-                aria-expanded={filtersOpen}
-                aria-controls="filter-drawer"
-                className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-border bg-card px-3 text-sm font-semibold text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:hidden"
+                key={c}
+                onClick={() => setLocations((s) => toggle(s, c))}
+                className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-accent bg-accent/10 px-3 text-sm font-semibold text-accent transition-colors hover:bg-accent/15"
               >
-                <SlidersHorizontal className="h-4 w-4 text-accent" />
-                Filters
-                {activeFilterCount > 0 && (
-                  <span className="ml-0.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1.5 text-[11px] font-bold text-accent-foreground">
-                    {activeFilterCount}
-                  </span>
-                )}
+                <MapPin className="h-3.5 w-3.5" />
+                {c}
+                <X className="h-3.5 w-3.5" />
               </button>
-              <div className="relative w-full sm:w-56">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <input
-                  value={projectQuery}
-                  onChange={(e) => setProjectQuery(e.target.value)}
-                  placeholder="Search by Project or Builder..."
-                  aria-label="Search by project or builder name"
-                  className="h-10 w-full rounded-xl border border-border bg-card pl-9 pr-3 text-sm outline-none ring-accent/40 focus:ring-2"
-                />
-              </div>
-              <div className="relative">
-                <select
-                  value={sort}
-                  onChange={(e) => setSort(e.target.value)}
-                  className="h-10 rounded-xl border border-border bg-card pl-3 pr-8 text-sm font-medium outline-none ring-accent/40 focus:ring-2"
-                >
-                  <option value="recommended">Sort by: Recommended</option>
-                  <option value="price-asc">Price: Low to High</option>
-                  <option value="price-desc">Price: High to Low</option>
-                  <option value="rating">Builder rating</option>
-                </select>
-              </div>
-            </div>
+            ))}
           </div>
 
           {/* Heading row */}
@@ -504,7 +558,7 @@ export function PropertyExplorer({ initial, seed, title, subtitle }: { initial: 
               Trending Localities
             </h3>
             <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-5">
-              {CITIES.map((c) => (
+              {cityNames.map((c) => (
                 <button
                   key={c}
                   onClick={() => setLocations(new Set([c]))}
@@ -710,27 +764,38 @@ function BudgetRange({
 }
 
 /**
- * Location picker for the tab row — a quick-access mirror of the sidebar's
- * Location group. Multi-select, so it shares the sidebar's `Set<City>` state
- * exactly; whichever control the user touches, both stay in sync.
+ * Location picker that lives on the end of the search bar.
+ *
+ * Two ways in: type to filter the cities we actually operate in, or hand over
+ * the browser's position and let it pick the nearest one. Geolocation is
+ * compared against real project coordinates where we have them and city
+ * centroids where we don't — see `@/lib/geo`. Nothing is geocoded remotely, so
+ * there is no API key and no request leaves the page.
+ *
+ * Selecting writes to the same `locations` set the sidebar Location group uses,
+ * so the two controls can never disagree.
  */
-function LocationSelect({
+function LocationPickerButton({
+  cities,
   selected,
-  onToggle,
-  onClear,
+  onApply,
   count,
 }: {
+  cities: City[];
   selected: Set<City>;
-  onToggle: (city: City) => void;
-  onClear: () => void;
+  onApply: (next: Set<City>) => void;
   count: (city: City) => number;
 }) {
   const [open, setOpen] = React.useState(false);
+  const [query, setQuery] = React.useState("");
+  const [locating, setLocating] = React.useState(false);
+  const [notice, setNotice] = React.useState<string | null>(null);
   const ref = React.useRef<HTMLDivElement>(null);
+  const inputRef = React.useRef<HTMLInputElement>(null);
 
-  // Close on outside click / ESC. Only bound while open.
   React.useEffect(() => {
     if (!open) return;
+    inputRef.current?.focus();
     const onPointerDown = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     };
@@ -745,84 +810,165 @@ function LocationSelect({
     };
   }, [open]);
 
-  const label =
-    selected.size === 0
-      ? "All Locations"
-      : selected.size === 1
-        ? [...selected][0]
-        : `${selected.size} Locations`;
+  React.useEffect(() => {
+    if (!open) {
+      setQuery("");
+      setNotice(null);
+    }
+  }, [open]);
+
+  const results = React.useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return cities;
+    return cities.filter((c) => c.toLowerCase().includes(q));
+  }, [cities, query]);
+
+  function useMyLocation() {
+    if (!navigator.geolocation) {
+      setNotice("Your browser can't share a location.");
+      return;
+    }
+    setLocating(true);
+    setNotice(null);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setLocating(false);
+        const origin = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        const nearest = nearestCity(origin);
+
+        if (!nearest) {
+          setNotice("Oops — sorry, no property found near your location.");
+          return;
+        }
+
+        // Outside every market we cover: say so plainly, and leave the full
+        // list showing rather than filtering to somewhere far away.
+        if (nearest.km > NEARBY_RADIUS_KM) {
+          onApply(new Set());
+          setNotice(
+            `Oops — sorry, no property found near your location. Showing everything instead (closest is ${nearest.city}, ${formatKm(nearest.km)} away).`,
+          );
+          return;
+        }
+
+        onApply(new Set([nearest.city]));
+        setOpen(false);
+      },
+      () => {
+        setLocating(false);
+        setNotice("Couldn't get your location. Pick a city instead.");
+      },
+      { timeout: 10_000, maximumAge: 5 * 60_000 },
+    );
+  }
+
+  const active = selected.size > 0;
 
   return (
     <div ref={ref} className="relative">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        aria-haspopup="listbox"
+        aria-haspopup="dialog"
         aria-expanded={open}
+        aria-label="Filter by location"
+        title="Filter by location"
         className={cn(
-          "inline-flex items-center gap-1.5 rounded-xl border px-4 py-2.5 text-sm font-semibold transition-colors",
-          selected.size
-            ? "border-accent bg-accent text-accent-foreground"
-            : "border-border bg-card text-foreground hover:bg-muted",
+          "flex h-9 w-9 items-center justify-center rounded-lg transition-colors",
+          active
+            ? "bg-accent text-accent-foreground"
+            : "text-muted-foreground hover:bg-muted hover:text-accent",
         )}
       >
         <MapPin className="h-4 w-4" />
-        <span className="max-w-[11rem] truncate">{label}</span>
-        <ChevronDown
-          className={cn("h-4 w-4 transition-transform", open && "rotate-180")}
-        />
       </button>
 
       {open && (
         <div
-          role="listbox"
-          aria-label="Filter by location"
-          aria-multiselectable
-          className="absolute left-0 top-full z-30 mt-2 w-64 rounded-xl border border-border bg-card p-2 shadow-lift"
+          role="dialog"
+          aria-label="Choose a location"
+          className="absolute right-0 top-full z-40 mt-2 w-[20rem] max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-border bg-card shadow-lift"
         >
-          {CITIES.map((c) => {
-            const checked = selected.has(c);
-            return (
-              <button
-                key={c}
-                type="button"
-                role="option"
-                aria-selected={checked}
-                onClick={() => onToggle(c)}
-                className="flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left text-sm transition-colors hover:bg-muted"
-              >
-                <span
-                  className={cn(
-                    "flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors",
-                    checked
-                      ? "border-accent bg-accent text-accent-foreground"
-                      : "border-border",
-                  )}
-                >
-                  {checked && <Check className="h-3 w-3" />}
-                </span>
-                <span className="flex-1 truncate text-foreground">{c}</span>
-                <span className="shrink-0 text-xs text-muted-foreground">
-                  {count(c)}
-                </span>
-              </button>
-            );
-          })}
-          {selected.size > 0 && (
+          <div className="border-b border-border p-3">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+              <input
+                ref={inputRef}
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Enter your location"
+                aria-label="Enter your location"
+                className="h-9 w-full rounded-lg border border-border bg-background pl-8 pr-3 text-xs outline-none ring-accent/40 focus:ring-2"
+              />
+            </div>
             <button
               type="button"
-              onClick={onClear}
-              className="mt-1 w-full rounded-lg px-2 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              onClick={useMyLocation}
+              disabled={locating}
+              className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-accent/40 bg-accent/10 py-2 text-xs font-semibold text-accent transition-colors hover:bg-accent/15 disabled:opacity-60"
             >
-              Clear locations
+              <LocateFixed className={cn("h-3.5 w-3.5", locating && "animate-spin")} />
+              {locating ? "Locating…" : "Use my current location"}
             </button>
+          </div>
+
+          {notice && (
+            <p className="border-b border-border bg-muted/50 px-3 py-2.5 text-[11px] leading-snug text-muted-foreground">
+              {notice}
+            </p>
+          )}
+
+          <div className="max-h-60 overflow-y-auto p-1.5">
+            {results.length === 0 ? (
+              <p className="px-2 py-6 text-center text-xs text-muted-foreground">
+                Oops — sorry, no property found near your location.
+              </p>
+            ) : (
+              results.map((c) => {
+                const checked = selected.has(c);
+                return (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => onApply(toggle(selected, c))}
+                    className="flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left text-sm transition-colors hover:bg-muted"
+                  >
+                    <span
+                      className={cn(
+                        "flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors",
+                        checked
+                          ? "border-accent bg-accent text-accent-foreground"
+                          : "border-border",
+                      )}
+                    >
+                      {checked && <Check className="h-3 w-3" />}
+                    </span>
+                    <span className="flex-1 truncate text-foreground">{c}</span>
+                    <span className="shrink-0 text-xs text-muted-foreground">
+                      {count(c)}
+                    </span>
+                  </button>
+                );
+              })
+            )}
+          </div>
+
+          {active && (
+            <div className="border-t border-border p-2">
+              <button
+                type="button"
+                onClick={() => onApply(new Set())}
+                className="w-full rounded-lg px-2 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              >
+                Clear locations
+              </button>
+            </div>
           )}
         </div>
       )}
     </div>
   );
 }
-
 function FilterGroup({
   title,
   children,

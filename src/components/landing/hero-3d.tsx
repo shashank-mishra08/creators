@@ -207,9 +207,13 @@ export function Hero3D({ slides = [] }: { slides?: HeroSlide[] }) {
               />
             </Layer>
 
-            <Layer sx={sx} sy={sy} depth={200} z={230} className="left-[4%] bottom-[6%]">
-              <ScoreOrb value={92} />
-            </Layer>
+            {/* Mirrors the winning card's score — a fixed number here read as a
+                contradiction once the cards started showing real ones. */}
+            {slide && (
+              <Layer sx={sx} sy={sy} depth={200} z={230} className="left-[4%] bottom-[6%]">
+                <ScoreOrb value={slide.winner.score} />
+              </Layer>
+            )}
           </motion.div>
         </div>
       </div>

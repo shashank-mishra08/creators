@@ -6,9 +6,18 @@ import type { City, Possession, PropertyKind } from "@/lib/types";
  * client into their bundle.)
  */
 
+/**
+ * Known cities, used to seed admin form dropdowns.
+ *
+ * The public listing does NOT read this — it derives its city list from the
+ * properties it was given, so a city added via import appears in the filters
+ * without a code change. Keep this in sync when a genuinely new market opens.
+ */
 export const CITIES: City[] = [
+  "Ghaziabad",
   "Greater Noida East",
   "Greater Noida West",
+  "Noida Expressway",
   "Yamuna Expressway",
 ];
 

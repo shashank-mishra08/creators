@@ -11,7 +11,10 @@ const config: Config = {
     container: {
       center: true,
       padding: "1.5rem",
-      screens: { "2xl": "1240px" },
+      // Capped at 1440 rather than 1240: on a 1920 screen the old cap left
+      // ~340px of dead gutter on each side, which read as the page being
+      // squeezed into the middle.
+      screens: { "2xl": "1440px" },
     },
     extend: {
       colors: {

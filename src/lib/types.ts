@@ -11,10 +11,14 @@ export type Possession = "Ready to Move" | "Under Construction" | "New Launch";
 
 export type PropertyKind = "Apartment" | "Villa" | "Plot" | "Builder Floor";
 
-export type City =
-  | "Greater Noida East"
-  | "Greater Noida West"
-  | "Yamuna Expressway";
+/**
+ * City is open-ended data, not a fixed set. It was previously a union of three
+ * literals while the database already held five ("Ghaziabad" and "Noida
+ * Expressway" were unreachable from every filter), and the Excel importer
+ * accepts any city string. Deriving the list from live data instead of a
+ * hardcoded union means a new city shows up in the filters on its own.
+ */
+export type City = string;
 
 /** A real-estate developer / builder. */
 export interface Builder {
@@ -62,6 +66,12 @@ export interface LocationMetrics {
   airportKm: number;
   /** 0–100 walkability / connectivity convenience index. */
   connectivityIndex: number;
+  /**
+   * Real coordinates, or null when unknown. Never guessed — "near me" falls
+   * back to the project's city when these are missing.
+   */
+  latitude: number | null;
+  longitude: number | null;
 }
 
 /** Investment signals used by the rule-based recommendation engine. */
@@ -110,6 +120,8 @@ export interface Property {
   builder: Builder;
   city: City;
   locality: string;
+  /** Segment as entered in the source sheet: Premium | Luxury | Ultra Luxury. */
+  category: string;
   kind: PropertyKind;
   configs: string; // e.g. "2 / 3 BHK"
   possession: Possession;
@@ -224,7 +236,11 @@ export interface Banner {
   id: string;
   title: string;
   subtitle: string;
+  /** "image" or "video" — decides which URL the carousel renders. */
+  mediaType: "image" | "video";
+  /** Image banner, or the poster frame shown before a video plays. */
   imageUrl: string;
+  videoUrl: string;
   linkUrl: string;
   sortOrder: number;
   active: boolean;

@@ -181,6 +181,12 @@ model Amenity {
 model LocationMetric {
   id                String   @id @default(uuid()) @db.Uuid
   propertyId        String   @unique @db.Uuid
+  // Real coordinates, when known. Nullable on purpose: only 10 of 38 projects
+  // ship a resolvable Google Maps link, and a guessed coordinate would send a
+  // buyer to the wrong site — so an unknown location stays null and the UI
+  // falls back to city-level matching rather than inventing a position.
+  latitude          Float?
+  longitude         Float?
   metroMin          Int? // travel time (minutes) — source gives time, not km
   schoolMin         Int?
   hospitalMin       Int?
@@ -422,7 +428,10 @@ model Banner {
   id        String    @id @default(uuid()) @db.Uuid
   title     String    @default("")
   subtitle  String    @default("")
-  imageUrl  String // required for display; rows without one are skipped
+  // "image" or "video". Defaults to image so existing banners are unchanged.
+  mediaType String    @default("image")
+  imageUrl  String // image banner, or the poster frame for a video
+  videoUrl  String    @default("") // used when mediaType is "video"
   linkUrl   String    @default("") // optional click-through
   sortOrder Int       @default(0)
   active    Boolean   @default(true)
