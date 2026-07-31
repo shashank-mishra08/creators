@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { requireAdminSession } from "@/lib/auth/admin-session";
+import { requirePermission } from "@/lib/auth/roles";
 import { prisma } from "@/lib/db/prisma";
 import { handleError, json, parseJsonBody } from "@/lib/api/http";
 import { AppError } from "@/lib/errors";
@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 /** POST /api/admin/properties/create — create a full new property */
 export async function POST(req: NextRequest) {
   try {
-    await requireAdminSession();
+    await requirePermission("properties", "create");
     const body = (await parseJsonBody(req)) as {
       builderName: string;
       name: string; subtitle?: string; city: string; locality: string;

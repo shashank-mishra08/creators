@@ -12,6 +12,7 @@ import {
   Upload,
   X,
 } from "lucide-react";
+import { useCan } from "@/components/admin/role-context";
 import type { Banner, BannerInput } from "@/lib/types";
 
 const INPUT =
@@ -43,6 +44,8 @@ export default function AdminBannersPage() {
   const [editing, setEditing] = useState<{ id: string | null; input: BannerInput } | null>(
     null,
   );
+  // Same table the API enforces — no button offered that would come back 403.
+  const allowed = useCan();
   const [deleteTarget, setDeleteTarget] = useState<Banner | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -144,6 +147,7 @@ export default function AdminBannersPage() {
           >
             <RefreshCw className="w-4 h-4" />
           </button>
+          {allowed("banners", "create") && (
           <button
             onClick={() => setEditing({ id: null, input: { ...EMPTY } })}
             className="inline-flex items-center gap-2 bg-[#7166F0] text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#5a52d5] transition-colors shadow-sm shadow-[#7166F0]/30"
@@ -151,6 +155,7 @@ export default function AdminBannersPage() {
             <Plus className="w-4 h-4" />
             Add Banner
           </button>
+          )}
         </div>
       </div>
 
@@ -230,12 +235,15 @@ export default function AdminBannersPage() {
                   </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
+                  {allowed("banners", "edit") && (
                   <button
                     onClick={() => toggleActive(b)}
                     className="rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100"
                   >
                     {b.active ? "Deactivate" : "Activate"}
                   </button>
+                  )}
+                  {allowed("banners", "edit") && (
                   <button
                     onClick={() => {
                       const { id: _id, ...input } = b;
@@ -246,6 +254,8 @@ export default function AdminBannersPage() {
                   >
                     <Pencil className="h-4 w-4" />
                   </button>
+                  )}
+                  {allowed("banners", "delete") && (
                   <button
                     onClick={() => setDeleteTarget(b)}
                     aria-label={`Delete ${b.title || "banner"}`}
@@ -253,6 +263,7 @@ export default function AdminBannersPage() {
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
+                  )}
                 </div>
               </li>
             ))}

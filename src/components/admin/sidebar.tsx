@@ -9,41 +9,46 @@ import {
   Mail, CalendarCheck, PhoneCall, UserCog, Settings,
   ChevronLeft, FileSpreadsheet, ScrollText, Trash2
 } from "lucide-react";
+import { can, type Action, type Resource } from "@/lib/auth/permissions";
+import type { Role } from "@/lib/auth/roles";
 import { cn } from "@/lib/utils";
 
-// `roles` (when present) restricts an item to those roles. Items without a
-// `roles` field are visible to every admin. If no role is passed to the
-// sidebar we fail open (show everything) so nothing disappears unexpectedly.
+/**
+ * `needs` is the permission a link requires, so the menu is built from the same
+ * table the API enforces — a visible link can no longer lead to a 403. Items
+ * without `needs` are open to every admin. If no role reaches the sidebar we
+ * fail open and show everything, so a missing prop never blanks the menu.
+ */
 type NavItem = {
   name: string;
   href: string;
   icon: typeof Home;
-  roles?: string[];
+  needs?: [Resource, Action];
 };
 
 const navGroups: { title: string; items: NavItem[] }[] = [
   {
     title: "PROPERTY MANAGEMENT",
     items: [
-      { name: "Properties", href: "/admin/properties", icon: Home },
-      { name: "Add Property", href: "/admin/properties/add", icon: PlusCircle },
-      { name: "Import from Excel", href: "/admin/import", icon: FileSpreadsheet },
-      { name: "Home Banners", href: "/admin/banners", icon: ImageIcon },
-      { name: "Recently Deleted", href: "/admin/properties?status=deleted", icon: Trash2 },
+      { name: "Properties", href: "/admin/properties", icon: Home, needs: ["properties", "view"] },
+      { name: "Add Property", href: "/admin/properties/add", icon: PlusCircle, needs: ["properties", "create"] },
+      { name: "Import from Excel", href: "/admin/import", icon: FileSpreadsheet, needs: ["import", "run"] },
+      { name: "Home Banners", href: "/admin/banners", icon: ImageIcon, needs: ["banners", "view"] },
+      { name: "Recently Deleted", href: "/admin/properties?status=deleted", icon: Trash2, needs: ["trash", "view"] },
     ]
   },
   {
     title: "CLIENT ENGAGEMENT",
     items: [
-      { name: "Contact Query", href: "/admin/bookings", icon: CalendarCheck },
+      { name: "Contact Query", href: "/admin/bookings", icon: CalendarCheck, needs: ["enquiries", "view"] },
     ]
   },
   {
     title: "SETTINGS",
     items: [
-      { name: "Users & Roles", href: "/admin/users", icon: UserCog, roles: ["SUPER_ADMIN"] },
-      { name: "Activity Log", href: "/admin/audit", icon: ScrollText, roles: ["SUPER_ADMIN"] },
-      { name: "Settings", href: "/admin/settings", icon: Settings, roles: ["SUPER_ADMIN"] },
+      { name: "Users & Roles", href: "/admin/users", icon: UserCog, needs: ["users", "view"] },
+      { name: "Activity Log", href: "/admin/audit", icon: ScrollText, needs: ["audit", "view"] },
+      { name: "Settings", href: "/admin/settings", icon: Settings, needs: ["settings", "view"] },
     ]
   }
 ];
@@ -61,7 +66,7 @@ export function AdminSidebar({
   const pathname = usePathname();
 
   const canSee = (item: NavItem) =>
-    !item.roles || !role || item.roles.includes(role);
+    !item.needs || !role || can(role as Role, item.needs[0], item.needs[1]);
 
   const visibleGroups = navGroups
     .map((g) => ({ ...g, items: g.items.filter(canSee) }))

@@ -1,5 +1,6 @@
 import { ShieldAlert, ScrollText } from "lucide-react";
 import { getCurrentAdmin } from "@/lib/auth/roles";
+import { can } from "@/lib/auth/permissions";
 import { listRecentAudit } from "@/lib/services/audit.service";
 
 export const dynamic = "force-dynamic";
@@ -21,7 +22,7 @@ function fmt(iso: string) {
 export default async function AdminAuditPage() {
   const current = await getCurrentAdmin();
 
-  if (!current || current.role !== "SUPER_ADMIN") {
+  if (!current || !can(current.role, "audit", "view")) {
     return (
       <div className="p-4 sm:p-6 lg:p-8 max-w-3xl mx-auto">
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-10 text-center">

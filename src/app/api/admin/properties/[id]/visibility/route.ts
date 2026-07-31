@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { requireAdminSession } from "@/lib/auth/admin-session";
+import { requirePermission } from "@/lib/auth/roles";
 import { prisma } from "@/lib/db/prisma";
 import { logAction } from "@/lib/services/audit.service";
 import { handleError, json, parseJsonBody } from "@/lib/api/http";
@@ -14,7 +14,7 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    const actorId = await requireAdminSession();
+    const actor = await requirePermission("properties", "edit");
     const body = (await parseJsonBody(req)) as { hidden: boolean };
 
     if (typeof body.hidden !== "boolean") {
@@ -28,7 +28,9 @@ export async function PATCH(
     });
 
     await logAction({
-      actorId,
+      actorId: actor.id,
+      actorName: actor.name,
+      actorRole: actor.role,
       action: updated.hidden ? "property.hide" : "property.show",
       entity: "property",
       entityId: updated.id,

@@ -1,5 +1,6 @@
 import { ShieldAlert } from "lucide-react";
 import { getCurrentAdmin } from "@/lib/auth/roles";
+import { can } from "@/lib/auth/permissions";
 import { adminUserService } from "@/lib/services/admin-user.service";
 import { UsersManager } from "@/components/admin/users-manager";
 
@@ -10,7 +11,7 @@ export default async function AdminUsersPage() {
 
   // Only Super Admins manage users. Everyone else sees a friendly notice
   // (the API routes enforce this independently).
-  if (!current || current.role !== "SUPER_ADMIN") {
+  if (!current || !can(current.role, "users", "view")) {
     return (
       <div className="p-4 sm:p-6 lg:p-8 max-w-3xl mx-auto">
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-10 text-center">

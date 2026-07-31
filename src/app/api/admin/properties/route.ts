@@ -1,4 +1,4 @@
-import { requireAdminSession } from "@/lib/auth/admin-session";
+import { requirePermission } from "@/lib/auth/roles";
 import { prisma } from "@/lib/db/prisma";
 import { handleError, json } from "@/lib/api/http";
 
@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
  */
 export async function GET() {
   try {
-    await requireAdminSession();
+    await requirePermission("properties", "view");
 
     const properties = await prisma.property.findMany({
       include: {

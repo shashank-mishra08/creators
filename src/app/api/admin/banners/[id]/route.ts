@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { requireAdminSession } from "@/lib/auth/admin-session";
+import { requirePermission } from "@/lib/auth/roles";
 import { bannerService } from "@/lib/services/banner.service";
 import { logAction } from "@/lib/services/audit.service";
 import { bannerSchema } from "@/lib/validation/schemas";
@@ -14,11 +14,13 @@ export async function PATCH(
   { params }: { params: { id: string } },
 ) {
   try {
-    const actorId = await requireAdminSession();
+    const actor = await requirePermission("banners", "edit");
     const input = bannerSchema.parse(await parseJsonBody(req));
     const banner = await bannerService.update(params.id, input);
     await logAction({
-      actorId,
+      actorId: actor.id,
+      actorName: actor.name,
+      actorRole: actor.role,
       action: "banner.update",
       entity: "banner",
       entityId: banner.id,
@@ -36,10 +38,12 @@ export async function DELETE(
   { params }: { params: { id: string } },
 ) {
   try {
-    const actorId = await requireAdminSession();
+    const actor = await requirePermission("banners", "delete");
     await bannerService.remove(params.id);
     await logAction({
-      actorId,
+      actorId: actor.id,
+      actorName: actor.name,
+      actorRole: actor.role,
       action: "banner.delete",
       entity: "banner",
       entityId: params.id,

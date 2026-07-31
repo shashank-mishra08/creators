@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server";
-import { requireAdminSession } from "@/lib/auth/admin-session";
+import { requireRole } from "@/lib/auth/roles";
+import { can } from "@/lib/auth/permissions";
 import { handleError, json } from "@/lib/api/http";
 import { AppError } from "@/lib/errors";
 import { isConfigured, uploadImage } from "@/lib/storage/cloudinary";
@@ -24,7 +25,12 @@ const MAX_SIZE_MB = 10;
  */
 export async function POST(req: NextRequest) {
   try {
-    await requireAdminSession();
+    // Shared by the property form and the banner form, so it cannot belong to
+    // one resource: whoever may edit either may put a picture on it.
+    const admin = await requireRole();
+    if (!can(admin.role, "properties", "edit") && !can(admin.role, "banners", "edit")) {
+      throw new AppError("You don't have permission to upload files.", 403);
+    }
 
     const formData = await req.formData();
     const file = formData.get("file") as File | null;

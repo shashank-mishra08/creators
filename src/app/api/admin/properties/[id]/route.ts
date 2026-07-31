@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { requireAdminSession } from "@/lib/auth/admin-session";
+import { requirePermission } from "@/lib/auth/roles";
 import { prisma } from "@/lib/db/prisma";
 import { logAction } from "@/lib/services/audit.service";
 import { handleError, json, parseJsonBody } from "@/lib/api/http";
@@ -14,7 +14,7 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    await requireAdminSession();
+    await requirePermission("properties", "view");
     const property = await prisma.property.findUnique({
       where: { id: params.id },
       include: {
@@ -43,7 +43,7 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    await requireAdminSession();
+    await requirePermission("properties", "edit");
     const body = (await parseJsonBody(req)) as Record<string, unknown>;
 
     const {
@@ -196,7 +196,7 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const actorId = await requireAdminSession();
+    const actor = await requirePermission("properties", "delete");
     const body = (await parseJsonBody(req)) as { confirmName?: string };
 
     const property = await prisma.property.findUnique({
@@ -217,7 +217,9 @@ export async function DELETE(
       data: { deletedAt: new Date() },
     });
     await logAction({
-      actorId,
+      actorId: actor.id,
+      actorName: actor.name,
+      actorRole: actor.role,
       action: "property.delete",
       entity: "property",
       entityId: params.id,

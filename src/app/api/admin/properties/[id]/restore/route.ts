@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 import { prisma } from "@/lib/db/prisma";
-import { requireAdminSession } from "@/lib/auth/admin-session";
+import { requirePermission } from "@/lib/auth/roles";
 import { logAction } from "@/lib/services/audit.service";
 import { handleError, json } from "@/lib/api/http";
 import { AppError } from "@/lib/errors";
@@ -19,7 +19,7 @@ export async function POST(
   { params }: { params: { id: string } },
 ) {
   try {
-    const actorId = await requireAdminSession();
+    const actor = await requirePermission("trash", "restore");
 
     const property = await prisma.property.findUnique({
       where: { id: params.id },
@@ -35,7 +35,9 @@ export async function POST(
       data: { deletedAt: null },
     });
     await logAction({
-      actorId,
+      actorId: actor.id,
+      actorName: actor.name,
+      actorRole: actor.role,
       action: "property.restore",
       entity: "property",
       entityId: params.id,

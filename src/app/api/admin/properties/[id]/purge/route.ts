@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 import { prisma } from "@/lib/db/prisma";
-import { requireAdminSession } from "@/lib/auth/admin-session";
+import { requirePermission } from "@/lib/auth/roles";
 import { logAction } from "@/lib/services/audit.service";
 import { handleError, json, parseJsonBody } from "@/lib/api/http";
 import { AppError } from "@/lib/errors";
@@ -20,7 +20,7 @@ export async function DELETE(
   { params }: { params: { id: string } },
 ) {
   try {
-    const actorId = await requireAdminSession();
+    const actor = await requirePermission("trash", "purge");
     const body = (await parseJsonBody(req)) as { confirmName?: string };
 
     const property = await prisma.property.findUnique({
@@ -46,7 +46,9 @@ export async function DELETE(
     // Cascade deletes handle all related records (as defined in schema).
     await prisma.property.delete({ where: { id: params.id } });
     await logAction({
-      actorId,
+      actorId: actor.id,
+      actorName: actor.name,
+      actorRole: actor.role,
       action: "property.purge",
       entity: "property",
       entityId: params.id,

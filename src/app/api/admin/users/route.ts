@@ -1,4 +1,4 @@
-import { requireRole } from "@/lib/auth/roles";
+import { requirePermission } from "@/lib/auth/roles";
 import { adminUserService } from "@/lib/services/admin-user.service";
 import { logAction } from "@/lib/services/audit.service";
 import { handleError, json, parseJsonBody } from "@/lib/api/http";
@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 /** GET /api/admin/users — list admin-panel users (Super Admin only). */
 export async function GET() {
   try {
-    await requireRole("SUPER_ADMIN");
+    await requirePermission("users", "view");
     const users = await adminUserService.list();
     return json({ users });
   } catch (err) {
@@ -20,7 +20,7 @@ export async function GET() {
 /** POST /api/admin/users — invite a new admin user (Super Admin only). */
 export async function POST(req: Request) {
   try {
-    const actor = await requireRole("SUPER_ADMIN");
+    const actor = await requirePermission("users", "create");
     const body = (await parseJsonBody(req as Parameters<typeof parseJsonBody>[0])) as {
       name?: string;
       email?: string;

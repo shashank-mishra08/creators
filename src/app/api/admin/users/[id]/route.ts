@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { requireRole } from "@/lib/auth/roles";
+import { requirePermission } from "@/lib/auth/roles";
 import { adminUserService } from "@/lib/services/admin-user.service";
 import { logAction } from "@/lib/services/audit.service";
 import { handleError, json, parseJsonBody } from "@/lib/api/http";
@@ -13,7 +13,7 @@ export async function PATCH(
   { params }: { params: { id: string } },
 ) {
   try {
-    const actor = await requireRole("SUPER_ADMIN");
+    const actor = await requirePermission("users", "edit");
     const body = (await parseJsonBody(req)) as { role?: string; isActive?: boolean };
     const user = await adminUserService.update(params.id, actor.id, {
       role: body.role,

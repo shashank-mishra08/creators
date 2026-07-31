@@ -8,6 +8,7 @@ import {
   Building2, RefreshCw, FileSpreadsheet, Undo2
 } from "lucide-react";
 import { DeleteConfirmModal } from "@/components/admin/delete-confirm-modal";
+import { useCan } from "@/components/admin/role-context";
 
 interface AdminProperty {
   id: string;
@@ -32,6 +33,9 @@ export default function AdminPropertiesPage() {
   const [properties, setProperties] = useState<AdminProperty[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Same permission table the API enforces, so a button is never offered that
+  // would come back 403. The API remains the boundary; this is the courtesy.
+  const allowed = useCan();
   // Seeded from ?q= so the header search can hand a term over to this list.
   const [search, setSearch] = useState("");
   // The sidebar links here with ?status=deleted, so Recently Deleted is
@@ -199,6 +203,7 @@ export default function AdminPropertiesPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
+          {allowed("import", "run") && (
           <Link
             href="/admin/import"
             className="inline-flex items-center gap-2 bg-white border border-slate-200 text-slate-700 px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-slate-50 transition-colors shadow-sm"
@@ -206,6 +211,8 @@ export default function AdminPropertiesPage() {
             <FileSpreadsheet className="w-4 h-4" />
             Import from Excel
           </Link>
+          )}
+          {allowed("properties", "create") && (
           <Link
             href="/admin/properties/add"
             className="inline-flex items-center gap-2 bg-[#7166F0] text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#5a52d5] transition-colors shadow-sm shadow-[#7166F0]/30"
@@ -213,6 +220,7 @@ export default function AdminPropertiesPage() {
             <Plus className="w-4 h-4" />
             Add New Property
           </Link>
+          )}
         </div>
       </div>
 
@@ -349,6 +357,7 @@ export default function AdminPropertiesPage() {
                         <div className="flex items-center justify-center gap-1.5">
                           {prop.deletedAt ? (
                             <>
+                              {allowed("trash", "restore") && (
                               <button
                                 onClick={() => handleRestore(prop)}
                                 disabled={isToggling}
@@ -357,6 +366,8 @@ export default function AdminPropertiesPage() {
                                 <Undo2 className="w-3.5 h-3.5" />
                                 Restore
                               </button>
+                              )}
+                              {allowed("trash", "purge") && (
                               <button
                                 onClick={() => setPurgeTarget(prop)}
                                 title="Delete permanently"
@@ -364,9 +375,11 @@ export default function AdminPropertiesPage() {
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
                               </button>
+                              )}
                             </>
                           ) : (
                             <>
+                              {allowed("properties", "edit") && (
                               <Link
                                 href={`/admin/properties/${prop.id}/edit`}
                                 title="Edit"
@@ -374,6 +387,8 @@ export default function AdminPropertiesPage() {
                               >
                                 <Pencil className="w-3.5 h-3.5" />
                               </Link>
+                              )}
+                              {allowed("properties", "edit") && (
                               <button
                                 onClick={() => toggleVisibility(prop)}
                                 disabled={isToggling}
@@ -386,6 +401,8 @@ export default function AdminPropertiesPage() {
                               >
                                 {prop.hidden ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                               </button>
+                              )}
+                              {allowed("properties", "delete") && (
                               <button
                                 onClick={() => setDeleteTarget(prop)}
                                 title="Delete property"
@@ -393,6 +410,7 @@ export default function AdminPropertiesPage() {
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
                               </button>
+                              )}
                             </>
                           )}
                         </div>

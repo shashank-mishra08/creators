@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { writeFile, unlink } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { requireAdminSession } from "@/lib/auth/admin-session";
+import { requirePermission } from "@/lib/auth/roles";
 import { handleError, json } from "@/lib/api/http";
 import { AppError } from "@/lib/errors";
 import { prisma } from "@/lib/db/prisma";
@@ -35,7 +35,7 @@ interface PreviewResult {
  */
 export async function POST(req: NextRequest) {
   try {
-    await requireAdminSession();
+    await requirePermission("import", "run");
 
     const form = await req.formData();
     const files = form.getAll("file").filter((f): f is File => f instanceof File);

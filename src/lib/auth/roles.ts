@@ -1,6 +1,7 @@
 import { getSessionUserId } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/prisma";
 import { AppError } from "@/lib/errors";
+import { can, type Action, type Resource } from "@/lib/auth/permissions";
 
 /**
  * Role-based access control for the admin panel.
@@ -87,4 +88,28 @@ export async function requireRole(...allowed: Role[]): Promise<AdminUser> {
   }
 
   return { id: u.id, name: u.name, email: u.email, role, isAdmin: u.isAdmin, isActive: u.isActive };
+}
+
+/**
+ * Guard for admin API routes, stated as the thing being done rather than the
+ * roles allowed to do it: `requirePermission("properties", "delete")` reads as
+ * the rule it enforces, and adding a role later means editing the permission
+ * table, not hunting for every route that named that role.
+ *
+ * Also closes a gap the older `requireAdminSession()` left open: that one
+ * checks `isAdmin` and nothing else, so a deactivated admin kept working on
+ * every route using it. This refuses a deactivated account.
+ *
+ * Throws 401 (not signed in) or 403 (deactivated, not an admin, or not
+ * permitted).
+ */
+export async function requirePermission(
+  resource: Resource,
+  action: Action,
+): Promise<AdminUser> {
+  const admin = await requireRole();
+  if (!can(admin.role, resource, action)) {
+    throw new AppError("You don't have permission to perform this action.", 403);
+  }
+  return admin;
 }

@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { requireAdminSession } from "@/lib/auth/admin-session";
 import { authService } from "@/lib/services/auth.service";
 import { setSessionCookie } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/prisma";
