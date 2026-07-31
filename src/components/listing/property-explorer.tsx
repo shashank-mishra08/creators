@@ -504,19 +504,23 @@ export function PropertyExplorer({ initial, seed, title, subtitle, variant = "fe
             </div>
           )}
 
-          {/* ── Row 2: sort and search on the left, location on the right ── */}
+          {/* ── Row 2: location and search on the left, sort on the right ── */}
           <div className="mb-3 flex flex-wrap items-center gap-2">
-            <select
-              value={sort}
-              onChange={(e) => setSort(e.target.value)}
-              aria-label="Sort properties"
-              className="h-12 shrink-0 rounded-xl border border-border bg-card pl-3 pr-8 text-sm font-medium outline-none ring-accent/40 focus:ring-2"
-            >
-              <option value="recommended">Sort by: Recommended</option>
-              <option value="price-asc">Price: Low to High</option>
-              <option value="price-desc">Price: High to Low</option>
-              <option value="rating">Builder rating</option>
-            </select>
+            {/*
+              `z-30` is load-bearing, not decoration. Without a z-index of its
+              own this wrapper paints at "auto" level, and the property cards —
+              later in the DOM — covered the open picker panel. Stays under the
+              site header (z-50) and the filter drawer (z-70).
+              Full width on phones, where it gets a wrapped line to itself.
+            */}
+            <div className="relative z-30 w-full sm:w-auto">
+              <LocationPickerButton
+                cities={cityNames}
+                selected={locations}
+                onApply={(next) => setLocations(next)}
+                count={(c) => count((p) => p.city === c)}
+              />
+            </div>
 
             <div className="relative min-w-[12rem] flex-1 sm:max-w-md">
               <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -539,23 +543,20 @@ export function PropertyExplorer({ initial, seed, title, subtitle, variant = "fe
               )}
             </div>
 
-            {/*
-              `z-30` is load-bearing, not decoration. Without a z-index of its
-              own this wrapper paints at "auto" level, and the property cards —
-              later in the DOM — covered the open picker panel. Stays under the
-              site header (z-50) and the filter drawer (z-70).
-              `ml-auto` pushes the pill to the far end of the row.
-            */}
-            {/* Full width on phones: on its own wrapped line `ml-auto` would
-                strand it against the right edge with dead space beside it. */}
-            <div className="relative z-30 w-full sm:ml-auto sm:w-auto">
-              <LocationPickerButton
-                cities={cityNames}
-                selected={locations}
-                onApply={(next) => setLocations(next)}
-                count={(c) => count((p) => p.city === c)}
-              />
-            </div>
+            {/* `sm:ml-auto` pushes it to the far end of the row. Not on phones:
+                on its own wrapped line it would strand against the right edge
+                with dead space beside it. */}
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value)}
+              aria-label="Sort properties"
+              className="h-12 shrink-0 rounded-xl border border-border bg-card pl-3 pr-8 text-sm font-medium outline-none ring-accent/40 focus:ring-2 sm:ml-auto"
+            >
+              <option value="recommended">Sort by: Recommended</option>
+              <option value="price-asc">Price: Low to High</option>
+              <option value="price-desc">Price: High to Low</option>
+              <option value="rating">Builder rating</option>
+            </select>
           </div>
 
           {/* ── Row 3: mobile filters button + active location chips ── */}
@@ -987,7 +988,10 @@ function LocationPickerButton({
         <div
           role="dialog"
           aria-label="Choose a location"
-          className="absolute right-0 top-full z-40 mt-2 w-[20rem] max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-border bg-card shadow-lift"
+          // Opens from the pill's left edge: the pill sits at the start of the
+          // toolbar now, and a right-aligned panel would extend past it into
+          // the filter sidebar.
+          className="absolute left-0 top-full z-40 mt-2 w-[20rem] max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-border bg-card shadow-lift"
         >
           <div className="border-b border-border p-3">
             <div className="relative">
