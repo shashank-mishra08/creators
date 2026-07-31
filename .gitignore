@@ -28,3 +28,6 @@ creators_new/
 # serves the public/ files that existed at build time, so an upload written
 # afterwards would 404. User content either way — it belongs in object storage.
 .uploads/
+
+# Media-migration restore points (snapshots + rollback mappings). Local only.
+/backups/

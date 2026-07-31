@@ -1,9 +1,10 @@
 /**
  * Moves locally-stored images to Cloudinary and repoints the database at them.
  *
- * Covers BOTH tables that hold asset paths:
+ * Covers every column that holds an asset path:
  *   - property_media.url
  *   - configurations.floor_plan_image
+ *   - banners.image_url
  *
  * Safety properties:
  *   - DRY RUN BY DEFAULT. Pass --apply to actually upload and write.
@@ -32,6 +33,15 @@ import { isConfigured, uploadImage } from "../src/lib/storage/cloudinary";
 
 const APPLY = process.argv.includes("--apply");
 const ROLLBACK_IDX = process.argv.indexOf("--rollback");
+/**
+ * `--limit N` migrates only the first N rows.
+ *
+ * Lets a small batch prove the whole path — upload, URL written, page still
+ * renders — before the rest follows. Safe to stop there: migrated and
+ * un-migrated rows both render, since the local files are never removed.
+ */
+const LIMIT_IDX = process.argv.indexOf("--limit");
+const LIMIT = LIMIT_IDX === -1 ? Infinity : Number(process.argv[LIMIT_IDX + 1]);
 const ROOT = process.cwd();
 const PUBLIC_DIR = path.join(ROOT, "public");
 
@@ -66,7 +76,7 @@ function publicIdFor(url: string): string {
 }
 
 type Job = {
-  table: "property_media" | "configurations";
+  table: "property_media" | "configurations" | "banners";
   id: string;
   url: string;
 };
@@ -80,6 +90,11 @@ async function collectJobs(): Promise<{ jobs: Job[]; skipped: Job[] }> {
   const configs = await prisma.configuration.findMany({
     select: { id: true, floorPlanImage: true },
   });
+  // Only the poster image: videoUrl points at a video, which this image-upload
+  // path would reject, and it is empty on every row today.
+  const banners = await prisma.banner.findMany({
+    select: { id: true, imageUrl: true },
+  });
 
   const all: Job[] = [
     ...media
@@ -92,6 +107,9 @@ async function collectJobs(): Promise<{ jobs: Job[]; skipped: Job[] }> {
         id: c.id,
         url: c.floorPlanImage,
       })),
+    ...banners
+      .filter((b) => isLocalPath(b.imageUrl))
+      .map((b) => ({ table: "banners" as const, id: b.id, url: b.imageUrl })),
   ];
 
   // A row whose file is missing locally can't be uploaded from here. Report it
@@ -111,6 +129,11 @@ async function writeRow(job: Job, newUrl: string) {
     await prisma.propertyMedia.update({
       where: { id: job.id },
       data: { url: newUrl },
+    });
+  } else if (job.table === "banners") {
+    await prisma.banner.update({
+      where: { id: job.id },
+      data: { imageUrl: newUrl },
     });
   } else {
     await prisma.configuration.update({
@@ -144,8 +167,12 @@ async function main() {
     return rollback(file);
   }
 
-  const { jobs, skipped } = await collectJobs();
+  const { jobs: allJobs, skipped } = await collectJobs();
+  const jobs = Number.isFinite(LIMIT) ? allJobs.slice(0, LIMIT) : allJobs;
 
+  if (jobs.length !== allJobs.length) {
+    console.log(`Limited to ${jobs.length} of ${allJobs.length} rows (--limit).`);
+  }
   console.log(`Local-path rows to migrate : ${jobs.length}`);
   console.log(`Skipped (file not on disk) : ${skipped.length}`);
   for (const s of skipped.slice(0, 10)) {
