@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Menu, Search, Bell, ChevronDown, LogOut } from "lucide-react";
+import { Menu, Search, ChevronDown, LogOut } from "lucide-react";
 
 const ROLE_LABEL: Record<string, string> = {
   SUPER_ADMIN: "Super Admin",
@@ -19,6 +19,7 @@ export function AdminHeader({
 }) {
   const router = useRouter();
   const [showMenu, setShowMenu] = useState(false);
+  const [query, setQuery] = useState("");
 
   const displayName = user?.name || "Admin";
   const displayRole = (user && ROLE_LABEL[user.role]) || "Super Admin";
@@ -42,27 +43,33 @@ export function AdminHeader({
           <Menu className="h-6 w-6" />
         </button>
 
-        {/* Full search from sm up; below that it would crowd out everything else. */}
-        <div className="relative hidden w-full max-w-xl sm:block">
+        {/* Full search from sm up; below that it would crowd out everything else.
+            Submitting hands the term to the properties list via ?q=, which is
+            where the matching actually happens — one search box, one behaviour. */}
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            const q = query.trim();
+            router.push(q ? `/admin/properties?q=${encodeURIComponent(q)}` : "/admin/properties");
+          }}
+          role="search"
+          className="relative hidden w-full max-w-xl sm:block"
+        >
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <Search className="h-5 w-5 text-slate-400" />
           </div>
           <input
-            type="text"
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            aria-label="Search properties"
             className="block w-full pl-10 pr-3 py-2.5 border-0 rounded-lg text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-white/20 transition-all bg-white shadow-sm"
-            placeholder="Search properties, builders, enquiries..."
+            placeholder="Search properties by name, builder or locality…"
           />
-        </div>
+        </form>
       </div>
 
       <div className="flex items-center gap-3 sm:gap-6 sm:pl-6">
-        <button className="relative shrink-0 text-white/80 hover:text-white transition-colors">
-          <Bell className="w-6 h-6" />
-          <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold flex items-center justify-center rounded-full border-2 border-[#7166F0]">
-            3
-          </span>
-        </button>
-
         {/* User Menu */}
         <div className="relative">
           <div

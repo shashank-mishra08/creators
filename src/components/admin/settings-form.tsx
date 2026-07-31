@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import {
-  Phone, Share2, Bell, Search, Wrench, Save, Loader2, CheckCircle2, AlertTriangle,
+  Phone, Share2, Bell, Wrench, Save, Loader2, CheckCircle2, AlertTriangle,
   PanelBottom, Plus, Trash2,
 } from "lucide-react";
 
@@ -38,7 +38,6 @@ const TABS = [
   { id: "footer", label: "Footer", icon: PanelBottom },
   { id: "social", label: "Social", icon: Share2 },
   { id: "leads", label: "Leads", icon: Bell },
-  { id: "seo", label: "SEO & Tracking", icon: Search },
   { id: "advanced", label: "Advanced", icon: Wrench },
 ] as const;
 
@@ -259,15 +258,11 @@ export function SettingsForm({
           </>
         )}
 
-        {tab === "seo" && (
-          <>
-            <Field label="Default meta title" value={form.metaTitle} onChange={(v) => set("metaTitle", v)} disabled={d} />
-            <Field label="Default meta description" value={form.metaDescription} onChange={(v) => set("metaDescription", v)} disabled={d} textarea />
-            <Field label="Default OG / share image URL" value={form.ogImageUrl} onChange={(v) => set("ogImageUrl", v)} disabled={d} placeholder="https://…/share.png" />
-            <Field label="Google Analytics ID (GA4)" value={form.ga4Id} onChange={(v) => set("ga4Id", v)} disabled={d} placeholder="G-XXXXXXXXXX" />
-            <Field label="Meta (Facebook) Pixel ID" value={form.metaPixelId} onChange={(v) => set("metaPixelId", v)} disabled={d} placeholder="1234567890" />
-          </>
-        )}
+        {/* No SEO & Tracking tab: metaTitle, metaDescription, ogImageUrl, ga4Id
+            and metaPixelId are written here and read by nothing — `getPublic()`
+            never exposed them and no layout code injects an analytics script.
+            The form promised settings that did not apply. The columns and the
+            save path are left intact, so putting the tab back is a UI change. */}
 
         {tab === "advanced" && (
           <div>

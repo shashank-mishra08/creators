@@ -63,17 +63,9 @@ export function AdminLoginForm() {
       </div>
 
       <div>
-        <div className="flex items-center justify-between mb-1.5">
-          <label className="block text-sm font-medium text-slate-700" htmlFor="admin-password">
-            Password
-          </label>
-          <Link
-            href="/forgot-password"
-            className="text-xs font-medium text-brand-purple hover:underline"
-          >
-            Forgot password?
-          </Link>
-        </div>
+        <label className="block text-sm font-medium text-slate-700 mb-1.5" htmlFor="admin-password">
+          Password
+        </label>
         <div className="relative">
           <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
@@ -94,6 +86,16 @@ export function AdminLoginForm() {
           >
             {showPw ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
           </button>
+        </div>
+        {/* Below the field, not beside the label: you reach for this after
+            trying the password, not before typing it. */}
+        <div className="mt-2 text-right">
+          <Link
+            href="/forgot-password"
+            className="text-xs font-medium text-brand-purple hover:underline"
+          >
+            Forgot password?
+          </Link>
         </div>
       </div>
 

@@ -32,6 +32,7 @@ export default function AdminPropertiesPage() {
   const [properties, setProperties] = useState<AdminProperty[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Seeded from ?q= so the header search can hand a term over to this list.
   const [search, setSearch] = useState("");
   // The sidebar links here with ?status=deleted, so Recently Deleted is
   // reachable as its own destination rather than only as a chip on this page.
@@ -41,6 +42,13 @@ export default function AdminPropertiesPage() {
   const [statusFilter, setStatusFilter] = useState<
     "all" | "active" | "hidden" | "deleted"
   >(initialStatus);
+
+  // Follow ?q= whenever it changes: the header search pushes a new URL while
+  // this page is already mounted, so reading it once at mount is not enough.
+  const urlQuery = searchParams.get("q") ?? "";
+  useEffect(() => {
+    setSearch(urlQuery);
+  }, [urlQuery]);
   const [deleteTarget, setDeleteTarget] = useState<AdminProperty | null>(null);
   const [purgeTarget, setPurgeTarget] = useState<AdminProperty | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
@@ -158,13 +166,26 @@ export default function AdminPropertiesPage() {
     setPurgeTarget(null);
   }
 
-  const statusBadge = (p: AdminProperty) => {
+  /**
+   * Two chips, because these are two different questions.
+   *
+   * One column used to answer both, and the lifecycle checks ran first — so an
+   * Under Construction project showed red when deleted, grey when hidden and
+   * orange otherwise. The colour looked random because it was never about
+   * construction. "Ready to Move" was also labelled "Active", which reads as a
+   * visibility state, so a live under-construction project looked inactive.
+   */
+  const lifecycleBadge = (p: AdminProperty) => {
     if (p.deletedAt) return { label: "Deleted", cls: "bg-red-100 text-red-700" };
     if (p.hidden) return { label: "Hidden", cls: "bg-slate-100 text-slate-500" };
-    if (p.possession === "Ready to Move") return { label: "Active", cls: "bg-green-100 text-green-700" };
+    return { label: "Live", cls: "bg-green-100 text-green-700" };
+  };
+
+  const possessionBadge = (p: AdminProperty) => {
+    if (p.possession === "Ready to Move") return { label: "Ready to Move", cls: "bg-teal-100 text-teal-700" };
     if (p.possession === "Under Construction") return { label: "Under Construction", cls: "bg-orange-100 text-orange-700" };
     if (p.possession === "New Launch") return { label: "New Launch", cls: "bg-blue-100 text-blue-700" };
-    return { label: p.possession, cls: "bg-slate-100 text-slate-600" };
+    return { label: p.possession || "—", cls: "bg-slate-100 text-slate-600" };
   };
 
   return (
@@ -276,7 +297,8 @@ export default function AdminPropertiesPage() {
               </thead>
               <tbody className="divide-y divide-slate-50">
                 {filtered.map((prop) => {
-                  const badge = statusBadge(prop);
+                  const life = lifecycleBadge(prop);
+                  const poss = possessionBadge(prop);
                   const isToggling = togglingId === prop.id;
                   return (
                     <tr key={prop.id} className={`hover:bg-slate-50/50 transition-colors ${prop.hidden ? "opacity-60" : ""}`}>
@@ -311,9 +333,14 @@ export default function AdminPropertiesPage() {
                         <p className="text-sm text-slate-700">{prop.builderName}</p>
                       </td>
                       <td className="px-5 py-4">
-                        <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap ${badge.cls}`}>
-                          {badge.label}
-                        </span>
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap ${life.cls}`}>
+                            {life.label}
+                          </span>
+                          <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap ${poss.cls}`}>
+                            {poss.label}
+                          </span>
+                        </div>
                       </td>
                       <td className="px-5 py-4 hidden xl:table-cell">
                         <p className="text-sm text-slate-700">{prop.priceRangeLabel || "—"}</p>

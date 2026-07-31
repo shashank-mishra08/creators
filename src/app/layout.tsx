@@ -10,6 +10,7 @@ import { SiteFooter } from "@/components/layout/site-footer";
 import { MaintenanceScreen } from "@/components/layout/maintenance-screen";
 import { Toaster } from "@/components/ui/toaster";
 import { AuthInit } from "@/components/auth/auth-init";
+import { CompareSessionReset } from "@/components/selection/compare-session";
 import { settingsService } from "@/lib/services/settings.service";
 
 const inter = Inter({
@@ -98,6 +99,9 @@ export default async function RootLayout({
         >
           <MotionConfig reducedMotion="user">
             <AuthInit />
+            {/* Clears the comparison once the visitor leaves /compare, so the
+                bottom tray does not follow them back to the listing. */}
+            <CompareSessionReset />
             <div className="relative flex min-h-screen flex-col">
               <SiteHeader />
               <main id="main-content" className="flex-1">

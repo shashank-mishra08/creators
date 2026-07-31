@@ -42,13 +42,17 @@ export function BannerCarousel({ banners }: { banners: Banner[] }) {
     <section
       aria-label="Featured announcements"
       aria-roledescription="carousel"
-      className="container py-6 sm:py-8"
+      // Full-bleed: no container gutters, so the banner spans the whole
+      // viewport width the way a hero band should.
+      className="w-full"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       onFocusCapture={() => setPaused(true)}
       onBlurCapture={() => setPaused(false)}
     >
-      <div className="group relative overflow-hidden rounded-2xl border border-border bg-card shadow-glass">
+      {/* No rounding, border or shadow now that it reaches the viewport edges —
+          all three only read as edges when there is a gutter beside them. */}
+      <div className="group relative overflow-hidden bg-card">
         <div
           className="flex transition-transform duration-500 ease-out"
           style={{ transform: `translateX(-${idx * 100}%)` }}
