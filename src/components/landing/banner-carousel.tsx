@@ -7,7 +7,9 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Banner } from "@/lib/types";
 
-const AUTOPLAY_MS = 6000;
+/** Time each banner holds before the next slides in. The slide itself takes
+ *  500ms (see `duration-500` below), so a banner is fully still for 1.5s. */
+const AUTOPLAY_MS = 2000;
 
 /**
  * Promotional strip under the hero — new launches, offers, campaigns.
