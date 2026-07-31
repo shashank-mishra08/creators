@@ -355,6 +355,28 @@ export function PropertyExplorer({ initial, seed, title, subtitle, variant = "fe
     </FilterGroup>
   );
 
+  /**
+   * Segment picker, in the sidebar with the other filters.
+   *
+   * Radio rows rather than the checkboxes the other groups use: exactly one
+   * segment applies at a time, and "All" is the off position — a checkbox here
+   * would promise a combination the filter cannot do. `active` is 0 on All,
+   * since that narrows nothing.
+   */
+  const gApartment = (
+    <FilterGroup title="Apartment Type" defaultOpen={groupsOpen} active={tab === 0 ? 0 : 1}>
+      {TABS.map((t, i) => (
+        <RadioRow
+          key={t.label}
+          label={t.label}
+          count={count(t.test)}
+          checked={tab === i}
+          onChange={() => setTab(i)}
+        />
+      ))}
+    </FilterGroup>
+  );
+
   const gBudget = (
     <FilterGroup title="Budget" defaultOpen={groupsOpen} active={budgetActive ? 1 : 0}>
       {priceBounds.max > priceBounds.min ? (
@@ -424,6 +446,7 @@ export function PropertyExplorer({ initial, seed, title, subtitle, variant = "fe
     <>
       {gBrand}
       {gPossession}
+      {gApartment}
       {gBudget}
       {gBhk}
       {gArea}
@@ -481,35 +504,51 @@ export function PropertyExplorer({ initial, seed, title, subtitle, variant = "fe
             </div>
           )}
 
-          {/* ── Row 2: search, with the location picker on the end ── */}
-          <div className={cn("relative mb-3", browse && "max-w-xl")}>
-            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <input
-              value={projectQuery}
-              onChange={(e) => setProjectQuery(e.target.value)}
-              placeholder="Search by project, builder or location..."
-              aria-label="Search by project, builder or location"
-              className="h-12 w-full rounded-xl border border-border bg-card pl-11 pr-14 text-sm outline-none ring-accent/40 focus:ring-2"
-            />
-            {projectQuery && (
-              <button
-                type="button"
-                onClick={() => setProjectQuery("")}
-                aria-label="Clear search"
-                className="absolute right-14 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            )}
+          {/* ── Row 2: sort and search on the left, location on the right ── */}
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value)}
+              aria-label="Sort properties"
+              className="h-12 shrink-0 rounded-xl border border-border bg-card pl-3 pr-8 text-sm font-medium outline-none ring-accent/40 focus:ring-2"
+            >
+              <option value="recommended">Sort by: Recommended</option>
+              <option value="price-asc">Price: Low to High</option>
+              <option value="price-desc">Price: High to Low</option>
+              <option value="rating">Builder rating</option>
+            </select>
+
+            <div className="relative min-w-[12rem] flex-1 sm:max-w-md">
+              <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <input
+                value={projectQuery}
+                onChange={(e) => setProjectQuery(e.target.value)}
+                placeholder="Search by project, builder or location..."
+                aria-label="Search by project, builder or location"
+                className="h-12 w-full rounded-xl border border-border bg-card pl-11 pr-10 text-sm outline-none ring-accent/40 focus:ring-2"
+              />
+              {projectQuery && (
+                <button
+                  type="button"
+                  onClick={() => setProjectQuery("")}
+                  aria-label="Clear search"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+
             {/*
-              `z-30` is load-bearing, not decoration. `-translate-y-1/2` makes
-              this a transformed element, which starts its own stacking context
-              and traps the picker panel's own z-index inside it. Without a
-              z-index of its own the whole thing paints at "auto" level, so the
-              property cards — later in the DOM — covered the open panel.
-              Stays under the site header (z-50) and the filter drawer (z-70).
+              `z-30` is load-bearing, not decoration. Without a z-index of its
+              own this wrapper paints at "auto" level, and the property cards —
+              later in the DOM — covered the open picker panel. Stays under the
+              site header (z-50) and the filter drawer (z-70).
+              `ml-auto` pushes the pill to the far end of the row.
             */}
-            <div className="absolute right-2 top-1/2 z-30 -translate-y-1/2">
+            {/* Full width on phones: on its own wrapped line `ml-auto` would
+                strand it against the right edge with dead space beside it. */}
+            <div className="relative z-30 w-full sm:ml-auto sm:w-auto">
               <LocationPickerButton
                 cities={cityNames}
                 selected={locations}
@@ -519,37 +558,8 @@ export function PropertyExplorer({ initial, seed, title, subtitle, variant = "fe
             </div>
           </div>
 
-          {/* ── Row 3: apartment type + sort + filters, left-aligned ── */}
-          <div className="mb-5 flex flex-wrap items-center gap-2">
-            {browse && (
-              <select
-                value={tab}
-                onChange={(e) => setTab(Number(e.target.value))}
-                aria-label="Apartment type"
-                className="h-10 rounded-xl border border-border bg-card pl-3 pr-8 text-sm font-medium outline-none ring-accent/40 focus:ring-2"
-              >
-                {/* Driven by TABS, so this can never drift from the segments
-                    the filter actually understands. */}
-                {TABS.map((t, i) => (
-                  <option key={t.label} value={i}>
-                    Apartment Type: {t.label}
-                  </option>
-                ))}
-              </select>
-            )}
-
-            <select
-              value={sort}
-              onChange={(e) => setSort(e.target.value)}
-              aria-label="Sort properties"
-              className="h-10 rounded-xl border border-border bg-card pl-3 pr-8 text-sm font-medium outline-none ring-accent/40 focus:ring-2"
-            >
-              <option value="recommended">Sort by: Recommended</option>
-              <option value="price-asc">Price: Low to High</option>
-              <option value="price-desc">Price: High to Low</option>
-              <option value="rating">Builder rating</option>
-            </select>
-
+          {/* ── Row 3: mobile filters button + active location chips ── */}
+          <div className="mb-5 flex flex-wrap items-center gap-2 empty:mb-0">
             {/* Mobile/tablet: opens the filter drawer (sidebar is hidden < lg). */}
             <button
               type="button"
@@ -945,21 +955,32 @@ function LocationPickerButton({
 
   return (
     <div ref={ref} className="relative">
+      {/* The selected city replaces the label, so the pill states the filter
+          rather than making you open it to find out. */}
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-label="Filter by location"
-        title="Filter by location"
         className={cn(
-          "flex h-9 w-9 items-center justify-center rounded-lg transition-colors",
+          "inline-flex h-12 w-full items-center justify-between gap-2 rounded-xl border px-3.5 text-sm font-semibold transition-colors sm:w-auto sm:max-w-[14rem] sm:justify-start",
           active
-            ? "bg-accent text-accent-foreground"
-            : "text-muted-foreground hover:bg-muted hover:text-accent",
+            ? "border-accent bg-accent/10 text-accent"
+            : "border-border bg-card text-foreground hover:bg-muted",
         )}
       >
-        <MapPin className="h-4 w-4" />
+        <MapPin className={cn("h-4 w-4 shrink-0", !active && "text-accent")} />
+        <span className="truncate">
+          {selected.size === 0
+            ? "Choose Location"
+            : selected.size === 1
+              ? [...selected][0]
+              : `${selected.size} locations`}
+        </span>
+        <ChevronDown
+          className={cn("h-4 w-4 shrink-0 transition-transform", open && "rotate-180")}
+        />
       </button>
 
       {open && (
@@ -1118,6 +1139,43 @@ function CheckRow({
   );
 }
 
+
+/** Single-select twin of CheckRow: same row, round indicator, one at a time. */
+function RadioRow({
+  label,
+  count,
+  checked,
+  onChange,
+}: {
+  label: string;
+  count: number;
+  checked: boolean;
+  onChange: () => void;
+}) {
+  return (
+    <label className="flex cursor-pointer items-center justify-between gap-2 py-0.5 text-sm">
+      <span className="flex items-center gap-2">
+        <input
+          type="radio"
+          name="apartment-type"
+          checked={checked}
+          onChange={onChange}
+          className="peer sr-only"
+        />
+        <span
+          className={cn(
+            "flex h-4 w-4 items-center justify-center rounded-full border transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-background",
+            checked ? "border-accent" : "border-border",
+          )}
+        >
+          {checked && <span className="h-2 w-2 rounded-full bg-accent" />}
+        </span>
+        <span className={cn("text-foreground", checked && "font-semibold")}>{label}</span>
+      </span>
+      <span className="text-xs text-muted-foreground">{count}</span>
+    </label>
+  );
+}
 
 const ListingCard = React.forwardRef<HTMLDivElement, { property: Property }>(
   function ListingCard({ property: p }, ref) {
