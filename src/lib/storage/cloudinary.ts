@@ -19,13 +19,28 @@
  */
 import { createHash } from "node:crypto";
 
-const CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME?.trim();
-const API_KEY = process.env.CLOUDINARY_API_KEY?.trim();
-const API_SECRET = process.env.CLOUDINARY_API_SECRET?.trim();
-const FOLDER = process.env.CLOUDINARY_FOLDER?.trim() || "properties";
+/**
+ * Read on each call rather than once at module load.
+ *
+ * A standalone script loads .env in its own body, but ES modules evaluate every
+ * static import first — so module-level reads here happened before dotenv had
+ * run, and `isConfigured()` returned false with perfectly good credentials in
+ * .env. Next.js loads env before any app module, so the app never saw it; the
+ * migration script would have refused to run. Reading lazily costs nothing and
+ * removes the ordering trap for every caller.
+ */
+function env() {
+  return {
+    cloudName: process.env.CLOUDINARY_CLOUD_NAME?.trim(),
+    apiKey: process.env.CLOUDINARY_API_KEY?.trim(),
+    apiSecret: process.env.CLOUDINARY_API_SECRET?.trim(),
+    folder: process.env.CLOUDINARY_FOLDER?.trim() || "properties",
+  };
+}
 
 export function isConfigured(): boolean {
-  return Boolean(CLOUD_NAME && API_KEY && API_SECRET);
+  const { cloudName, apiKey, apiSecret } = env();
+  return Boolean(cloudName && apiKey && apiSecret);
 }
 
 /**
@@ -47,23 +62,24 @@ function sign(params: Record<string, string>, secret: string): string {
  * and appends it to the delivery URL.
  */
 export async function uploadImage(file: File, publicId: string): Promise<string> {
-  if (!CLOUD_NAME || !API_KEY || !API_SECRET) {
+  const { cloudName, apiKey, apiSecret, folder } = env();
+  if (!cloudName || !apiKey || !apiSecret) {
     throw new Error("Cloudinary is not configured");
   }
 
   const timestamp = Math.floor(Date.now() / 1000).toString();
-  const signed = { folder: FOLDER, public_id: publicId, timestamp };
+  const signed = { folder, public_id: publicId, timestamp };
 
   const body = new FormData();
   body.append("file", file);
-  body.append("api_key", API_KEY);
-  body.append("folder", FOLDER);
+  body.append("api_key", apiKey);
+  body.append("folder", folder);
   body.append("public_id", publicId);
   body.append("timestamp", timestamp);
-  body.append("signature", sign(signed, API_SECRET));
+  body.append("signature", sign(signed, apiSecret));
 
   const res = await fetch(
-    `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
+    `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
     { method: "POST", body },
   );
 
