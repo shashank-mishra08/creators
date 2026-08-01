@@ -185,11 +185,24 @@ export default function AdminPropertiesPage() {
     return { label: "Live", cls: "bg-green-100 text-green-700" };
   };
 
+  /**
+   * Two colours, not four: green once you can move in, orange while you cannot.
+   * Teal and blue only asked the reader to remember a legend.
+   *
+   * The comparison is loose on purpose. Seven rows carry "Under Constuction"
+   * (missing r) from an imported sheet, and an exact match dropped them into a
+   * grey default — which is what made the colours look random. Matching on
+   * "ready" means a typo can no longer change the colour.
+   *
+   * The label still prints whatever is stored, so a misspelling stays visible
+   * to whoever can fix it rather than being quietly papered over.
+   */
   const possessionBadge = (p: AdminProperty) => {
-    if (p.possession === "Ready to Move") return { label: "Ready to Move", cls: "bg-teal-100 text-teal-700" };
-    if (p.possession === "Under Construction") return { label: "Under Construction", cls: "bg-orange-100 text-orange-700" };
-    if (p.possession === "New Launch") return { label: "New Launch", cls: "bg-blue-100 text-blue-700" };
-    return { label: p.possession || "—", cls: "bg-slate-100 text-slate-600" };
+    const ready = p.possession.trim().toLowerCase().startsWith("ready");
+    return {
+      label: p.possession || "—",
+      cls: ready ? "bg-green-100 text-green-700" : "bg-orange-100 text-orange-700",
+    };
   };
 
   return (
