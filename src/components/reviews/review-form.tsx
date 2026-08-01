@@ -184,13 +184,10 @@ export function ReviewForm({
         </section>
 
         {/* ── 3. free text ────────────────────────────────────────────── */}
-        {/* Spans the two rows the ratings and photos occupy beside it, but its
-            content is shorter than they are, so it used to leave 116px of dead
-            space underneath. `self-stretch` opts this one cell out of the grid's
-            `items-start`, and the textarea below takes the slack — the writing
-            area grows instead of the gap. Desktop only; on a phone the sections
-            simply stack and there is nothing to fill. */}
-        <section className="flex flex-col lg:col-start-1 lg:row-start-2 lg:row-span-2 lg:self-stretch">
+        {/* Sits beside the aspect ratings, which are the closest thing to it in
+            height — 282 against 246, so only 36px is left over. It used to span
+            two rows and leave 116px of dead space below itself. */}
+        <section className="lg:col-start-1 lg:row-start-2">
           <SectionHead
             n={3}
             title="Your Review"
@@ -203,9 +200,7 @@ export function ReviewForm({
             rows={8}
             placeholder="Write your review here……"
             aria-label="Your review"
-            // `rows` stays the floor; `lg:flex-1` lets it grow into whatever
-            // height the column has spare. `min-h-0` so flex can size it at all.
-            className="mt-3 w-full resize-y rounded-xl border border-border bg-background p-3.5 text-sm outline-none ring-accent/30 placeholder:text-muted-foreground focus:ring-2 lg:min-h-0 lg:flex-1"
+            className="mt-3 w-full resize-y rounded-xl border border-border bg-background p-3.5 text-sm outline-none ring-accent/30 placeholder:text-muted-foreground focus:ring-2"
           />
           <div
             className={cn(
@@ -243,7 +238,10 @@ export function ReviewForm({
         </section>
 
         {/* ── 5. photos ───────────────────────────────────────────────── */}
-        <section className="lg:col-start-2 lg:row-start-3">
+        {/* Full width on its own row. Beside the review it was the shorter of
+            two unequal stacks; across the bottom it fills instead of leaving a
+            hole, and the steps still read 1,2 / 3,4 / 5 top to bottom. */}
+        <section className="lg:col-span-2 lg:row-start-3">
           <SectionHead
             n={5}
             title="Add Photos"
