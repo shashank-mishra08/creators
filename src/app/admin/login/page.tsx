@@ -9,12 +9,16 @@ export const metadata: Metadata = {
 
 export default function AdminLoginPage() {
   return (
-    // White fills the whole viewport — no backdrop gutter showing anywhere.
-    <div className="min-h-screen w-full bg-white flex items-stretch">
+    // `h-screen` + `overflow-hidden`, not `min-h-screen`: a login screen should
+    // never scroll the page. It needed 862px of height, so every laptop shorter
+    // than that (1366×768 scrolled 94px, 1280×800 scrolled 62px) drifted. The
+    // form column below carries its own `overflow-y-auto`, so on a viewport too
+    // short for the form it is the panel that scrolls, never the page.
+    <div className="h-screen w-full overflow-hidden bg-white flex items-stretch">
       {/* ── Shell ── */}
       <div
         className="
-          w-full bg-white
+          w-full h-full min-h-0 bg-white
           p-0 sm:p-2.5 lg:p-3
           grid grid-cols-1 lg:grid-cols-[minmax(0,52%)_minmax(0,1fr)]
           gap-0 lg:gap-4
@@ -25,20 +29,10 @@ export default function AdminLoginPage() {
             the scene never gets cropped by object-fit at odd panel sizes. */}
         <div className="relative hidden lg:block rounded-2xl overflow-hidden bg-[#0B0718]">
           <AdminLoginArtwork />
-
-          {/* Logo over the artwork's empty top-left corner */}
-          <div className="absolute top-7 left-7 z-20">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/brand/creators-logo.png"
-              alt="Creators"
-              className="w-[120px] h-auto object-contain brightness-0 invert opacity-90"
-            />
-          </div>
         </div>
 
         {/* ── Right column: the form card fills it, matching the artwork's height ── */}
-        <div className="flex items-stretch justify-center px-4 py-10 sm:px-6 sm:py-12 lg:py-10 lg:px-6">
+        <div className="flex min-h-0 items-stretch justify-center overflow-y-auto px-4 py-8 sm:px-6 sm:py-10 lg:py-4 lg:px-6">
           {/* ── Inner form card ── */}
           <div
             className="
@@ -46,7 +40,7 @@ export default function AdminLoginPage() {
               flex flex-col justify-center
               lg:rounded-2xl lg:border lg:border-slate-200/80
               lg:shadow-sm lg:bg-white
-              px-0 py-0 lg:px-14 lg:py-12
+              px-0 py-0 lg:px-14 lg:py-8
             "
           >
             {/* Dot-grid accent, top-right inside the card */}
@@ -71,8 +65,8 @@ export default function AdminLoginPage() {
                 </div>
               </div>
 
-              <div className="mb-7 text-center">
-                <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-brand-purple/10 ring-1 ring-brand-purple/15 mb-5">
+              <div className="mb-6 text-center">
+                <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-brand-purple/10 ring-1 ring-brand-purple/15 mb-4">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src="/brand/creators-badge.png"
