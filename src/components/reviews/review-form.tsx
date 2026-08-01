@@ -184,7 +184,13 @@ export function ReviewForm({
         </section>
 
         {/* ── 3. free text ────────────────────────────────────────────── */}
-        <section className="lg:col-start-1 lg:row-start-2 lg:row-span-2">
+        {/* Spans the two rows the ratings and photos occupy beside it, but its
+            content is shorter than they are, so it used to leave 116px of dead
+            space underneath. `self-stretch` opts this one cell out of the grid's
+            `items-start`, and the textarea below takes the slack — the writing
+            area grows instead of the gap. Desktop only; on a phone the sections
+            simply stack and there is nothing to fill. */}
+        <section className="flex flex-col lg:col-start-1 lg:row-start-2 lg:row-span-2 lg:self-stretch">
           <SectionHead
             n={3}
             title="Your Review"
@@ -197,7 +203,9 @@ export function ReviewForm({
             rows={8}
             placeholder="Write your review here……"
             aria-label="Your review"
-            className="mt-3 w-full resize-y rounded-xl border border-border bg-background p-3.5 text-sm outline-none ring-accent/30 placeholder:text-muted-foreground focus:ring-2"
+            // `rows` stays the floor; `lg:flex-1` lets it grow into whatever
+            // height the column has spare. `min-h-0` so flex can size it at all.
+            className="mt-3 w-full resize-y rounded-xl border border-border bg-background p-3.5 text-sm outline-none ring-accent/30 placeholder:text-muted-foreground focus:ring-2 lg:min-h-0 lg:flex-1"
           />
           <div
             className={cn(
