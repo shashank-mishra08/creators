@@ -25,15 +25,22 @@ const jakarta = Plus_Jakarta_Sans({
 });
 
 const SITE_NAME = "Creators Arena";
-const DEFAULT_TITLE = "Creators Arena — Compare Properties Smarter";
+/**
+ * The browser tab shows the name and nothing else — a tab is ~25 characters
+ * wide, so the longer line only ever appeared as "Creators Arena — Compare
+ * Prop…". The descriptive version is kept for the share card and the search
+ * snippet below, where there is room for it and it does some work.
+ */
+const SOCIAL_TITLE = "Creators Arena — Compare Properties Smarter";
 const DEFAULT_DESCRIPTION =
   "Compare residential properties across NCR side-by-side. Price, amenities, location, builder reputation and investment potential — find the best home in minutes.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: DEFAULT_TITLE,
-    // Page titles render as "<page> · Creators Arena"; the home title is absolute.
+    default: SITE_NAME,
+    // Page titles render as "<page> · Creators Arena"; the home title is the
+    // name on its own.
     template: `%s · ${SITE_NAME}`,
   },
   description: DEFAULT_DESCRIPTION,
@@ -41,14 +48,14 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     siteName: SITE_NAME,
-    title: DEFAULT_TITLE,
+    title: SOCIAL_TITLE,
     description: DEFAULT_DESCRIPTION,
     locale: "en_IN",
     images: [{ url: "/art/skyline.png", alt: "Creators Arena — NCR property comparison" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: DEFAULT_TITLE,
+    title: SOCIAL_TITLE,
     description: DEFAULT_DESCRIPTION,
     images: ["/art/skyline.png"],
   },
