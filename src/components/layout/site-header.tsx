@@ -43,9 +43,13 @@ export function SiteHeader() {
     >
       <div className="container flex h-16 items-center gap-6">
         <Link href="/" className="shrink-0 text-primary dark:text-foreground">
-          {/* Logo defaults to h-28, which overflows this h-16 bar and eats ~168px
-              of a phone viewport. Size it to the bar instead. */}
-          <Logo imageClassName="h-11 sm:h-14 mt-0" />
+          {/* The source PNG is 612×407 but the mark inside it is only 352×192 —
+              53% of the height is transparent padding, so a box sized to the
+              64px bar rendered a mark barely 26px tall. The box is deliberately
+              taller than the bar: the overflow is transparent, so nothing shows,
+              and the mark lands at a readable size. `mt` re-centres it, since
+              the padding is uneven (81px above the mark, 134px below). */}
+          <Logo imageClassName="h-16 sm:h-[76px] mt-0 translate-y-[7px] sm:translate-y-[6px]" />
         </Link>
 
         <nav className="ml-2 hidden items-center gap-1 lg:flex">
