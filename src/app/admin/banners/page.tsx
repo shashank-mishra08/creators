@@ -32,10 +32,74 @@ const EMPTY: BannerInput = {
   endsAt: null,
 };
 
-/** `datetime-local` needs "YYYY-MM-DDTHH:mm"; the API speaks ISO or null. */
-const toLocalInput = (iso: string | null) =>
-  iso ? new Date(iso).toISOString().slice(0, 16) : "";
+const pad = (n: number) => String(n).padStart(2, "0");
+
+/**
+ * `datetime-local` needs "YYYY-MM-DDTHH:mm" in LOCAL time; the API speaks UTC
+ * ISO or null.
+ *
+ * This used to read `new Date(iso).toISOString().slice(0, 16)`, which formats
+ * the instant in UTC. Typing 9:00 am stored the right moment, but reopening the
+ * form showed 3:30 am — the same instant, printed in the wrong zone. Saving
+ * again then read that 3:30 back as local and shifted the stored time another
+ * 5½ hours earlier, so a schedule drifted every time it was edited, and an
+ * early-morning time could roll back past midnight and land in the afternoon of
+ * the day before. Hence "set 9 am, get 4" and "set am, get pm".
+ *
+ * Building the string from the local getters keeps what is shown and what is
+ * stored the same moment.
+ */
+const toLocalInput = (iso: string | null) => {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
+
+/** The input has no zone, so `new Date` reads it as local — which is what the
+ *  admin typed — and `toISOString` hands the API the matching UTC instant. */
 const fromLocalInput = (v: string) => (v ? new Date(v).toISOString() : null);
+
+/**
+ * Whether a banner is on the site at this moment, and if not, why.
+ *
+ * Mirrors the conditions `bannerRepository.findLive` applies, so the panel and
+ * the site agree. Four banners were switched on and only one was showing, with
+ * nothing on screen to explain the other three.
+ */
+function liveState(b: Banner): { label: string; cls: string; why: string } {
+  const hasMedia = b.mediaType === "video" ? Boolean(b.videoUrl) : Boolean(b.imageUrl);
+  if (!b.active)
+    return { label: "Inactive", cls: "bg-slate-100 text-slate-500", why: "Switched off." };
+  if (!hasMedia)
+    return { label: "No media", cls: "bg-red-100 text-red-700", why: "Nothing to display." };
+
+  const now = Date.now();
+  if (b.startsAt && new Date(b.startsAt).getTime() > now)
+    return {
+      label: "Scheduled",
+      cls: "bg-amber-100 text-amber-700",
+      why: `Not on the site until ${fmtSchedule(b.startsAt)}.`,
+    };
+  if (b.endsAt && new Date(b.endsAt).getTime() < now)
+    return {
+      label: "Expired",
+      cls: "bg-slate-200 text-slate-600",
+      why: `Came off the site on ${fmtSchedule(b.endsAt)}.`,
+    };
+  return { label: "Live now", cls: "bg-green-100 text-green-700", why: "On the site." };
+}
+
+/** Dates read dd/mm/yyyy here, with the time, because the schedule turns a
+ *  banner on and off at an hour, not just on a day. */
+const fmtSchedule = (iso: string | null) => {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  const h = d.getHours();
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}, ${h12}:${pad(d.getMinutes())} ${h < 12 ? "am" : "pm"}`;
+};
 
 export default function AdminBannersPage() {
   const [banners, setBanners] = useState<Banner[]>([]);
@@ -210,15 +274,22 @@ export default function AdminBannersPage() {
                     {b.subtitle || b.linkUrl || "—"}
                   </div>
                   <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                    <span
-                      className={`rounded-md px-1.5 py-0.5 text-[11px] font-semibold ${
-                        b.active
-                          ? "bg-green-100 text-green-700"
-                          : "bg-slate-100 text-slate-500"
-                      }`}
-                    >
-                      {b.active ? "Active" : "Inactive"}
-                    </span>
+                    {/* "Active" is the switch; this is whether the banner is
+                        actually on the site right now. They are not the same
+                        thing — a scheduled or expired banner is Active and
+                        invisible, which is impossible to work out from a list
+                        that only shows the switch. */}
+                    {(() => {
+                      const s = liveState(b);
+                      return (
+                        <span
+                          className={`rounded-md px-1.5 py-0.5 text-[11px] font-semibold ${s.cls}`}
+                          title={s.why}
+                        >
+                          {s.label}
+                        </span>
+                      );
+                    })()}
                     <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[11px] text-slate-500">
                       Order {b.sortOrder}
                     </span>
@@ -227,9 +298,9 @@ export default function AdminBannersPage() {
                     </span>
                     {(b.startsAt || b.endsAt) && (
                       <span className="rounded-md bg-blue-50 px-1.5 py-0.5 text-[11px] text-blue-700">
-                        {b.startsAt ? new Date(b.startsAt).toLocaleDateString() : "—"}
+                        {fmtSchedule(b.startsAt)}
                         {" → "}
-                        {b.endsAt ? new Date(b.endsAt).toLocaleDateString() : "—"}
+                        {fmtSchedule(b.endsAt)}
                       </span>
                     )}
                   </div>
