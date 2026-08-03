@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { GitCompareArrows, Heart, LogOut, Menu, Star, X } from "lucide-react";
+import { GitCompareArrows, Heart, LogOut, Menu, ShieldCheck, Star, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/brand/logo";
 import { useAuth, selectShortlistIds } from "@/store/auth";
@@ -165,6 +165,16 @@ export function MobileNav({ nav }: { nav: NavItem[] }) {
                     </div>
                   </div>
                 </div>
+                {/* Same session covers the panel, so this opens it directly.
+                    Admins only — a convenience, not the gate: the admin routes
+                    verify the account server-side either way. */}
+                {user.isAdmin && (
+                  <Link href="/admin" className="block">
+                    <Button variant="accent" size="md" className="w-full">
+                      <ShieldCheck className="h-4 w-4" /> Admin panel
+                    </Button>
+                  </Link>
+                )}
                 <Button
                   variant="outline"
                   size="md"

@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Heart, LogOut, Star } from "lucide-react";
+import { Heart, LogOut, ShieldCheck, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth, selectShortlistIds } from "@/store/auth";
 import { useMounted } from "@/lib/use-mounted";
@@ -91,6 +91,19 @@ export function AuthNav() {
               <div className="truncate text-sm font-bold text-foreground">{user.name}</div>
               <div className="truncate text-xs text-muted-foreground">{user.email}</div>
             </div>
+            {/* Admins share one session across the site and the panel, so this
+                goes straight in without a second sign-in. Shown to admins only —
+                but only as a convenience: every admin route verifies the account
+                server-side, so this link is useless to anyone else. */}
+            {user.isAdmin && (
+              <Link
+                href="/admin"
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-2 border-b border-border px-4 py-2.5 text-sm font-semibold text-accent hover:bg-muted"
+              >
+                <ShieldCheck className="h-4 w-4" /> Admin panel
+              </Link>
+            )}
             <Link
               href="/shortlist"
               onClick={() => setOpen(false)}

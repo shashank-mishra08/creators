@@ -86,6 +86,8 @@ export const authService = {
       phoneNumber: row.phoneNumber ?? null,
       provider: row.provider,
       savedPropertyIds: row.savedPropertyIds ?? [],
+      isAdmin: row.isAdmin ?? false,
+      role: row.role ?? "CUSTOMER",
     };
   },
 

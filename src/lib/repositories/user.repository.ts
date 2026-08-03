@@ -7,6 +7,14 @@ export interface UserRecord {
   phoneNumber: string | null;
   provider: string;
   savedPropertyIds: string[];
+  /**
+   * Carried so the public header can offer an admin a way back into the panel.
+   * Not a secret — it only tells the account holder what they already know, and
+   * every admin route verifies this server-side regardless of what the client
+   * believes. Hiding the link is convenience; the guard is the security.
+   */
+  isAdmin: boolean;
+  role: string;
 }
 
 type UserRow = {
@@ -17,6 +25,8 @@ type UserRow = {
   provider: string;
   passwordHash: string | null;
   savedPropertyIds: string[];
+  isAdmin: boolean;
+  role: string;
 };
 
 const toRecord = (u: UserRow): UserRecord => ({
@@ -26,6 +36,8 @@ const toRecord = (u: UserRow): UserRecord => ({
   phoneNumber: u.phoneNumber ?? null,
   provider: u.provider,
   savedPropertyIds: u.savedPropertyIds ?? [],
+  isAdmin: u.isAdmin ?? false,
+  role: u.role ?? "CUSTOMER",
 });
 
 export const userRepository = {

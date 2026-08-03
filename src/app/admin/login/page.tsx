@@ -1,4 +1,7 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
+import { getCurrentAdmin } from "@/lib/auth/roles";
+import { getSessionUserId } from "@/lib/auth/session";
 import { AdminLoginForm } from "@/components/admin/login-form";
 import { AdminLoginArtwork } from "@/components/admin/login-artwork";
 
@@ -7,7 +10,26 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function AdminLoginPage() {
+// Reads the session, so it cannot be prerendered.
+export const dynamic = "force-dynamic";
+
+export default async function AdminLoginPage() {
+  // Nobody who is already signed in has a reason to see this form.
+  //
+  // An admin is sent to the panel — the site and the panel share one session,
+  // so asking for the same password twice achieves nothing. A signed-in
+  // customer is sent home: the form would reject them anyway (the admin login
+  // route returns 403 and sets no session for a non-admin account), so showing
+  // it only invites them to try.
+  //
+  // A signed-out visitor still gets the form, and has to: an admin who is not
+  // logged in cannot be told apart from a stranger, and hiding it would lock
+  // the admins out too. It is already marked noindex, and credentials without
+  // an admin account get nowhere.
+  if (getSessionUserId()) {
+    redirect((await getCurrentAdmin()) ? "/admin" : "/");
+  }
+
   return (
     // `h-screen` + `overflow-hidden`, not `min-h-screen`: a login screen should
     // never scroll the page. It needed 862px of height, so every laptop shorter

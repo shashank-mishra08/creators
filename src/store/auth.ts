@@ -14,6 +14,9 @@ export interface User {
   id: string;
   name: string;
   email: string;
+  /** Lets the header offer an admin the way back into the panel. Every admin
+   *  route checks this server-side, so a tampered value gains nothing. */
+  isAdmin: boolean;
 }
 
 interface AuthState {
@@ -58,7 +61,7 @@ export const useAuth = create<AuthState>((set, get) => ({
       const body = await res.json();
       const u = body?.data;
       if (u)
-        set({ user: { id: u.id, name: u.name, email: u.email }, savedIds: u.savedPropertyIds ?? [] });
+        set({ user: { id: u.id, name: u.name, email: u.email, isAdmin: Boolean(u.isAdmin) }, savedIds: u.savedPropertyIds ?? [] });
       else set({ user: null, savedIds: [] });
     } catch {
       // network/hydration failure → treat as logged-out
@@ -79,7 +82,7 @@ export const useAuth = create<AuthState>((set, get) => ({
       return false;
     }
     const u = data.data;
-    set({ user: { id: u.id, name: u.name, email: u.email }, savedIds: u.savedPropertyIds ?? [], error: null });
+    set({ user: { id: u.id, name: u.name, email: u.email, isAdmin: Boolean(u.isAdmin) }, savedIds: u.savedPropertyIds ?? [], error: null });
     return true;
   },
 
@@ -90,7 +93,7 @@ export const useAuth = create<AuthState>((set, get) => ({
       return false;
     }
     const u = data.data;
-    set({ user: { id: u.id, name: u.name, email: u.email }, savedIds: u.savedPropertyIds ?? [], error: null });
+    set({ user: { id: u.id, name: u.name, email: u.email, isAdmin: Boolean(u.isAdmin) }, savedIds: u.savedPropertyIds ?? [], error: null });
     return true;
   },
 
