@@ -15,6 +15,9 @@ export interface UserRecord {
    */
   isAdmin: boolean;
   role: string;
+  /** Deactivated accounts keep `isAdmin` but cannot use the panel, so the
+   *  client needs both to know whether to offer the way in. */
+  isActive: boolean;
 }
 
 type UserRow = {
@@ -27,6 +30,7 @@ type UserRow = {
   savedPropertyIds: string[];
   isAdmin: boolean;
   role: string;
+  isActive: boolean;
 };
 
 const toRecord = (u: UserRow): UserRecord => ({
@@ -38,6 +42,7 @@ const toRecord = (u: UserRow): UserRecord => ({
   savedPropertyIds: u.savedPropertyIds ?? [],
   isAdmin: u.isAdmin ?? false,
   role: u.role ?? "CUSTOMER",
+  isActive: u.isActive ?? true,
 });
 
 export const userRepository = {

@@ -88,6 +88,7 @@ export const authService = {
       savedPropertyIds: row.savedPropertyIds ?? [],
       isAdmin: row.isAdmin ?? false,
       role: row.role ?? "CUSTOMER",
+      isActive: row.isActive ?? true,
     };
   },
 
