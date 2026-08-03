@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Menu, Search, ChevronDown, LogOut } from "lucide-react";
+import { ChevronDown, Home, LogOut, Menu, Search } from "lucide-react";
 
 const ROLE_LABEL: Record<string, string> = {
   SUPER_ADMIN: "Super Admin",
@@ -96,6 +97,17 @@ export function AdminHeader({
                 <LogOut className="w-4 h-4" />
                 Sign Out
               </button>
+              {/* The way back to the public site. The session is shared, so this
+                  leaves the admin signed in — it navigates, it does not sign out.
+                  Until now the panel was a dead end unless you edited the URL. */}
+              <Link
+                href="/"
+                onClick={() => setShowMenu(false)}
+                className="flex items-center gap-2.5 w-full border-t border-slate-100 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+              >
+                <Home className="w-4 h-4" />
+                Back to website
+              </Link>
             </div>
           )}
         </div>
