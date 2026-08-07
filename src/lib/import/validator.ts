@@ -94,6 +94,8 @@ export interface NormalizedProject {
     mapsUrl: string | null;
     sector: string | null;
     connectivityIndex: number;
+    latitude: number | null;
+    longitude: number | null;
   };
   investment: {
     appreciationPct: number | null;
@@ -164,6 +166,17 @@ function pickGradient(seed: string): [string, string] {
 
 const col = (m: Record<string, string[]>, k: string) => m[k] ?? [];
 
+/** "Independent Villa" → "Villa", "residential plot" → "Plot". Falls back to
+ *  Apartment, which is what the sheets overwhelmingly describe. */
+function kindFromProjectType(raw: string | null): string {
+  const t = (raw ?? "").toLowerCase();
+  if (!t) return "Apartment";
+  if (t.includes("villa")) return "Villa";
+  if (t.includes("plot")) return "Plot";
+  if (t.includes("builder floor") || t.includes("builderfloor")) return "Builder Floor";
+  return "Apartment";
+}
+
 export function validateAndClean(parsed: ParsedProject): ValidationResult {
   const issues: Issue[] = [];
   const s = parsed.scalars;
@@ -193,6 +206,7 @@ export function validateAndClean(parsed: ParsedProject): ValidationResult {
   const carpet = col(parsed.configMatrix, "carpetArea");
   const balcony = col(parsed.configMatrix, "balconyArea");
   const builtup = col(parsed.configMatrix, "builtUpArea");
+  const floorPlans = col(parsed.configMatrix, "floorPlanImage");
   const pricePerSqFt = C.parseMoney(s.pricePerSqFt);
 
   const configurations = unitCats
@@ -211,7 +225,7 @@ export function validateAndClean(parsed: ParsedProject): ValidationResult {
         balconyAreaSqft: C.parseFloatLoose(balcony[i]),
         builtUpAreaSqft: C.parseFloatLoose(builtup[i]),
         priceLabel,
-        floorPlanImage: "",
+        floorPlanImage: C.str(floorPlans[i]) ?? "",
         sortOrder: i,
       };
     })
@@ -271,6 +285,20 @@ export function validateAndClean(parsed: ParsedProject): ValidationResult {
     warn("pricing", "No pricing information found (Price/Sq.Ft and Starting Price both missing)");
 
   // ---- location (minutes, not km) ----
+  // Coordinates are optional, but without them the map and the "near me" search
+  // have nothing to place the project on. Out-of-range values are dropped rather
+  // than stored, since a swapped or mistyped pair puts a project in the sea.
+  const rawLat = C.parseFloatLoose(s.latitude);
+  const rawLng = C.parseFloatLoose(s.longitude);
+  const latitude = rawLat != null && rawLat >= -90 && rawLat <= 90 ? rawLat : null;
+  const longitude = rawLng != null && rawLng >= -180 && rawLng <= 180 ? rawLng : null;
+  if (rawLat != null && latitude == null)
+    warn("latitude", `Latitude ${rawLat} is out of range (-90 to 90) — ignored`);
+  if (rawLng != null && longitude == null)
+    warn("longitude", `Longitude ${rawLng} is out of range (-180 to 180) — ignored`);
+  if ((latitude == null) !== (longitude == null))
+    warn("coordinates", "Only one of Latitude / Longitude given — both are needed to place the project on the map");
+
   const metroMin = C.parseMinutes(s.metroMin);
   const schoolMin = C.parseMinutes(s.schoolMin);
   const hospitalMin = C.parseMinutes(s.hospitalMin);
@@ -375,6 +403,10 @@ export function validateAndClean(parsed: ParsedProject): ValidationResult {
   const configsLabel = bhks.length ? `${bhks.join(" / ")} BHK` : "";
 
   const subtitle = [C.str(s.category), C.str(s.projectType)].filter(Boolean).join(" ");
+  // Was hardcoded "Apartment", so a villa or a plot imported as a flat and said
+  // so on the hero, the comparison table and the property page. Read from
+  // Project Type, matched loosely, and only fall back when it says nothing.
+  const propertyKind = kindFromProjectType(C.str(s.projectType));
   // Slug (idempotency key) + derived colour use the RAW name so a display-name
   // correction never changes a property's identity (avoids duplicate on re-import).
   const slug = C.slugify(rawBuilderName, projectName);
@@ -401,7 +433,7 @@ export function validateAndClean(parsed: ParsedProject): ValidationResult {
             category: C.str(s.category),
             city,
             locality: C.str(s.sector) ?? C.str(s.fullAddress) ?? city,
-            kind: "Apartment",
+            kind: propertyKind,
             possession,
             possessionDate: C.str(s.possessionDate) ?? "",
             description: C.str(s.description),
@@ -434,6 +466,8 @@ export function validateAndClean(parsed: ParsedProject): ValidationResult {
             mapsUrl,
             sector: C.str(s.sector),
             connectivityIndex,
+            latitude,
+            longitude,
           },
           investment: {
             appreciationPct,

@@ -49,6 +49,10 @@ export const FIELD_TARGET: Record<string, Target> = {
   sector: "scalar",
   fullAddress: "scalar",
   mapsUrl: "scalar",
+  // Without these the map and the "near me" search have nothing to place the
+  // project on, and someone has to type them into the admin form afterwards.
+  latitude: "scalar",
+  longitude: "scalar",
   metroMin: "scalar",
   schoolMin: "scalar",
   hospitalMin: "scalar",
@@ -77,6 +81,9 @@ export const FIELD_TARGET: Record<string, Target> = {
   carpetArea: "matrix",
   balconyArea: "matrix",
   builtUpArea: "matrix",
+  // One image per unit type, so it lines up with the columns above rather than
+  // living in the media list (which is per-project).
+  floorPlanImage: "matrix",
   // parking (lives in the amenities section in the real sheets)
   parkingBasement: "parking",
   parkingEv: "parking",
@@ -125,6 +132,8 @@ export const ALIASES: Record<string, string> = {
   sectorarea: "sector",
   fulladdress: "fullAddress",
   googlemapslink: "mapsUrl",
+  latitude: "latitude",
+  longitude: "longitude",
   distancefrommetro: "metroMin",
   distancefromschool: "schoolMin",
   distancefromhospital: "hospitalMin",
@@ -158,6 +167,9 @@ export const ALIASES: Record<string, string> = {
   balconyarea: "balconyArea",
   builtupareainsqft: "builtUpArea",
   builtuparea: "builtUpArea",
+  floorplanimagelink: "floorPlanImage",
+  floorplanimage: "floorPlanImage",
+  floorplanlink: "floorPlanImage",
   basementparking: "parkingBasement",
   basementevparking: "parkingEv",
   basementmachenicalparking: "parkingMechanical",
