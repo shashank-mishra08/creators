@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CoverImage } from "@/components/ui/cover-image";
+import { cn } from "@/lib/utils";
 
 /** One property as rendered on a hero card. Built server-side in `page.tsx`. */
 export type HeroCard = {
@@ -48,13 +49,32 @@ const ROTATE_MS = 5000;
  * rotate a few times before settling. With no slides the stage still renders —
  * just the ambient panel and chips — so an empty database degrades quietly.
  */
-export function Hero3D({ slides = [] }: { slides?: HeroSlide[] }) {
+export function Hero3D({
+  slides = [],
+  active = true,
+  heightClassName = "min-h-[calc(100svh-4rem)]",
+  showScrollHint = true,
+}: {
+  slides?: HeroSlide[];
+  /**
+   * False while the hero is parked off-screen in the showcase. Without this the
+   * card rotation burns its three turns where nobody can see them, and the hero
+   * is frozen by the time it slides back in. It also parks the hero's controls:
+   * see `offstage` below.
+   */
+  active?: boolean;
+  /** The showcase sizes every slide from this one, so it owns the height. */
+  heightClassName?: string;
+  /** Off in the showcase, where the carousel dots occupy that strip. */
+  showScrollHint?: boolean;
+}) {
   const stage = React.useRef<HTMLDivElement>(null);
   const [slideIdx, setSlideIdx] = React.useState(0);
 
   // Rotate a limited number of times, then stop. Skipped entirely when the user
   // asked for reduced motion, or when there's nothing to rotate to.
   React.useEffect(() => {
+    if (!active) return;
     if (slides.length < 2) return;
     if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
 
@@ -66,7 +86,7 @@ export function Hero3D({ slides = [] }: { slides?: HeroSlide[] }) {
       if (done >= rotations) clearInterval(timer);
     }, ROTATE_MS);
     return () => clearInterval(timer);
-  }, [slides.length]);
+  }, [slides.length, active]);
 
   const slide = slides[slideIdx];
   // Only the first slide preloads; later ones must not compete for LCP.
@@ -91,12 +111,24 @@ export function Hero3D({ slides = [] }: { slides?: HeroSlide[] }) {
     my.set(0);
   };
 
+  // Parked off to the side of the showcase track. Its CTAs have to leave the
+  // tab order and the accessibility tree the same way an off-screen banner's
+  // link does — otherwise Tab lands on a button nobody can see, and the browser
+  // scrolls the (overflow-hidden, but still scrollable) stage sideways to reveal
+  // it, which the transform that positions the track never undoes.
+  const offstage = !active;
+  const parked = offstage ? -1 : undefined;
+
   return (
     <section
       ref={stage}
       onMouseMove={onMove}
       onMouseLeave={onLeave}
-      className="relative flex min-h-[calc(100svh-4rem)] items-center overflow-hidden bg-grid"
+      aria-hidden={offstage}
+      className={cn(
+        "relative flex w-full shrink-0 basis-full items-center overflow-hidden bg-grid",
+        heightClassName,
+      )}
     >
       {/* Ambient glow */}
       <div className="pointer-events-none absolute -left-32 top-10 h-[26rem] w-[26rem] rounded-full bg-accent/25 blur-[130px]" />
@@ -110,7 +142,10 @@ export function Hero3D({ slides = [] }: { slides?: HeroSlide[] }) {
             Comparison is our superpower · NCR Real Estate
           </span>
 
-          <h1 className="mt-6 font-display text-5xl font-extrabold leading-[1.02] tracking-tight text-primary dark:text-foreground sm:text-6xl xl:text-7xl">
+          {/* One step down from the old sizes: the hero shares a fixed-height
+              stage with the banners now, and at 7xl the copy column ran past
+              it on a laptop. */}
+          <h1 className="mt-6 font-display text-4xl font-extrabold leading-[1.02] tracking-tight text-primary dark:text-foreground sm:text-5xl xl:text-6xl">
             Compare
             <br />
             Properties
@@ -125,14 +160,14 @@ export function Hero3D({ slides = [] }: { slides?: HeroSlide[] }) {
           </p>
 
           <div className="mt-8 flex flex-wrap items-center gap-3">
-            <Link href="/properties">
-              <Button variant="accent" size="lg" className="group">
+            <Link href="/properties" tabIndex={parked}>
+              <Button variant="accent" size="lg" className="group" tabIndex={parked}>
                 Start Comparing
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Button>
             </Link>
-            <Link href="/properties">
-              <Button variant="outline" size="lg">
+            <Link href="/properties" tabIndex={parked}>
+              <Button variant="outline" size="lg" tabIndex={parked}>
                 Explore Properties
               </Button>
             </Link>
@@ -219,11 +254,13 @@ export function Hero3D({ slides = [] }: { slides?: HeroSlide[] }) {
       </div>
 
       {/* scroll hint */}
-      <div className="pointer-events-none absolute inset-x-0 bottom-5 flex justify-center">
-        <span className="animate-float text-xs font-medium tracking-wide text-muted-foreground">
-          ↓ see how it works
-        </span>
-      </div>
+      {showScrollHint && (
+        <div className="pointer-events-none absolute inset-x-0 bottom-5 flex justify-center">
+          <span className="animate-float text-xs font-medium tracking-wide text-muted-foreground">
+            ↓ see how it works
+          </span>
+        </div>
+      )}
     </section>
   );
 }

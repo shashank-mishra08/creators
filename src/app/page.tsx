@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { getDataSource } from "@/lib/data-source";
-import { Hero3D, type HeroSlide } from "@/components/landing/hero-3d";
-import { BannerCarousel } from "@/components/landing/banner-carousel";
+import { type HeroSlide } from "@/components/landing/hero-3d";
+import { HeroShowcase } from "@/components/landing/hero-showcase";
 import { PropertyExplorer } from "@/components/listing/property-explorer";
 import { ReviewSection } from "@/components/landing/review-section";
 import { bannerService } from "@/lib/services/banner.service";
@@ -64,11 +64,11 @@ export default async function HomePage() {
   const seed = Math.random();
   return (
     <>
-      {/* Hero cards show real listings, rotating a few times before settling.
-          (Previously a fixed illustration; the client asked for live stock.) */}
-      <Hero3D slides={buildHeroSlides(properties)} />
-      {/* Renders nothing until an admin publishes a banner. */}
-      <BannerCarousel banners={banners} />
+      {/* Hero and banners share one rotating stage: the client's read was that
+          a hero alone added no value, so the promotions now get the same room
+          rather than a strip below the fold. With no live banners this is the
+          hero on its own, exactly as before. */}
+      <HeroShowcase slides={buildHeroSlides(properties)} banners={banners} />
       <PropertyExplorer
         initial={properties}
         seed={seed}
