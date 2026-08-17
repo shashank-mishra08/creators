@@ -16,6 +16,7 @@ import {
   Heart,
   MapPin,
   Phone,
+  Printer,
   ShieldCheck,
   Star,
   Train,
@@ -28,6 +29,7 @@ import { useMounted } from "@/lib/use-mounted";
 import { setPendingAction } from "@/lib/pending-action";
 import { rememberProperty } from "@/lib/recent-properties";
 import { Button } from "@/components/ui/button";
+import { ShareButton } from "@/components/ui/share-button";
 import { CoverImage } from "@/components/ui/cover-image";
 import { Lightbox } from "@/components/ui/lightbox";
 import { SiteVisitModal } from "@/components/property/site-visit-modal";
@@ -236,13 +238,29 @@ export function PropertyDetail({
         )}
       </div>
 
-      {/* Action buttons */}
-      <div className="mt-4 flex flex-wrap items-center gap-2">
+      {/* Action buttons. `data-print-hide` — none of them do anything on paper. */}
+      <div data-print-hide className="mt-4 flex flex-wrap items-center gap-2">
         <ActionButton active={shortlisted} onClick={handleShortlist} icon={Heart} label={shortlisted ? "Shortlisted" : "Shortlist"} />
         <ActionButton active={inCompare} onClick={() => toggleCompare(p.id)} icon={GitCompareArrows} label={inCompare ? "Added to Compare" : "Compare"} />
         <a href={mapsLink} target="_blank" rel="noreferrer">
           <ActionButton icon={MapPin} label="Get Location" />
         </a>
+        {/* The property's own address, not location.href — so a link shared
+            from a filtered or scrolled state still opens this property. */}
+        <ShareButton
+          url={`/properties/${p.id}`}
+          title={`${p.builder.name} ${p.name}`}
+          text={`${p.name} — ${p.locality}${p.city ? `, ${p.city}` : ""}`}
+          label="Share"
+          className="h-10 rounded-xl px-4 text-sm"
+        />
+        <button
+          type="button"
+          onClick={() => window.print()}
+          className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-border px-4 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
+        >
+          <Printer className="h-4 w-4" /> Print
+        </button>
       </div>
 
       {/* Header card */}
@@ -277,7 +295,7 @@ export function PropertyDetail({
             </div>
             <div className="text-xs text-muted-foreground">{p.configs} · {p.priceRangeLabel}</div>
           </div>
-          <div className="flex flex-col gap-2 sm:flex-row">
+          <div data-print-hide className="flex flex-col gap-2 sm:flex-row">
             <Button variant="accent" size="sm" className="w-full flex-1" onClick={() => setIsSiteVisitOpen(true)}>
               <Phone className="h-4 w-4" /> Contact Expert
             </Button>
@@ -530,9 +548,10 @@ export function PropertyDetail({
         </div>
       </div>
 
-      {/* Similar Properties */}
+      {/* Similar Properties. Left off the printed sheet: someone sharing a
+          property is sending that property, not a page of competitors. */}
       {similar.length > 0 && (
-        <div className="mt-6">
+        <div data-print-hide className="mt-6">
           <h2 className="mb-4 font-display text-xl font-extrabold text-primary dark:text-foreground">Similar Properties You May Like</h2>
           <div className="grid gap-4 sm:grid-cols-3">
             {similar.map((s) => (
@@ -571,7 +590,7 @@ export function PropertyDetail({
             ))}
           </div>
         </div>
-        <div className="rounded-2xl border border-accent/30 bg-accent/10 p-5">
+        <div data-print-hide className="rounded-2xl border border-accent/30 bg-accent/10 p-5">
           <h2 className="font-display text-base font-bold text-primary dark:text-foreground">Need Expert Advice?</h2>
           <p className="mt-1 text-xs text-muted-foreground">
             Our property experts will help you find the best deal — best price, free

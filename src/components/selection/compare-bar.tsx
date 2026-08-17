@@ -57,6 +57,7 @@ export function CompareBar() {
           animate={{ y: 0 }}
           exit={{ y: 120 }}
           transition={{ type: "spring", stiffness: 320, damping: 32 }}
+          data-print-hide
           className="fixed inset-x-0 bottom-0 z-50"
         >
           <div className="container pb-4">

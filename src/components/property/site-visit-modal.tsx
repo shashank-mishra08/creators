@@ -99,7 +99,8 @@ export function SiteVisitModal({ isOpen, onClose, propertyName }: SiteVisitModal
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+            data-print-hide
+      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
           />
 
           {/* Modal */}

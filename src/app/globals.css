@@ -175,3 +175,77 @@ html {
     scroll-behavior: auto;
   }
 }
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Print
+
+   "Download PDF" and Ctrl+P used to produce the whole website — navigation,
+   footer, toasts, buttons that do nothing on paper. These rules cut the page
+   down to its content, so a property or a comparison prints as the document
+   someone actually wanted to send.
+
+   Anything that should not appear on paper carries `data-print-hide`.
+   ────────────────────────────────────────────────────────────────────────── */
+@media print {
+  /* Chrome drops background colours by default; keep the ones that carry
+     meaning (Best chips, top-pick tints) rather than printing blank boxes. */
+  *,
+  *::before,
+  *::after {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+  }
+
+  /* Site chrome and anything explicitly opted out. */
+  body > header,
+  body > footer,
+  .relative.flex.min-h-screen > header,
+  .relative.flex.min-h-screen > footer,
+  [data-print-hide] {
+    display: none !important;
+  }
+
+  /* Fixed and sticky elements repeat on every printed page or cover content:
+     the compare tray, toasts, sticky table headers. Let them flow instead. */
+  [class*="fixed"],
+  .sticky {
+    position: static !important;
+  }
+
+  /* Scrollports clip to one screen on paper — release them so the whole table
+     prints rather than only the part that happened to be visible. */
+  [class*="overflow-auto"],
+  [class*="overflow-x-auto"],
+  [class*="overflow-y-auto"] {
+    overflow: visible !important;
+    max-height: none !important;
+  }
+
+  main {
+    padding: 0 !important;
+  }
+
+  /* Keep a card from being sliced across two sheets. */
+  section,
+  article,
+  li,
+  tr {
+    break-inside: avoid;
+  }
+
+  a[href^="http"]::after {
+    content: " (" attr(href) ")";
+    font-size: 10px;
+    color: #555;
+    word-break: break-all;
+  }
+
+  @page {
+    margin: 12mm;
+  }
+}

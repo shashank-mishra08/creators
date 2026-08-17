@@ -17,7 +17,7 @@ export function Toaster() {
   }, [toast, setToast]);
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-24 z-[100] flex justify-center px-4">
+    <div data-print-hide className="pointer-events-none fixed inset-x-0 bottom-24 z-[100] flex justify-center px-4">
       <AnimatePresence>
         {toast && (
           <motion.div
