@@ -13,6 +13,9 @@ interface ComparisonState {
   /** Swap one selection for another in place, keeping its column position. */
   replace: (oldId: string, newId: string) => void;
   remove: (id: string) => void;
+  /** Adopt a whole selection at once — used when a shared /compare link
+   *  arrives with the ids in the URL. */
+  setSelection: (ids: string[]) => void;
   clear: () => void;
   isSelected: (id: string) => boolean;
   canCompare: () => boolean;
@@ -51,6 +54,8 @@ export const useComparison = create<ComparisonState>()(
       },
       remove: (id) =>
         set((s) => ({ selected: s.selected.filter((x) => x !== id) })),
+      setSelection: (ids) =>
+        set({ selected: [...new Set(ids.filter(Boolean))].slice(0, MAX_COMPARE) }),
       clear: () => set({ selected: [] }),
       isSelected: (id) => get().selected.includes(id),
       canCompare: () => get().selected.length >= MIN_COMPARE,

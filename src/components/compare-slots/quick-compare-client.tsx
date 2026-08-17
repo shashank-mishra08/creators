@@ -2,9 +2,10 @@
 
 import * as React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Loader2, Scale } from "lucide-react";
+import { Loader2, Printer, Scale } from "lucide-react";
 import { PropertySlotSelect } from "@/components/compare-slots/property-slot-select";
 import { QuickCompareTable } from "@/components/compare-slots/quick-compare-table";
+import { ShareButton } from "@/components/ui/share-button";
 import { api } from "@/lib/api/client";
 import { compareProperties } from "@/lib/scoring";
 import type { ComparisonResult, Property, PropertyOption } from "@/lib/types";
@@ -169,6 +170,25 @@ export function QuickCompareClient() {
           Select up to {SLOTS} properties to compare features, prices, amenities
           and more.
         </p>
+
+        {/* Only once there is something to send. The URL already carries the
+            selection, so the link opens the same comparison for anyone. */}
+        {properties.length > 0 && (
+          <div data-print-hide className="mt-4 flex items-center justify-center gap-2">
+            <ShareButton
+              url={`/compare/quick?p=${properties.map((x) => x.id).join(",")}`}
+              title="Property comparison"
+              text={properties.map((x) => x.name).join(" vs ")}
+            />
+            <button
+              type="button"
+              onClick={() => window.print()}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:bg-muted"
+            >
+              <Printer className="h-3.5 w-3.5" /> Print
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Slots. Always all three, so the page reads the same before and after a

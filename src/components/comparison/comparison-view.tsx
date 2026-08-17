@@ -18,7 +18,6 @@ import {
   MapPin,
   Phone,
   Plus,
-  Share2,
   Sparkles,
   TrendingUp,
   Users,
@@ -34,6 +33,7 @@ import { LocationMap } from "@/components/comparison/location-map";
 import { PropertyPicker } from "@/components/comparison/property-picker";
 import { CompareSelectionBar } from "@/components/comparison/compare-selection-bar";
 import { Button } from "@/components/ui/button";
+import { ShareButton } from "@/components/ui/share-button";
 import { CoverImage } from "@/components/ui/cover-image";
 import { Lightbox } from "@/components/ui/lightbox";
 import { cn, formatPriceLakh } from "@/lib/utils";
@@ -163,17 +163,15 @@ export function ComparisonView({
           >
             <ArrowLeft className="h-4 w-4" /> Back to Listings
           </Link>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => {
-                if (navigator.share)
-                  navigator.share({ title: "Property Comparison", url: location.href }).catch(() => {});
-                else navigator.clipboard?.writeText(location.href);
-              }}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-muted"
-            >
-              <Share2 className="h-3.5 w-3.5" /> Share
-            </button>
+          <div data-print-hide className="flex items-center gap-2">
+            {/* Was sharing location.href — a bare /compare, while the
+                selection lived in localStorage. The recipient opened it and saw
+                their own comparison, or none. The ids travel in the link now. */}
+            <ShareButton
+              url={`/compare?p=${properties.map((x) => x.id).join(",")}`}
+              title="Property comparison"
+              text={properties.map((x) => x.name).join(" vs ")}
+            />
             <button
               onClick={() => window.print()}
               className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-muted"

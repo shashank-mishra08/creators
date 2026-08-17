@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { GitCompareArrows, Scale } from "lucide-react";
 import { MIN_COMPARE, useComparison } from "@/store/comparison";
 import { ComparisonView } from "@/components/comparison/comparison-view";
@@ -11,6 +12,8 @@ import type { ComparisonResult, Property } from "@/lib/types";
 
 export function CompareClient() {
   const selected = useComparison((s) => s.selected);
+  const setSelection = useComparison((s) => s.setSelection);
+  const searchParams = useSearchParams();
   const [hydrated, setHydrated] = React.useState(false);
   const [loading, setLoading] = React.useState(true);
   const [properties, setProperties] = React.useState<Property[]>([]);
@@ -19,6 +22,19 @@ export function CompareClient() {
 
   // Selection lives in localStorage (zustand persist) — wait for hydration.
   React.useEffect(() => setHydrated(true), []);
+
+  /**
+   * A shared link carries its comparison in `?p=`, and adopting it replaces
+   * whatever the visitor had selected — which is the point of opening someone
+   * else's comparison. Runs once per distinct link: the page keeps reading the
+   * store afterwards, so removing a column still behaves exactly as before.
+   */
+  const linkIds = searchParams.get("p");
+  React.useEffect(() => {
+    if (!linkIds) return;
+    const ids = [...new Set(linkIds.split(",").map((x) => x.trim()).filter(Boolean))];
+    if (ids.length) setSelection(ids);
+  }, [linkIds, setSelection]);
 
   const key = selected.join(",");
   React.useEffect(() => {

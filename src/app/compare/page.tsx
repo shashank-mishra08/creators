@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { CompareClient } from "@/components/comparison/compare-client";
 
 export const metadata: Metadata = {
@@ -15,5 +16,10 @@ export const metadata: Metadata = {
 };
 
 export default function ComparePage() {
-  return <CompareClient />;
+  // The client reads `?p=` from a shared link, which needs a Suspense boundary.
+  return (
+    <Suspense fallback={<div className="min-h-[60vh]" />}>
+      <CompareClient />
+    </Suspense>
+  );
 }
