@@ -3,7 +3,7 @@
 import * as React from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   BadgeCheck,
@@ -29,6 +29,12 @@ import { useAuth } from "@/store/auth";
 import { useMounted } from "@/lib/use-mounted";
 import { setPendingAction } from "@/lib/pending-action";
 import { LocationPickerButton } from "@/components/listing/location-picker";
+import {
+  CITY_PARAM,
+  QUERY_PARAM,
+  parseCities,
+  writeListingParams,
+} from "@/lib/listing-filters";
 import { CompareBar } from "@/components/selection/compare-bar";
 import { Button } from "@/components/ui/button";
 import { CoverImage } from "@/components/ui/cover-image";
@@ -144,11 +150,11 @@ export function PropertyExplorer({ initial, seed, title, subtitle, variant = "fe
   }, [initial, activeSeed]);
 
   const router = useRouter();
+  const searchParams = useSearchParams();
   const selected = useComparison((s) => s.selected);
 
   const [tab, setTab] = React.useState(0);
   const [locQuery, setLocQuery] = React.useState("");
-  const [locations, setLocations] = React.useState<Set<City>>(new Set());
   // Budget range (in lakhs). Bounds are derived from the live data; `budget` is
   // null until the user drags a handle. Effective range falls back to bounds.
   const [budget, setBudget] = React.useState<[number, number] | null>(null);
@@ -158,8 +164,6 @@ export function PropertyExplorer({ initial, seed, title, subtitle, variant = "fe
   const [amenities, setAmenities] = React.useState<Set<AmenityKey>>(new Set());
   const [builders, setBuilders] = React.useState<Set<string>>(new Set());
   const [sort, setSort] = React.useState("recommended");
-  // Toolbar "Search by Project Name" — real-time, partial, case-insensitive.
-  const [projectQuery, setProjectQuery] = React.useState("");
 
   // Distinct builder/brand names, derived from the live data (never hardcoded).
   const builderNames = React.useMemo(
@@ -172,6 +176,38 @@ export function PropertyExplorer({ initial, seed, title, subtitle, variant = "fe
   const cityNames = React.useMemo(
     () => [...new Set(shuffledInitial.map((p) => p.city).filter(Boolean))].sort(),
     [shuffledInitial],
+  );
+
+  /*
+   * Search text and city filter live in the URL, not in this component.
+   *
+   * The navbar carries the same two controls, and duplicated state is state
+   * that drifts. Reading them from `?q=`/`?city=` means the two copies cannot
+   * disagree — and the resulting URL is shareable, which the old local state
+   * never was. Writes go through `history.replaceState`, so no navigation and
+   * no re-query; see `@/lib/listing-filters`.
+   */
+  const projectQuery = searchParams.get(QUERY_PARAM) ?? "";
+  const setProjectQuery = React.useCallback(
+    (value: string) => writeListingParams({ q: value }),
+    [],
+  );
+
+  const cityParam = searchParams.get(CITY_PARAM);
+  // Narrowed to cities we actually have, so a stale or hand-edited link can
+  // only ever show fewer results — never an empty list under a phantom chip.
+  const locations = React.useMemo(() => {
+    const known = new Set<string>(cityNames);
+    return new Set(parseCities(cityParam).filter((c) => known.has(c)) as City[]);
+  }, [cityParam, cityNames]);
+
+  const setLocations = React.useCallback(
+    (next: Set<City> | ((prev: Set<City>) => Set<City>)) => {
+      writeListingParams({
+        cities: typeof next === "function" ? next(locations) : next,
+      });
+    },
+    [locations],
   );
 
   // Budget bounds derived from real priced properties (rounded to ₹5 L steps).

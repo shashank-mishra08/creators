@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/brand/logo";
 import { useAuth, selectShortlistIds } from "@/store/auth";
 import { useComparison } from "@/store/comparison";
+import { ListingSearchControls } from "@/components/layout/nav-search";
+import { isListingPath } from "@/lib/listing-filters";
 import { useMounted } from "@/lib/use-mounted";
 import { cn } from "@/lib/utils";
 
@@ -101,6 +103,18 @@ export function MobileNav({ nav }: { nav: NavItem[] }) {
               <X className="h-5 w-5" />
             </button>
           </div>
+
+          {/* The header bar has no room for the search on a phone, so it lives
+              here. Typing updates the URL rather than navigating, so the drawer
+              stays open and the listing behind it is already filtered when it
+              closes. Hidden from `md` up, where the bar shows them inline. */}
+          {isListingPath(pathname) && (
+            <div className="border-b border-border p-4 md:hidden">
+              <React.Suspense fallback={null}>
+                <ListingSearchControls enabled={open} stacked />
+              </React.Suspense>
+            </div>
+          )}
 
           <nav className="flex flex-col gap-1 p-4">
             {nav.map((item) => {

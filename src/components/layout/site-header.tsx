@@ -7,6 +7,7 @@ import { Logo } from "@/components/brand/logo";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { AuthNav } from "@/components/auth/auth-nav";
 import { MobileNav } from "@/components/layout/mobile-nav";
+import { NavSearch } from "@/components/layout/nav-search";
 import { cn } from "@/lib/utils";
 
 const NAV = [
@@ -73,6 +74,14 @@ export function SiteHeader() {
             );
           })}
         </nav>
+
+        {/* Suspense because it reads `useSearchParams`, and this header renders
+            on every route — including the statically rendered ones, which would
+            otherwise fail to prerender. It renders nothing off the listing
+            pages, so the boundary costs nothing there. */}
+        <React.Suspense fallback={null}>
+          <NavSearch />
+        </React.Suspense>
 
         <div className="ml-auto flex items-center gap-2">
           <ThemeToggle />
