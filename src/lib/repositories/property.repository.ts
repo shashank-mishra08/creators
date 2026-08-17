@@ -5,6 +5,7 @@ import type {
   AmenityKey,
   Builder,
   City,
+  CityCount,
   PropertyKind,
   Possession,
   Property,
@@ -278,6 +279,26 @@ export const propertyRepository = {
       take,
     });
     return rows.map(mapProperty);
+  },
+
+  /**
+   * Cities with a public project in them, and how many each holds.
+   *
+   * An aggregate rather than a row fetch: the location picker needs five names
+   * and five numbers, and pulling the slim catalogue to count it client-side
+   * was both a bigger payload and a visible delay before the list appeared.
+   */
+  async cityCounts(): Promise<CityCount[]> {
+    const rows = await prisma.property.groupBy({
+      by: ["city"],
+      where: { ...PUBLIC_VISIBILITY },
+      _count: { _all: true },
+      orderBy: { city: "asc" },
+    });
+
+    return rows
+      .filter((r) => r.city)
+      .map((r) => ({ name: r.city as City, count: r._count._all }));
   },
 
   /**

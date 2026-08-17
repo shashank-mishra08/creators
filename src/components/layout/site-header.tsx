@@ -8,6 +8,7 @@ import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { AuthNav } from "@/components/auth/auth-nav";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { NavSearch } from "@/components/layout/nav-search";
+import type { CityCount } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const NAV = [
@@ -20,7 +21,9 @@ const NAV = [
   { href: "/compare/quick", label: "Compare" },
 ];
 
-export function SiteHeader() {
+/** `cities` comes from the root layout — see the note there on why it is not
+ *  fetched in the picker itself. */
+export function SiteHeader({ cities }: { cities: CityCount[] }) {
   const pathname = usePathname();
   const [scrolled, setScrolled] = React.useState(false);
 
@@ -80,7 +83,7 @@ export function SiteHeader() {
             otherwise fail to prerender. It renders nothing off the listing
             pages, so the boundary costs nothing there. */}
         <React.Suspense fallback={null}>
-          <NavSearch />
+          <NavSearch cities={cities} />
         </React.Suspense>
 
         <div className="ml-auto flex items-center gap-2">
@@ -89,7 +92,7 @@ export function SiteHeader() {
           <div className="hidden lg:block">
             <AuthNav />
           </div>
-          <MobileNav nav={NAV} />
+          <MobileNav nav={NAV} cities={cities} />
         </div>
       </div>
     </header>

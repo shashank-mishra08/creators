@@ -12,6 +12,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { AuthInit } from "@/components/auth/auth-init";
 import { CompareSessionReset } from "@/components/selection/compare-session";
 import { settingsService } from "@/lib/services/settings.service";
+import { propertyService } from "@/lib/services/property.service";
+import type { CityCount } from "@/lib/types";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -76,7 +78,19 @@ export default async function RootLayout({
   // Public-safe settings drive the footer (contact, social, custom fields).
   // Fetched only for the public site; the footer falls back to its defaults if
   // this is null, so nothing breaks when settings are empty or unreadable.
-  const publicSettings = isAdminRoute ? null : await settingsService.getPublic();
+  //
+  // The header's location picker gets its cities here too, in parallel. It used
+  // to fetch them itself once mounted, which left the dropdown empty for a
+  // second or two after the page was otherwise usable — the toolbar's copy of
+  // the same picker had its list server-rendered and opened complete, so the
+  // two controls visibly disagreed. An empty list falls back to no picker
+  // options rather than breaking the header.
+  const [publicSettings, navCities] = await Promise.all([
+    isAdminRoute ? Promise.resolve(null) : settingsService.getPublic(),
+    isAdminRoute
+      ? Promise.resolve<CityCount[]>([])
+      : propertyService.cityCounts().catch(() => [] as CityCount[]),
+  ]);
 
   if (maintenance) {
     return (
@@ -110,7 +124,7 @@ export default async function RootLayout({
                 bottom tray does not follow them back to the listing. */}
             <CompareSessionReset />
             <div className="relative flex min-h-screen flex-col">
-              <SiteHeader />
+              <SiteHeader cities={navCities} />
               <main id="main-content" className="flex-1">
                 {children}
               </main>

@@ -256,6 +256,16 @@ export interface PropertyOption {
   gradient: [string, string];
 }
 
+/**
+ * One city with how many public projects it holds — the location picker's whole
+ * data need. Server-rendered into the header so the navbar picker opens with
+ * its list already there, the way the toolbar's does.
+ */
+export interface CityCount {
+  name: City;
+  count: number;
+}
+
 /** Admin-managed promotional banner shown on the home page. */
 export interface Banner {
   id: string;

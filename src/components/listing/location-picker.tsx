@@ -195,8 +195,14 @@ export function LocationPickerButton({
 
           <div className="max-h-60 overflow-y-auto p-1.5">
             {results.length === 0 ? (
+              // Two different nothings. Typing into the filter and matching no
+              // city is a search miss; an empty `cities` list is the catalogue
+              // being empty. Neither is "nothing near you" — that answer comes
+              // from the geolocation path, which writes its own `notice` above.
               <p className="px-2 py-6 text-center text-xs text-muted-foreground">
-                Oops — sorry, no property found near your location.
+                {query.trim()
+                  ? `No location matches “${query.trim()}”.`
+                  : "No locations to choose from yet."}
               </p>
             ) : (
               results.map((c) => {

@@ -10,6 +10,7 @@ import { useAuth, selectShortlistIds } from "@/store/auth";
 import { useComparison } from "@/store/comparison";
 import { ListingSearchControls } from "@/components/layout/nav-search";
 import { isListingPath } from "@/lib/listing-filters";
+import type { CityCount } from "@/lib/types";
 import { useMounted } from "@/lib/use-mounted";
 import { cn } from "@/lib/utils";
 
@@ -20,7 +21,13 @@ type NavItem = { href: string; label: string };
  * header (inline nav + AuthNav) is unchanged. Holds the nav links, the compare
  * shortcut and the auth actions so nothing is unreachable on small screens.
  */
-export function MobileNav({ nav }: { nav: NavItem[] }) {
+export function MobileNav({
+  nav,
+  cities,
+}: {
+  nav: NavItem[];
+  cities: CityCount[];
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const mounted = useMounted();
@@ -111,7 +118,7 @@ export function MobileNav({ nav }: { nav: NavItem[] }) {
           {isListingPath(pathname) && (
             <div className="border-b border-border p-4 md:hidden">
               <React.Suspense fallback={null}>
-                <ListingSearchControls enabled={open} stacked />
+                <ListingSearchControls cities={cities} stacked />
               </React.Suspense>
             </div>
           )}

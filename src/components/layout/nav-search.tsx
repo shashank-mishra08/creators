@@ -4,7 +4,6 @@ import * as React from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Search, X } from "lucide-react";
 import { LocationPickerButton } from "@/components/listing/location-picker";
-import { api } from "@/lib/api/client";
 import {
   CITY_PARAM,
   QUERY_PARAM,
@@ -12,48 +11,8 @@ import {
   parseCities,
   writeListingParams,
 } from "@/lib/listing-filters";
-import type { City } from "@/lib/types";
+import type { City, CityCount } from "@/lib/types";
 import { cn } from "@/lib/utils";
-
-type CityCount = { name: City; count: number };
-
-/**
- * Cities for the picker, with how many projects each holds.
- *
- * The header sits in the root layout and has no property data, so this comes
- * from the slim options endpoint — the same one the compare pickers use. Only
- * fetched where the controls are actually shown, and once per mount.
- */
-function useCityOptions(enabled: boolean): CityCount[] {
-  const [cities, setCities] = React.useState<CityCount[]>([]);
-
-  React.useEffect(() => {
-    if (!enabled || cities.length) return;
-    let cancelled = false;
-    api
-      .propertyOptions()
-      .then((options) => {
-        if (cancelled) return;
-        const counts = new Map<City, number>();
-        for (const o of options) {
-          if (o.city) counts.set(o.city, (counts.get(o.city) ?? 0) + 1);
-        }
-        setCities(
-          [...counts.entries()]
-            .map(([name, count]) => ({ name, count }))
-            .sort((a, b) => a.name.localeCompare(b.name)),
-        );
-      })
-      // The picker just stays empty if this fails. The page's own toolbar has
-      // the full list either way, so no city becomes unreachable.
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [enabled, cities.length]);
-
-  return cities;
-}
 
 /**
  * The listing search box and location picker, for use outside the listing.
@@ -61,17 +20,22 @@ function useCityOptions(enabled: boolean): CityCount[] {
  * It drives the same `?q=`/`?city=` params the toolbar on the page reads, so
  * the two are one control shown twice rather than two filters competing — see
  * `@/lib/listing-filters` for why the URL is the channel.
+ *
+ * `cities` is passed down from the root layout rather than fetched here. This
+ * component used to load them itself on mount, which meant the navbar picker
+ * opened on an empty list for a second or two after the page was interactive
+ * while the toolbar's identical picker opened complete — the two controls are
+ * meant to be one control shown twice, and that was the one place they differed.
  */
 export function ListingSearchControls({
-  enabled,
+  cities,
   stacked = false,
 }: {
-  enabled: boolean;
+  cities: CityCount[];
   /** Drawer layout: full width, one control per line. */
   stacked?: boolean;
 }) {
   const searchParams = useSearchParams();
-  const cities = useCityOptions(enabled);
 
   const query = searchParams.get(QUERY_PARAM) ?? "";
   const cityNames = React.useMemo(() => cities.map((c) => c.name), [cities]);
@@ -135,13 +99,13 @@ export function ListingSearchControls({
  * Below `md` the bar has no room for it — the drawer carries it there, and the
  * page's own toolbar is a few pixels further down regardless.
  */
-export function NavSearch() {
+export function NavSearch({ cities }: { cities: CityCount[] }) {
   const pathname = usePathname();
   if (!isListingPath(pathname)) return null;
 
   return (
     <div className="hidden min-w-0 flex-1 md:flex lg:max-w-xl">
-      <ListingSearchControls enabled />
+      <ListingSearchControls cities={cities} />
     </div>
   );
 }
