@@ -7,6 +7,7 @@ import { PropertySlotSelect } from "@/components/compare-slots/property-slot-sel
 import { QuickCompareTable } from "@/components/compare-slots/quick-compare-table";
 import { ShareButton } from "@/components/ui/share-button";
 import { api } from "@/lib/api/client";
+import { useComparison } from "@/store/comparison";
 import { compareProperties } from "@/lib/scoring";
 import type { ComparisonResult, Property, PropertyOption } from "@/lib/types";
 
@@ -75,6 +76,29 @@ export function QuickCompareClient() {
       SLOTS,
     );
   }, [searchParams]);
+
+  /**
+   * Seed the slots from the selection built while browsing, but only when the
+   * URL says nothing.
+   *
+   * "Add to Compare" on a property page writes to the shared store, and until
+   * now this page ignored it — the visitor arrived to three empty dropdowns and
+   * had to find the same property again. Seeding fixes that without giving up
+   * what the separation bought: the URL still wins whenever it has ids, so a
+   * shared link opens the sender's comparison and not the reader's, and the
+   * moment anyone touches a dropdown the URL takes over for good. Nothing is
+   * written back, so /compare and its tray are left exactly as they were.
+   */
+  const storeSelection = useComparison((st) => st.selected);
+  const seeded = React.useRef(false);
+  React.useEffect(() => {
+    if (seeded.current) return;
+    if (searchParams.get("p")) { seeded.current = true; return; }
+    if (storeSelection.length === 0) return;
+    seeded.current = true;
+    const clean = [...new Set(storeSelection.filter(Boolean))].slice(0, SLOTS);
+    router.replace(`/compare/quick?p=${clean.join(",")}`, { scroll: false });
+  }, [storeSelection, searchParams, router]);
 
   const setIds = React.useCallback(
     (next: string[]) => {
