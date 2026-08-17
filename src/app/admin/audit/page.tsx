@@ -1,6 +1,7 @@
 import { ShieldAlert, ScrollText } from "lucide-react";
 import { getCurrentAdmin } from "@/lib/auth/roles";
 import { can } from "@/lib/auth/permissions";
+import { formatDateTimeIST } from "@/lib/format-date";
 import { listRecentAudit } from "@/lib/services/audit.service";
 
 export const dynamic = "force-dynamic";
@@ -11,13 +12,9 @@ const ROLE_LABEL: Record<string, string> = {
   AGENT: "Agent",
 };
 
-function fmt(iso: string) {
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return iso;
-  return d.toLocaleString("en-IN", {
-    day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
-  });
-}
+/** This page renders on the server, so an unpinned locale format printed the
+ *  server's clock — IST on a laptop, UTC on Vercel, 5½ hours apart. */
+const fmt = (iso: string) => formatDateTimeIST(iso, iso);
 
 export default async function AdminAuditPage() {
   const current = await getCurrentAdmin();

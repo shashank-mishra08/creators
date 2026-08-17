@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db/prisma";
+import { formatDateIST } from "@/lib/format-date";
 import { CalendarCheck, Phone, Building2 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -91,7 +92,7 @@ export default async function AdminBookingsPage() {
                     </td>
                     <td className="px-5 py-4 hidden lg:table-cell">
                       <p className="text-sm text-slate-700">
-                        {b.createdAt.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                        {formatDateIST(b.createdAt)}
                       </p>
                     </td>
                   </tr>

@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db/prisma";
+import { IST_TZ } from "@/lib/format-date";
 import Link from "next/link";
 import {
   Building2, Eye, HardHat, EyeOff,
@@ -80,7 +81,10 @@ export default async function AdminDashboardPage() {
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
           <p className="text-sm text-slate-500 mt-0.5">
+            {/* Pinned to IST: rendered on the server, so an unpinned format
+                shows the previous day for the first 5½ hours of every day. */}
             {new Date().toLocaleDateString("en-IN", {
+              timeZone: IST_TZ,
               weekday: "long", year: "numeric", month: "long", day: "numeric",
             })}
           </p>

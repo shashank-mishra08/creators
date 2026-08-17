@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { formatDateTimeIST } from "@/lib/format-date";
 import { UserPlus, Mail, Shield, X, Loader2, CheckCircle2, Copy, Check, KeyRound, Link2 } from "lucide-react";
 
 type Role = "SUPER_ADMIN" | "MANAGER" | "AGENT";
@@ -23,12 +24,10 @@ const ROLE_OPTIONS: { value: Role; label: string; hint: string }[] = [
   { value: "AGENT", label: "Agent", hint: "View properties & bookings, update status" },
 ];
 
-function fmtDate(iso: string | null) {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return "—";
-  return d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
-}
+/** Last login is the one place an admin checks "was that just now or last
+ *  week", and a bare date could not answer it. IST for everyone, so two admins
+ *  comparing notes are reading the same clock. */
+const fmtDate = (iso: string | null) => formatDateTimeIST(iso);
 
 /** Read-only link with a copy button. Works even where the site can't send email. */
 function CopyLinkBox({ url }: { url: string }) {
