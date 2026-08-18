@@ -275,6 +275,12 @@ export interface Banner {
   mediaType: "image" | "video";
   /** Image banner, or the poster frame shown before a video plays. */
   imageUrl: string;
+  /**
+   * Portrait artwork for phones, where the slide is taller than it is wide.
+   * Empty means there is none and `imageUrl` is used at every width, which is
+   * how every banner behaved before this field existed.
+   */
+  imageUrlMobile: string;
   videoUrl: string;
   linkUrl: string;
   sortOrder: number;

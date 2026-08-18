@@ -96,6 +96,7 @@ export const bannerSchema = z.object({
   subtitle: z.string().trim().max(240).default(""),
   mediaType: z.enum(["image", "video"]).default("image"),
   imageUrl: z.string().trim().default(""),
+  imageUrlMobile: z.string().trim().default(""),
   videoUrl: z.string().trim().default(""),
   linkUrl: z.string().trim().max(500).default(""),
   sortOrder: z.coerce.number().int().min(0).max(9999).default(0),
