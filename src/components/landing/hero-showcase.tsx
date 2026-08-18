@@ -34,9 +34,12 @@ const STAGE_HEIGHT =
 export function HeroShowcase({
   slides = [],
   banners = [],
+  projectCount = 0,
 }: {
   slides?: HeroSlide[];
   banners?: Banner[];
+  /** Passed straight through to the hero's stat row. */
+  projectCount?: number;
 }) {
   const count = 1 + banners.length;
   const [idx, setIdx] = React.useState(0);
@@ -116,6 +119,7 @@ export function HeroShowcase({
       >
         <Hero3D
           slides={slides}
+          projectCount={projectCount}
           active={idx === 0}
           heightClassName={STAGE_HEIGHT}
           showScrollHint={single}

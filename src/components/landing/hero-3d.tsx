@@ -40,6 +40,19 @@ const MAX_ROTATIONS = 3;
 const ROTATE_MS = 5000;
 
 /**
+ * The "verified projects" figure, from the live catalogue.
+ *
+ * Floored to a round ten and suffixed, so 43 projects reads "40+" — a claim
+ * that stays true as projects are added or hidden, where an exact number goes
+ * stale the moment one is. Under ten there is no ten to floor to without
+ * printing "0+", so the exact count stands on its own.
+ */
+function projectsLabel(count: number): string {
+  if (count < 10) return String(count);
+  return `${Math.floor(count / 10) * 10}+`;
+}
+
+/**
  * Interactive 3D hero. The whole stage reacts to the cursor: a perspective
  * tilt on the deck plus per-layer parallax (different translateZ depths move by
  * different amounts). Everything is visible at rest — the motion is enhancement,
@@ -51,11 +64,19 @@ const ROTATE_MS = 5000;
  */
 export function Hero3D({
   slides = [],
+  projectCount = 0,
   active = true,
   heightClassName = "min-h-[calc(100svh-4rem)]",
   showScrollHint = true,
 }: {
   slides?: HeroSlide[];
+  /**
+   * How many projects the catalogue holds, for the stat row. Counted server-side
+   * in `page.tsx` from the same list the explorer below the fold renders, so the
+   * headline figure and the grid can never disagree. Zero — or omitted — drops
+   * the stat rather than claiming a number.
+   */
+  projectCount?: number;
   /**
    * False while the hero is parked off-screen in the showcase. Without this the
    * card rotation burns its three turns where nobody can see them, and the hero
@@ -175,7 +196,9 @@ export function Hero3D({
 
           <dl className="mt-10 flex flex-wrap gap-x-9 gap-y-4">
             {[
-              { k: "20+", v: "Verified projects" },
+              ...(projectCount > 0
+                ? [{ k: projectsLabel(projectCount), v: "Verified projects" }]
+                : []),
               { k: "5", v: "Scoring factors" },
               { k: "< 2 min", v: "To a decision" },
             ].map((s) => (

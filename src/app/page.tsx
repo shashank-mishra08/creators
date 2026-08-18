@@ -68,7 +68,13 @@ export default async function HomePage() {
           a hero alone added no value, so the promotions now get the same room
           rather than a strip below the fold. With no live banners this is the
           hero on its own, exactly as before. */}
-      <HeroShowcase slides={buildHeroSlides(properties)} banners={banners} />
+      <HeroShowcase
+        slides={buildHeroSlides(properties)}
+        banners={banners}
+        // The same array the explorer below is given, so the hero's count and
+        // the grid are one number rather than two that drift.
+        projectCount={properties.length}
+      />
       <PropertyExplorer
         initial={properties}
         seed={seed}
