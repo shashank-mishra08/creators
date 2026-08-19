@@ -132,12 +132,10 @@ export function cityLandingCopy(city: string, properties: Property[]) {
   }. Compare price, amenities, location and builders on Creators Arena.`;
   const intro =
     n === 0
-      ? `We are adding live projects in ${city}. Browse other NCR locations or compare homes side-by-side.`
-      : `${city} currently has ${n} live ${
-          n === 1 ? "project" : "projects"
-        } on Creators Arena${builders.length ? ` from ${builders.slice(0, 4).join(", ")}` : ""}${
-          span ? `, ${span}` : ""
-        }. Compare ${kindLabel} on price, amenities, location and investment potential before you shortlist.`;
+      ? `Live projects in ${city} will appear here as they are published.`
+      : `${n} live ${n === 1 ? "project" : "projects"}${
+          span ? ` ${span}` : ""
+        }${builders.length ? ` · ${builders.slice(0, 3).join(", ")}` : ""}.`;
   const faqs = [
     {
       q: `Are there flats for sale in ${city}?`,
@@ -173,9 +171,9 @@ export function builderLandingCopy(builder: string, properties: Property[]) {
   const intro =
     n === 0
       ? `${builder} projects will appear here as they are published.`
-      : `${builder} has ${n} live ${n === 1 ? "project" : "projects"} on Creators Arena${
+      : `${n} live ${n === 1 ? "project" : "projects"}${
           cities.length ? ` in ${cities.join(", ")}` : ""
-        }${span ? `, ${span}` : ""}. Compare them on price, amenities, location and ROI before you visit.`;
+        }${span ? ` ${span}` : ""}.`;
   const faqs = [
     {
       q: `Which ${builder} projects are listed?`,

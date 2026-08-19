@@ -22,15 +22,8 @@ export default async function PropertiesPage() {
   const properties = await getDataSource().list();
   return (
     <>
-      <div className="container pt-8 pb-0">
-        <h1 className="font-display text-3xl font-extrabold tracking-tight text-primary dark:text-foreground sm:text-4xl">
-          NCR properties for sale
-        </h1>
-        <p className="mt-2 max-w-2xl text-sm text-muted-foreground sm:text-base">
-          Filter live projects in Noida, Greater Noida, Ghaziabad and Yamuna
-          Expressway, then shortlist 2–4 to compare.
-        </p>
-      </div>
+      {/* Visible UI leads with filters; heading is for a11y/SEO only. */}
+      <h1 className="sr-only">NCR properties for sale</h1>
       <PropertyExplorer
         initial={properties}
         // Browse layout: collapsed filter groups, brand-first order, no Location

@@ -35,55 +35,48 @@ export default async function AboutPage() {
           ],
         }}
       />
-      <article className="container max-w-3xl py-12">
-        <p className="text-xs font-semibold uppercase tracking-wider text-accent">About</p>
-        <h1 className="mt-2 font-display text-3xl font-extrabold tracking-tight text-primary dark:text-foreground sm:text-4xl">
-          Property comparison, built for NCR buyers
+      <article className="container min-h-[70vh] max-w-3xl py-12">
+        <p className="text-[11px] font-bold uppercase tracking-wider text-accent">About</p>
+        <h1 className="mt-2 font-display text-3xl font-extrabold tracking-tight text-primary dark:text-foreground">
+          Comparison, built for NCR buyers
         </h1>
-        <div className="mt-6 space-y-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
+        <div className="mt-6 space-y-4 text-sm leading-relaxed text-muted-foreground">
           <p>
-            {SITE_NAME} is a RERA-registered real estate consultancy in Noida. We
-            help home buyers and investors compare residential projects across
-            Noida, Greater Noida, Ghaziabad and Yamuna Expressway — side by side,
-            on price, amenities, location, builder reputation and investment
-            potential.
+            {SITE_NAME} is a RERA-registered consultancy in Noida. We help buyers
+            and investors compare residential projects across Noida, Greater Noida,
+            Ghaziabad and Yamuna Expressway — side by side.
           </p>
           <p>
-            Most listing sites show one project at a time. Buyers still end up in
-            a spreadsheet. Comparison is the product here: pick two to four live
-            projects and a rule-based score explains which one fits a family,
-            an investor or a luxury brief — and why.
-          </p>
-          <p>
-            The catalogue is taken from developer intake sheets and kept current
-            by the team in Noida. Every public project page carries
-            configurations, floor plans, RERA details and connectivity so a site
-            visit starts with facts, not a brochure.
+            Pick two to four live projects and a rule-based score explains which
+            one fits a family, an investor or a luxury brief — and why. Every
+            public page carries configurations, floor plans, RERA details and
+            connectivity so a site visit starts with facts.
           </p>
         </div>
         <dl className="mt-8 grid gap-4 rounded-2xl border border-border bg-card p-5 text-sm shadow-glass sm:grid-cols-2">
           <div>
-            <dt className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Office
-            </dt>
-            <dd className="mt-1 font-medium text-foreground">{address}</dd>
+            <dt className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Office</dt>
+            <dd className="mt-1 font-semibold text-foreground">{address}</dd>
           </div>
           <div>
-            <dt className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              RERA
-            </dt>
-            <dd className="mt-1 font-medium text-foreground">{rera}</dd>
+            <dt className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">RERA</dt>
+            <dd className="mt-1 font-semibold text-foreground">{rera}</dd>
           </div>
         </dl>
-        <p className="mt-8 text-sm">
-          <Link href="/properties" className="font-semibold text-accent hover:underline">
-            Browse NCR properties
+        <div className="mt-8 flex flex-wrap gap-3">
+          <Link
+            href="/properties"
+            className="inline-flex h-10 items-center rounded-xl bg-accent px-4 text-sm font-semibold text-accent-foreground"
+          >
+            Browse properties
           </Link>
-          {" · "}
-          <Link href="/contact" className="font-semibold text-accent hover:underline">
+          <Link
+            href="/contact"
+            className="inline-flex h-10 items-center rounded-xl border border-border px-4 text-sm font-semibold text-foreground hover:bg-muted"
+          >
             Contact the team
           </Link>
-        </p>
+        </div>
       </article>
     </>
   );

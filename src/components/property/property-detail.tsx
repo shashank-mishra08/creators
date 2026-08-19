@@ -247,7 +247,7 @@ export function PropertyDetail({
       <div className="mt-4 grid gap-4 rounded-2xl border border-border bg-card p-5 shadow-glass lg:grid-cols-[1.4fr_1fr]">
         <div>
           <h1 className="font-display text-2xl font-extrabold text-primary dark:text-foreground">
-            {p.name} in {p.locality}, {p.city}
+            {p.builder.name} {p.name}
           </h1>
           <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
             <MapPin className="h-4 w-4 text-accent" /> {p.locality}, {p.city}

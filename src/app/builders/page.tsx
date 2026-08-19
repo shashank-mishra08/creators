@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { ArrowRight, Building2 } from "lucide-react";
-import { JsonLd } from "@/components/seo/json-ld";
-import { breadcrumbJsonLd, builderPath } from "@/lib/seo";
+import { Building2 } from "lucide-react";
+import { DirectoryIndex } from "@/components/seo/directory-index";
+import { builderPath } from "@/lib/seo";
 import { getDataSource } from "@/lib/data-source";
 
 export const metadata: Metadata = {
@@ -30,46 +29,20 @@ export default async function BuildersIndexPage() {
     .sort((a, b) => a.name.localeCompare(b.name));
 
   return (
-    <>
-      <JsonLd
-        data={{
-          "@context": "https://schema.org",
-          "@graph": [
-            breadcrumbJsonLd([
-              { name: "Home", path: "/" },
-              { name: "Builders", path: "/builders" },
-            ]),
-          ],
-        }}
-      />
-      <div className="container py-12">
-        <h1 className="font-display text-3xl font-extrabold tracking-tight text-primary dark:text-foreground sm:text-4xl">
-          Builders with projects in NCR
-        </h1>
-        <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
-          Open a developer to see every live project we list for them, then
-          compare configurations, location and price against other NCR options.
-        </p>
-        <ul className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {builders.map((b) => (
-            <li key={b.name}>
-              <Link
-                href={builderPath(b.name)}
-                className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-card px-4 py-4 shadow-glass transition-colors hover:border-accent/50 hover:bg-accent/5"
-              >
-                <span className="flex items-center gap-2 font-semibold text-foreground">
-                  <Building2 className="h-4 w-4 text-accent" />
-                  {b.name}
-                </span>
-                <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                  {b.count} {b.count === 1 ? "project" : "projects"}
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </div>
-    </>
+    <DirectoryIndex
+      eyebrow="Builders"
+      title="Browse by builder"
+      subtitle="Open a developer to see every live project we list, then compare against other NCR options."
+      crumbs={[
+        { name: "Home", path: "/" },
+        { name: "Builders", path: "/builders" },
+      ]}
+      items={builders.map((b) => ({
+        name: b.name,
+        count: b.count,
+        href: builderPath(b.name),
+      }))}
+      icon={Building2}
+    />
   );
 }

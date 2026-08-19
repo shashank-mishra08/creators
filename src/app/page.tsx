@@ -76,15 +76,10 @@ export default async function HomePage() {
   const seed = (Math.floor(Date.now() / 86_400_000) % 1000) / 1000;
 
   const cityCounts = new Map<string, number>();
-  const builderCounts = new Map<string, number>();
   for (const p of properties) {
     if (p.city) cityCounts.set(p.city, (cityCounts.get(p.city) ?? 0) + 1);
-    builderCounts.set(p.builder.name, (builderCounts.get(p.builder.name) ?? 0) + 1);
   }
   const cities = [...cityCounts.entries()]
-    .map(([name, count]) => ({ name, count }))
-    .sort((a, b) => a.name.localeCompare(b.name));
-  const builders = [...builderCounts.entries()]
     .map(([name, count]) => ({ name, count }))
     .sort((a, b) => a.name.localeCompare(b.name));
 
@@ -101,7 +96,7 @@ export default async function HomePage() {
         // the grid are one number rather than two that drift.
         projectCount={properties.length}
       />
-      <MarketLinks cities={cities} builders={builders} />
+      <MarketLinks cities={cities} />
       <PropertyExplorer
         initial={properties}
         seed={seed}

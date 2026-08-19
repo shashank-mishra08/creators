@@ -171,14 +171,14 @@ export function Hero3D({
           <h1 className="mt-6 font-display text-4xl font-extrabold leading-[1.02] tracking-tight text-primary dark:text-foreground sm:text-5xl xl:text-6xl">
             Compare
             <br />
-            NCR Properties
+            Properties
             <br />
             <span className="text-gradient">Smarter.</span>
           </h1>
 
           <p className="mt-6 max-w-md text-base leading-relaxed text-muted-foreground sm:text-lg">
-            Side-by-side scores for flats in Noida, Greater Noida, Ghaziabad and
-            Yamuna Expressway — price, amenities, location, builder and ROI, in
+            Stack homes side-by-side and let our rule-based engine score them on
+            price, amenities, location, builder and ROI - the best investment, in
             minutes.
           </p>
 
