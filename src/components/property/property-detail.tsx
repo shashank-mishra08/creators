@@ -35,6 +35,7 @@ import { Lightbox } from "@/components/ui/lightbox";
 import { SiteVisitModal } from "@/components/property/site-visit-modal";
 import { PropertyReviews } from "@/components/reviews/property-reviews";
 import { cn, formatPriceLakh } from "@/lib/utils";
+import { builderPath, cityPath, propertyFaqs, propertyPath } from "@/lib/seo";
 
 const EXPERT_PHONE = "+919252996677";
 
@@ -147,28 +148,7 @@ export function PropertyDetail({
     { icon: MapPin, label: "Expressway", value: p.location.airportKm },
   ];
 
-  const faqs = [
-    {
-      q: "What is the possession date of the project?",
-      a: `Possession is ${p.possession === "Ready to Move" ? "available now" : `expected by ${p.possessionDate}`}.`,
-    },
-    {
-      q: "Is the project RERA registered?",
-      a: p.reraId
-        ? `Yes, this project is RERA registered (RERA ID: ${p.reraId}).`
-        : "RERA details are being updated for this project.",
-    },
-    {
-      q: "What are the available configurations?",
-      a: `This project offers ${p.configs} configurations${p.floorPlans.length ? `, from ${Math.min(...p.floorPlans.map((f) => f.areaSqFt)).toLocaleString("en-IN")} sq.ft onwards` : ""}.`,
-    },
-    {
-      q: "Is metro connectivity available?",
-      a: p.location.metroKm > 0
-        ? `The nearest metro station is approximately ${p.location.metroKm} minutes away.`
-        : "-",
-    },
-  ];
+  const faqs = propertyFaqs(p);
 
   return (
     <div className="container py-6">
@@ -180,11 +160,11 @@ export function PropertyDetail({
         <span className="opacity-40">|</span>
         <Link href="/" className="hover:text-accent">Home</Link>
         <ChevronRight className="h-3 w-3" />
-        <Link href="/properties" className="hover:text-accent">Apartments</Link>
+        <Link href="/properties" className="hover:text-accent">Properties</Link>
         <ChevronRight className="h-3 w-3" />
-        <span>{p.locality}, {p.city}</span>
+        <Link href={cityPath(p.city)} className="hover:text-accent">{p.city}</Link>
         <ChevronRight className="h-3 w-3" />
-        <span className="font-semibold text-accent">Property Details</span>
+        <span className="font-semibold text-accent">{p.name}</span>
       </div>
 
       {/* Gallery — right column only appears when there are real photos, and it
@@ -198,7 +178,7 @@ export function PropertyDetail({
             aria-label={`View photos of ${p.name}`}
             className="absolute inset-0 z-[1] cursor-zoom-in focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-default"
           >
-            <CoverImage src={photos[cover] ?? p.image} alt={p.name} gradient={p.gradient} label={p.name} sizes="(max-width:1024px) 100vw, 60vw" />
+            <CoverImage src={photos[cover] ?? p.image} alt={`${p.name} in ${p.locality}, ${p.city}`} gradient={p.gradient} label={p.name} sizes="(max-width:1024px) 100vw, 60vw" />
           </button>
 
           <span className="pointer-events-none absolute left-4 top-4 z-[2] rounded-lg bg-white/90 px-3 py-1.5 text-xs font-bold text-slate-800 shadow-sm backdrop-blur">
@@ -248,7 +228,7 @@ export function PropertyDetail({
         {/* The property's own address, not location.href — so a link shared
             from a filtered or scrolled state still opens this property. */}
         <ShareButton
-          url={`/properties/${p.id}`}
+          url={propertyPath(p)}
           title={`${p.builder.name} ${p.name}`}
           text={`${p.name} — ${p.locality}${p.city ? `, ${p.city}` : ""}`}
           label="Share"
@@ -266,14 +246,18 @@ export function PropertyDetail({
       {/* Header card */}
       <div className="mt-4 grid gap-4 rounded-2xl border border-border bg-card p-5 shadow-glass lg:grid-cols-[1.4fr_1fr]">
         <div>
-          <h1 className="font-display text-2xl font-extrabold text-primary dark:text-foreground">{p.builder.name} {p.name}</h1>
+          <h1 className="font-display text-2xl font-extrabold text-primary dark:text-foreground">
+            {p.name} in {p.locality}, {p.city}
+          </h1>
           <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
             <MapPin className="h-4 w-4 text-accent" /> {p.locality}, {p.city}
           </p>
           <p className="mt-1 flex items-center gap-1.5 text-sm">
             <Building2 className="h-4 w-4 text-accent" />
             <span className="text-muted-foreground">By</span>
-            <span className="font-bold text-accent">{p.builder.name}</span>
+            <Link href={builderPath(p.builder.name)} className="font-bold text-accent hover:underline">
+              {p.builder.name}
+            </Link>
           </p>
           {p.reraId && (
             <span className="mt-2 inline-block rounded-md bg-muted px-2 py-1 text-[11px] font-semibold text-muted-foreground">
@@ -555,7 +539,7 @@ export function PropertyDetail({
           <h2 className="mb-4 font-display text-xl font-extrabold text-primary dark:text-foreground">Similar Properties You May Like</h2>
           <div className="grid gap-4 sm:grid-cols-3">
             {similar.map((s) => (
-              <Link key={s.id} href={`/properties/${s.id}`} className="group overflow-hidden rounded-2xl border border-border bg-card shadow-glass transition-transform hover:-translate-y-1">
+              <Link key={s.id} href={propertyPath(s)} className="group overflow-hidden rounded-2xl border border-border bg-card shadow-glass transition-transform hover:-translate-y-1">
                 <div className="relative h-36 w-full">
                   <CoverImage src={s.image} alt={s.name} gradient={s.gradient} label={s.name} sizes="280px" />
                 </div>

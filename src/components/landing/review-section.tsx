@@ -4,6 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { Users, MapPin, ShieldCheck, Star, ArrowLeft, ArrowRight } from "lucide-react";
 import type { ReviewWithProperty } from "@/lib/services/review.service";
+import { propertyPath } from "@/lib/seo";
 
 /** The shape the carousel renders, whichever source it came from. */
 interface Card {
@@ -16,6 +17,7 @@ interface Card {
   rating: number;
   /** Set for real reviews so the card can link to the project. */
   propertyId?: string;
+  propertySlug?: string;
   /** Only the curated cards carry the avatar service + buyer badge. */
   avatarSeed?: number;
 }
@@ -108,6 +110,7 @@ export function ReviewSection({ reviews = [] }: { reviews?: ReviewWithProperty[]
     text: r.comment,
     rating: r.rating,
     propertyId: r.propertyId,
+    propertySlug: r.propertySlug,
   }));
 
   const cards = real.length > 0 ? real : curated;
@@ -200,7 +203,7 @@ export function ReviewSection({ reviews = [] }: { reviews?: ReviewWithProperty[]
                     </div>
                     {review.propertyId ? (
                       <Link
-                        href={`/properties/${review.propertyId}`}
+                        href={propertyPath({ slug: review.propertySlug, id: review.propertyId })}
                         className="shrink-0 rounded bg-brand-purple/10 px-1.5 py-0.5 text-[10px] font-semibold text-brand-purple hover:bg-brand-purple/20"
                       >
                         View project

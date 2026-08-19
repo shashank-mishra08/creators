@@ -1,15 +1,20 @@
 import type { Metadata } from "next";
 import { cache } from "react";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { getDataSource } from "@/lib/data-source";
 import { propertyService } from "@/lib/services/property.service";
 import { reviewService } from "@/lib/services/review.service";
 import { settingsService } from "@/lib/services/settings.service";
 import { PropertyDetail } from "@/components/property/property-detail";
-import { formatPriceLakh } from "@/lib/utils";
-import { SITE_URL } from "@/lib/constants";
-import type { Property } from "@/lib/types";
-import type { PropertyReviewsResult } from "@/lib/services/review.service";
+import { JsonLd } from "@/components/seo/json-ld";
+import { isUuid } from "@/lib/repositories/property.repository";
+import {
+  absoluteMediaUrl,
+  propertyDescription,
+  propertyJsonLd,
+  propertyPath,
+  propertyTitle,
+} from "@/lib/seo";
 
 // DB-backed: render at request time.
 export const dynamic = "force-dynamic";
@@ -28,14 +33,10 @@ export async function generateMetadata({
     return { title: "Property not found", robots: { index: false } };
   }
 
-  const priceBit =
-    property.priceLakh > 0 ? ` from ${formatPriceLakh(property.priceLakh)}` : "";
-  const title = `${property.name} — ${property.locality}, ${property.city}`;
-  const description = `${property.name} by ${property.builder.name} in ${property.locality}, ${property.city}. ${
-    property.configs || "Residential"
-  }${priceBit}. Compare price, amenities, location and investment potential on Creators Arena.`;
-  const url = `/properties/${property.id}`;
-  const image = property.image || "/art/skyline.png";
+  const title = propertyTitle(property);
+  const description = propertyDescription(property);
+  const url = propertyPath(property);
+  const image = absoluteMediaUrl(property.image) || "/art/skyline.png";
 
   return {
     title,
@@ -46,7 +47,7 @@ export async function generateMetadata({
       title: `${property.name} · Creators Arena`,
       description,
       url,
-      images: [{ url: image, alt: property.name }],
+      images: [{ url: image, alt: `${property.name} in ${property.locality}, ${property.city}` }],
     },
     twitter: {
       card: "summary_large_image",
@@ -57,74 +58,32 @@ export async function generateMetadata({
   };
 }
 
-/** schema.org structured data for rich results (Product + Offer + Breadcrumb). */
-function buildJsonLd(property: Property, reviews: PropertyReviewsResult | null) {
-  const url = `${SITE_URL}/properties/${property.id}`;
-  const product: Record<string, unknown> = {
-    "@type": "Product",
-    name: property.name,
-    description: `${property.name} by ${property.builder.name}, ${property.locality}, ${property.city}`,
-    url,
-    category: property.kind,
-    brand: { "@type": "Organization", name: property.builder.name },
-  };
-  if (property.image) product.image = `${SITE_URL}${property.image}`;
-  if (property.priceLakh > 0) {
-    product.offers = {
-      "@type": "Offer",
-      price: Math.round(property.priceLakh * 100000), // lakh → INR
-      priceCurrency: "INR",
-      availability: "https://schema.org/InStock",
-      url,
-    };
-  }
-  if (reviews && reviews.averageRating != null && reviews.count > 0) {
-    product.aggregateRating = {
-      "@type": "AggregateRating",
-      ratingValue: reviews.averageRating,
-      reviewCount: reviews.count,
-    };
-  }
-  const breadcrumb = {
-    "@type": "BreadcrumbList",
-    itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
-      { "@type": "ListItem", position: 2, name: "Properties", item: `${SITE_URL}/properties` },
-      { "@type": "ListItem", position: 3, name: property.name, item: url },
-    ],
-  };
-  return { "@context": "https://schema.org", "@graph": [product, breadcrumb] };
-}
-
 export default async function PropertyDetailPage({
   params,
 }: {
   params: { id: string };
 }) {
-  // The three reads are independent, so run them in parallel instead of three
-  // sequential round-trips. `getSimilar` fetches only 3 rows at the DB (was
-  // `list()` loading all properties with every relation just to slice 3).
-  // Reviews are non-critical, so a failure resolves to null rather than throwing.
-  const [property, similar, reviews, publicSettings] = await Promise.all([
-    loadProperty(params.id),
-    propertyService.getSimilar([params.id], 3),
-    reviewService.listForProperty(params.id).catch(() => null),
+  const property = await loadProperty(params.id);
+  if (!property) notFound();
+
+  // Old UUID links keep working; send crawlers to the stable slug URL.
+  // Does not write anything — slug is already on the row.
+  if (isUuid(params.id) && property.slug && params.id !== property.slug) {
+    permanentRedirect(propertyPath(property));
+  }
+
+  // Similar/reviews key off the UUID primary key. `getSimilar` only accepts
+  // UUIDs (compare/shortlist do too), so we use the loaded row's id — not the
+  // public slug in the URL.
+  const [similar, reviews, publicSettings] = await Promise.all([
+    propertyService.getSimilar([property.id], 3),
+    reviewService.listForProperty(property.id).catch(() => null),
     settingsService.getPublic().catch(() => null),
   ]);
 
-  if (!property) notFound();
-
-  const jsonLd = buildJsonLd(property, reviews);
-
   return (
     <>
-      {/* Escape "<" so property text can never break out of the script tag. */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"),
-        }}
-      />
+      <JsonLd data={propertyJsonLd(property, reviews)} />
       <PropertyDetail
         property={property}
         similar={similar}

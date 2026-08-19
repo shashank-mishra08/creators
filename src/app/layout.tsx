@@ -4,6 +4,12 @@ import { MotionConfig } from "framer-motion";
 import { headers } from "next/headers";
 import "./globals.css";
 import { SITE_URL } from "@/lib/constants";
+import {
+  DEFAULT_DESCRIPTION,
+  SITE_NAME,
+  SOCIAL_TITLE,
+  siteJsonLd,
+} from "@/lib/seo";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import { SiteHeader } from "@/components/layout/site-header";
 import { SiteFooter } from "@/components/layout/site-footer";
@@ -11,6 +17,8 @@ import { MaintenanceScreen } from "@/components/layout/maintenance-screen";
 import { Toaster } from "@/components/ui/toaster";
 import { AuthInit } from "@/components/auth/auth-init";
 import { CompareSessionReset } from "@/components/selection/compare-session";
+import { JsonLd } from "@/components/seo/json-ld";
+import { Analytics } from "@/components/seo/analytics";
 import { settingsService } from "@/lib/services/settings.service";
 import { propertyService } from "@/lib/services/property.service";
 import type { CityCount } from "@/lib/types";
@@ -26,17 +34,13 @@ const jakarta = Plus_Jakarta_Sans({
   display: "swap",
 });
 
-const SITE_NAME = "Creators Arena";
 /**
  * The browser tab shows the name and nothing else — a tab is ~25 characters
  * wide, so the longer line only ever appeared as "Creators Arena — Compare
  * Prop…". The descriptive version is kept for the share card and the search
- * snippet below, where there is room for it and it does some work.
+ * snippet below, where there is room for it and it does some work. Home
+ * overrides `title` with a keyword line; inner pages use the template.
  */
-const SOCIAL_TITLE = "Creators Arena — Compare Properties Smarter";
-const DEFAULT_DESCRIPTION =
-  "Compare residential properties across NCR side-by-side. Price, amenities, location, builder reputation and investment potential — find the best home in minutes.";
-
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
@@ -85,16 +89,19 @@ export default async function RootLayout({
   // the same picker had its list server-rendered and opened complete, so the
   // two controls visibly disagreed. An empty list falls back to no picker
   // options rather than breaking the header.
-  const [publicSettings, navCities] = await Promise.all([
+  const [publicSettings, navCities, tracking] = await Promise.all([
     isAdminRoute ? Promise.resolve(null) : settingsService.getPublic(),
     isAdminRoute
       ? Promise.resolve<CityCount[]>([])
       : propertyService.cityCounts().catch(() => [] as CityCount[]),
+    isAdminRoute
+      ? Promise.resolve(null)
+      : settingsService.getTracking().catch(() => null),
   ]);
 
   if (maintenance) {
     return (
-      <html lang="en" suppressHydrationWarning>
+      <html lang="en-IN" suppressHydrationWarning>
         <body className={`${inter.variable} ${jakarta.variable} font-sans antialiased`}>
           <MaintenanceScreen />
         </body>
@@ -103,8 +110,10 @@ export default async function RootLayout({
   }
 
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en-IN" suppressHydrationWarning>
       <body className={`${inter.variable} ${jakarta.variable} font-sans antialiased`}>
+        <JsonLd data={siteJsonLd(publicSettings)} />
+        <Analytics ga4Id={tracking?.ga4Id} metaPixelId={tracking?.metaPixelId} />
         {/* Keyboard skip link — first focusable element, revealed on focus. */}
         <a
           href="#main-content"
@@ -128,7 +137,7 @@ export default async function RootLayout({
               <main id="main-content" className="flex-1">
                 {children}
               </main>
-              <SiteFooter settings={publicSettings} />
+              <SiteFooter settings={publicSettings} cities={navCities} />
             </div>
             <Toaster />
           </MotionConfig>

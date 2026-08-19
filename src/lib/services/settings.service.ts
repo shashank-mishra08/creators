@@ -162,6 +162,23 @@ export const settingsService = {
       return null;
     }
   },
+
+  /**
+   * Tracking IDs already stored on the settings row. Read-only — never creates
+   * or updates the row. Fail-open so a missing table cannot take the site down.
+   */
+  async getTracking(): Promise<{ ga4Id: string; metaPixelId: string } | null> {
+    try {
+      const row = await prisma.siteSettings.findUnique({
+        where: { id: SINGLETON },
+        select: { ga4Id: true, metaPixelId: true },
+      });
+      if (!row) return null;
+      return { ga4Id: row.ga4Id ?? "", metaPixelId: row.metaPixelId ?? "" };
+    } catch {
+      return null;
+    }
+  },
 };
 
 export interface PublicSettings {

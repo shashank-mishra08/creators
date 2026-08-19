@@ -225,7 +225,7 @@ function WishlistTab() {
                     <GitCompareArrows className="h-3.5 w-3.5" />
                     {inCompare.includes(p.id) ? "Added" : "Compare"}
                   </button>
-                  <Link href={`/properties/${p.id}`}>
+                  <Link href={`/properties/${p.slug || p.id}`}>
                     <Button variant="accent" size="sm" className="w-full">
                       View
                     </Button>

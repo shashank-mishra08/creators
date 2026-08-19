@@ -113,6 +113,8 @@ export interface TowerInfo {
 /** The core property entity. */
 export interface Property {
   id: string;
+  /** Stable public URL key (builder+project). Already stored; never rewritten here. */
+  slug: string;
   name: string;
   subtitle: string;
   /** Long-form project description from the source sheet ("" when none). */
@@ -247,6 +249,7 @@ export interface ComparisonResult {
  */
 export interface PropertyOption {
   id: string;
+  slug: string;
   name: string;
   builderName: string;
   city: City;

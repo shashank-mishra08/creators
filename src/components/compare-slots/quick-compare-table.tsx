@@ -350,7 +350,7 @@ export function QuickCompareTable({
                   <div className="min-w-0 flex-1">
                     <div className="flex items-start gap-1">
                       <Link
-                        href={`/properties/${p.id}`}
+                        href={`/properties/${p.slug || p.id}`}
                         className="min-w-0 flex-1 text-sm font-bold leading-tight text-foreground hover:text-accent"
                       >
                         {p.name}

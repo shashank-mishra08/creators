@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getDataSource } from "@/lib/data-source";
 import { type HeroSlide } from "@/components/landing/hero-3d";
 import { HeroShowcase } from "@/components/landing/hero-showcase";
+import { MarketLinks } from "@/components/landing/market-links";
 import { PropertyExplorer } from "@/components/listing/property-explorer";
 import { ReviewSection } from "@/components/landing/review-section";
 import { bannerService } from "@/lib/services/banner.service";
@@ -28,6 +29,7 @@ function buildHeroSlides(properties: Property[]): HeroSlide[] {
 
     const toCard = (p: Property) => ({
       id: p.id,
+      slug: p.slug,
       name: p.name,
       meta: `${p.locality} · ${p.kind}`,
       price: p.priceLakh > 0 ? formatPriceLakh(p.priceLakh) : "Price on request",
@@ -45,9 +47,17 @@ function buildHeroSlides(properties: Property[]): HeroSlide[] {
   return slides;
 }
 
-// Title/description/OG inherited from the root layout; set the home canonical.
 export const metadata: Metadata = {
+  title: "Compare NCR Properties",
+  description:
+    "Compare flats in Noida, Greater Noida, Ghaziabad and Yamuna Expressway. Side-by-side scores for price, amenities, location, builder and ROI.",
   alternates: { canonical: "/" },
+  openGraph: {
+    title: "Compare NCR Properties · Creators Arena",
+    description:
+      "Compare flats in Noida, Greater Noida, Ghaziabad and Yamuna Expressway side-by-side.",
+    url: "/",
+  },
 };
 
 // DB-backed: render at request time, not build time.
@@ -61,7 +71,23 @@ export default async function HomePage() {
     bannerService.live(),
     reviewService.listRecent(12).catch(() => []),
   ]);
-  const seed = Math.random();
+  // Stable across a calendar day so crawlers don't see a different shuffle
+  // on every hit. The explorer still shuffles; it just stops changing hourly.
+  const seed = (Math.floor(Date.now() / 86_400_000) % 1000) / 1000;
+
+  const cityCounts = new Map<string, number>();
+  const builderCounts = new Map<string, number>();
+  for (const p of properties) {
+    if (p.city) cityCounts.set(p.city, (cityCounts.get(p.city) ?? 0) + 1);
+    builderCounts.set(p.builder.name, (builderCounts.get(p.builder.name) ?? 0) + 1);
+  }
+  const cities = [...cityCounts.entries()]
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+  const builders = [...builderCounts.entries()]
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+
   return (
     <>
       {/* Hero and banners share one rotating stage: the client's read was that
@@ -75,14 +101,13 @@ export default async function HomePage() {
         // the grid are one number rather than two that drift.
         projectCount={properties.length}
       />
+      <MarketLinks cities={cities} builders={builders} />
       <PropertyExplorer
         initial={properties}
         seed={seed}
-        // Same browse layout as /properties: this section is the one visitors
-        // actually land on, so the two should not behave differently.
         variant="browse"
         title="Featured properties by location"
-        subtitle="Browse live NCR projects grouped by location, then shortlist 2–4 to compare."
+        subtitle="Live NCR projects grouped for browsing — shortlist 2–4, then compare price, location and ROI."
       />
       {/* Real reviews once any exist; the curated launch copy until then. */}
       <ReviewSection reviews={recentReviews} />

@@ -3,12 +3,12 @@ import { Suspense } from "react";
 import { QuickCompareClient } from "@/components/compare-slots/quick-compare-client";
 
 export const metadata: Metadata = {
-  title: "Quick compare properties",
+  title: "Quick compare NCR properties",
   description:
-    "Pick up to three projects from the dropdowns and compare price, configuration, area, possession and amenities side by side.",
+    "Pick up to three Noida or Greater Noida projects and compare price, configuration, area, possession and amenities side by side.",
   alternates: { canonical: "/compare/quick" },
   openGraph: {
-    title: "Quick compare properties · Creators Arena",
+    title: "Quick compare NCR properties · Creators Arena",
     description:
       "Pick up to three projects and compare price, configuration, area, possession and amenities side by side.",
     url: "/compare/quick",

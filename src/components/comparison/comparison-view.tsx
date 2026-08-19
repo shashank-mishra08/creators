@@ -294,7 +294,7 @@ export function ComparisonView({
                         />
                         Shortlist
                       </button>
-                      <Link href={`/properties/${p.id}`} className="block">
+                      <Link href={`/properties/${p.slug || p.id}`} className="block">
                         <Button variant="accent" size="sm" className="w-full">
                           View Details
                         </Button>
@@ -533,7 +533,7 @@ export function ComparisonView({
                     <div className="mb-2 flex items-center gap-1 truncate text-[11px] text-muted-foreground">
                       <MapPin className="h-3 w-3 text-accent" /> {p.locality}
                     </div>
-                    <Link href={`/properties/${p.id}`}>
+                    <Link href={`/properties/${p.slug || p.id}`}>
                       <Button variant="subtle" size="sm" className="w-full">
                         View
                       </Button>

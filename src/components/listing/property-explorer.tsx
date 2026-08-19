@@ -39,6 +39,7 @@ import { CompareBar } from "@/components/selection/compare-bar";
 import { Button } from "@/components/ui/button";
 import { CoverImage } from "@/components/ui/cover-image";
 import { cn, formatPriceLakh } from "@/lib/utils";
+import { propertyPath } from "@/lib/seo";
 
 const BHK_OPTS = [1, 2, 3, 4];
 // Compact price label for the budget range (e.g. 250 → "₹2.5Cr", 79 → "₹79L").
@@ -1024,7 +1025,7 @@ const ListingCard = React.forwardRef<HTMLDivElement, { property: Property }>(
         className="flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-glass"
       >
         <div className="relative h-44 w-full">
-          <CoverImage src={p.image} alt={p.name} gradient={p.gradient} label={p.name} sizes="(max-width:768px) 100vw, 360px" />
+          <CoverImage src={p.image} alt={`${p.name} in ${p.locality}, ${p.city}`} gradient={p.gradient} label={p.name} sizes="(max-width:768px) 100vw, 360px" />
           <button
             onClick={handleShortlist}
             aria-label="Shortlist"
@@ -1035,7 +1036,11 @@ const ListingCard = React.forwardRef<HTMLDivElement, { property: Property }>(
         </div>
 
         <div className="flex flex-1 flex-col p-4">
-          <h3 className="font-display text-base font-bold text-primary dark:text-foreground">{p.builder.name} {p.name}</h3>
+          <h3 className="font-display text-base font-bold text-primary dark:text-foreground">
+            <Link href={propertyPath(p)} className="hover:text-accent">
+              {p.builder.name} {p.name}
+            </Link>
+          </h3>
           <p className="mt-0.5 flex items-center gap-1 text-xs font-semibold text-accent">
             <Building2 className="h-3 w-3" /> {p.builder.name}
           </p>
@@ -1083,7 +1088,7 @@ const ListingCard = React.forwardRef<HTMLDivElement, { property: Property }>(
             >
               <GitCompareArrows className="h-3.5 w-3.5" /> {inCompare ? "Added" : "Compare"}
             </button>
-            <Link href={`/properties/${p.id}`} className="col-span-2">
+            <Link href={propertyPath(p)} className="col-span-2">
               <Button variant="accent" size="sm" className="h-full w-full py-2.5 text-[12px]">
                 View Details
               </Button>

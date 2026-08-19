@@ -123,6 +123,7 @@ function mapProperty(p: PropertyRow): Property {
 
   return {
     id: p.id,
+    slug: p.slug,
     name: p.name,
     subtitle: p.subtitle,
     description: p.description ?? "",
@@ -311,6 +312,7 @@ export const propertyRepository = {
       where: { ...PUBLIC_VISIBILITY },
       select: {
         id: true,
+        slug: true,
         name: true,
         city: true,
         locality: true,
@@ -328,6 +330,7 @@ export const propertyRepository = {
 
     return rows.map((p) => ({
       id: p.id,
+      slug: p.slug,
       name: p.name,
       builderName: p.builder.name,
       city: p.city as City,

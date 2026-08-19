@@ -3,12 +3,12 @@ import { Suspense } from "react";
 import { CompareClient } from "@/components/comparison/compare-client";
 
 export const metadata: Metadata = {
-  title: "Compare properties",
+  title: "Compare NCR properties side-by-side",
   description:
-    "Side-by-side comparison with a transparent, rule-based recommendation score.",
+    "Compare 2–4 Noida and Greater Noida projects on price, amenities, location, builder reputation and ROI with a transparent recommendation score.",
   alternates: { canonical: "/compare" },
   openGraph: {
-    title: "Compare properties · Creators Arena",
+    title: "Compare NCR properties · Creators Arena",
     description:
       "Side-by-side comparison with a transparent, rule-based recommendation score.",
     url: "/compare",

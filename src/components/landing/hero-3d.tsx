@@ -20,10 +20,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { CoverImage } from "@/components/ui/cover-image";
 import { cn } from "@/lib/utils";
+import { propertyPath } from "@/lib/seo";
 
 /** One property as rendered on a hero card. Built server-side in `page.tsx`. */
 export type HeroCard = {
   id: string;
+  slug?: string;
   name: string;
   meta: string;
   price: string;
@@ -169,14 +171,14 @@ export function Hero3D({
           <h1 className="mt-6 font-display text-4xl font-extrabold leading-[1.02] tracking-tight text-primary dark:text-foreground sm:text-5xl xl:text-6xl">
             Compare
             <br />
-            Properties
+            NCR Properties
             <br />
             <span className="text-gradient">Smarter.</span>
           </h1>
 
           <p className="mt-6 max-w-md text-base leading-relaxed text-muted-foreground sm:text-lg">
-            Stack homes side-by-side and let our rule-based engine score them on
-            price, amenities, location, builder and ROI - the best investment, in
+            Side-by-side scores for flats in Noida, Greater Noida, Ghaziabad and
+            Yamuna Expressway — price, amenities, location, builder and ROI, in
             minutes.
           </p>
 
@@ -330,7 +332,7 @@ function DeckCard({
 }) {
   return (
     <div className={float} style={{ transform: `rotate(${rotate}deg)` }}>
-      <div className="glass w-60 overflow-hidden rounded-2xl shadow-lift">
+      <Link href={propertyPath(card)} className="glass block w-60 overflow-hidden rounded-2xl shadow-lift">
         <div className="relative h-28 w-full">
           <CoverImage
             src={card.image}
@@ -354,7 +356,7 @@ function DeckCard({
           </div>
           <div className="shrink-0 text-sm font-extrabold text-accent">{card.price}</div>
         </div>
-      </div>
+      </Link>
     </div>
   );
 }
@@ -363,7 +365,7 @@ function DeckCard({
 function WinnerCard({ card, eager }: { card: HeroCard; eager: boolean }) {
   return (
     <div className="animate-float-slow">
-      <div className="w-64 overflow-hidden rounded-2xl border-2 border-accent bg-card shadow-glow">
+      <Link href={propertyPath(card)} className="block w-64 overflow-hidden rounded-2xl border-2 border-accent bg-card shadow-glow">
         <div className="relative h-32 w-full">
           <CoverImage
             src={card.image}
@@ -393,7 +395,7 @@ function WinnerCard({ card, eager }: { card: HeroCard; eager: boolean }) {
             <span className="text-xs font-bold text-accent">{card.score}</span>
           </div>
         </div>
-      </div>
+      </Link>
     </div>
   );
 }

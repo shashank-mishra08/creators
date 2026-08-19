@@ -14,6 +14,7 @@ export interface PropertyReviewsResult {
 /** A review joined to just enough of its property to render a card. */
 export interface ReviewWithProperty extends PropertyReview {
   propertyId: string;
+  propertySlug: string;
   propertyName: string;
   propertyLocality: string;
   propertyCity: string;
@@ -37,7 +38,7 @@ export interface MyReviewsResult {
  */
 function joinProperties(
   reviews: PropertyReview[],
-  byId: Map<string, { name: string; locality: string; city: string; image: string; builder: { name: string } }>,
+  byId: Map<string, { slug: string; name: string; locality: string; city: string; image: string; builder: { name: string } }>,
 ): ReviewWithProperty[] {
   return reviews.flatMap((r) => {
     const p = byId.get(r.propertyId);
@@ -45,6 +46,7 @@ function joinProperties(
     return [
       {
         ...r,
+        propertySlug: p.slug,
         propertyName: `${p.builder.name} ${p.name}`.trim(),
         propertyLocality: p.locality,
         propertyCity: p.city,

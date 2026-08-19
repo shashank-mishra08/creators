@@ -5,37 +5,28 @@ import { Mail, MapPin, Phone, Globe, Clock, Instagram, Facebook, Linkedin, Youtu
 import { Logo } from "@/components/brand/logo";
 import { usePathname } from "next/navigation";
 import type { PublicSettings } from "@/lib/services/settings.service";
+import type { CityCount } from "@/lib/types";
+import { cityPath, SITE_NAP } from "@/lib/seo";
 
-const QUICK_LINKS = [
-  "Home",
-  "About Us",
-  "Residential",
-  "Commercial",
-  "Services",
-  "Careers",
-  "Blog",
-];
-const LOCATIONS = [
-  "Noida",
-  "Delhi",
-  "Gurugram",
-  "Greater Noida",
-  "Greater Noida West",
+const QUICK_LINKS: { label: string; href: string }[] = [
+  { label: "Home", href: "/" },
+  { label: "Properties", href: "/properties" },
+  { label: "Compare", href: "/compare/quick" },
+  { label: "Locations", href: "/locations" },
+  { label: "Builders", href: "/builders" },
+  { label: "About Us", href: "/about" },
+  { label: "Contact", href: "/contact" },
 ];
 
-// Current defaults — used as fallbacks so the footer looks unchanged whenever a
-// Settings field is left blank (or settings can't be read).
-const FALLBACK = {
-  tagline:
-    "At Creators Arena, we don't just close deals — we help you find the perfect space to grow, live, or build your dreams. Your gateway to smart property decisions.",
-  rera: "UPRERAAGT0000827072025",
-  phone: "+91-9891321123",
-  email: "contact@creatorshome.in",
-  website: "www.creatorshome.in",
-  address: "E-219, 2nd Floor, Sector 63, Noida 201301",
-};
+const FALLBACK = SITE_NAP;
 
-export function SiteFooter({ settings }: { settings?: PublicSettings | null }) {
+export function SiteFooter({
+  settings,
+  cities = [],
+}: {
+  settings?: PublicSettings | null;
+  cities?: CityCount[];
+}) {
   const pathname = usePathname();
   if (pathname.startsWith("/admin")) return null;
 
@@ -92,13 +83,16 @@ export function SiteFooter({ settings }: { settings?: PublicSettings | null }) {
 
         <FooterCol title="Quick Links">
           {QUICK_LINKS.map((l) => (
-            <FooterLink key={l} label={l} />
+            <FooterLink key={l.href} label={l.label} href={l.href} />
           ))}
         </FooterCol>
 
         <FooterCol title="Locations">
-          {LOCATIONS.map((l) => (
-            <FooterLink key={l} label={l} href="/properties" />
+          {(cities.length > 0
+            ? cities.map((c) => c.name)
+            : ["Greater Noida West", "Noida Expressway", "Ghaziabad"]
+          ).map((l) => (
+            <FooterLink key={l} label={l} href={cityPath(l)} />
           ))}
         </FooterCol>
 

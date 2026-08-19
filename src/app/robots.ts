@@ -6,9 +6,10 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
-      // API + auth/user-specific pages carry no search value.
+      // API, admin and auth/user-specific pages carry no search value.
       disallow: [
         "/api/",
+        "/admin/",
         "/login",
         "/signup",
         "/shortlist",
