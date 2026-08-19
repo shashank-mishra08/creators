@@ -1023,8 +1023,23 @@ const ListingCard = React.forwardRef<HTMLDivElement, { property: Property }>(
         whileHover={{ y: -4 }}
         className="flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-glass"
       >
-        <div className="relative h-44 w-full">
-          <CoverImage src={p.image} alt={p.name} gradient={p.gradient} label={p.name} sizes="(max-width:768px) 100vw, 360px" />
+        {/*
+          A ratio rather than a fixed height, so the card is the same shape at
+          every width and the photo can be cut to match it once, up front.
+          `h-44` made the box 340x176 on a phone and 347x176 on a desktop — near
+          enough 2:1 — while the catalogue's photos run from 0.61 to 2.43, so
+          `object-cover` was trimming 8% off the widest and over half off the
+          portrait ones.
+        */}
+        <div className="relative aspect-[16/9] w-full">
+          <CoverImage
+            src={p.image}
+            alt={p.name}
+            gradient={p.gradient}
+            label={p.name}
+            sizes="(max-width:768px) 100vw, 360px"
+            fit={{ ratio: "16:9", width: 800 }}
+          />
           <button
             onClick={handleShortlist}
             aria-label="Shortlist"
