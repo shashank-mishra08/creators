@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { getDataSource } from "@/lib/data-source";
 import { type HeroSlide } from "@/components/landing/hero-3d";
 import { HeroShowcase } from "@/components/landing/hero-showcase";
-import { MarketLinks } from "@/components/landing/market-links";
 import { PropertyExplorer } from "@/components/listing/property-explorer";
 import { ReviewSection } from "@/components/landing/review-section";
 import { bannerService } from "@/lib/services/banner.service";
@@ -75,14 +74,6 @@ export default async function HomePage() {
   // on every hit. The explorer still shuffles; it just stops changing hourly.
   const seed = (Math.floor(Date.now() / 86_400_000) % 1000) / 1000;
 
-  const cityCounts = new Map<string, number>();
-  for (const p of properties) {
-    if (p.city) cityCounts.set(p.city, (cityCounts.get(p.city) ?? 0) + 1);
-  }
-  const cities = [...cityCounts.entries()]
-    .map(([name, count]) => ({ name, count }))
-    .sort((a, b) => a.name.localeCompare(b.name));
-
   return (
     <>
       {/* Hero and banners share one rotating stage: the client's read was that
@@ -96,13 +87,12 @@ export default async function HomePage() {
         // the grid are one number rather than two that drift.
         projectCount={properties.length}
       />
-      <MarketLinks cities={cities} />
       <PropertyExplorer
         initial={properties}
         seed={seed}
         variant="browse"
         title="Featured properties by location"
-        subtitle="Live NCR projects grouped for browsing — shortlist 2–4, then compare price, location and ROI."
+        subtitle="Browse live NCR projects grouped by location, then shortlist 2–4 to compare."
       />
       {/* Real reviews once any exist; the curated launch copy until then. */}
       <ReviewSection reviews={recentReviews} />

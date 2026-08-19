@@ -14,7 +14,6 @@ import { cn } from "@/lib/utils";
 const NAV = [
   { href: "/", label: "Home" },
   { href: "/properties", label: "Properties" },
-  { href: "/locations", label: "Locations" },
   // The slot-based compare: it starts empty and is driven by its own
   // dropdowns, which is what a visitor arriving from the nav wants. The
   // selection-based /compare is reached from the tray on the listing page,

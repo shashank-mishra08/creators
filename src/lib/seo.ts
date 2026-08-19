@@ -25,26 +25,9 @@ export const SITE_NAP = {
   address: "E-219, 2nd Floor, Sector 63, Noida 201301",
 };
 
-/** URL-safe slug for city / builder names already stored on the property. */
-export function seoSlug(value: string): string {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}
-
 export function propertyPath(p: { slug?: string | null; id: string }): string {
   const key = p.slug?.trim() || p.id;
   return `/properties/${key}`;
-}
-
-export function cityPath(city: string): string {
-  return `/locations/${seoSlug(city)}`;
-}
-
-export function builderPath(name: string): string {
-  return `/builders/${seoSlug(name)}`;
 }
 
 /**
@@ -64,27 +47,6 @@ export function absoluteUrl(path: string): string {
   if (/^https?:\/\//i.test(path)) return path;
   const normalised = path.startsWith("/") ? path : `/${path}`;
   return `${SITE_URL}${normalised}`;
-}
-
-export function findBySlug<T>(items: T[], slug: string, nameOf: (item: T) => string): T | undefined {
-  return items.find((item) => seoSlug(nameOf(item)) === slug);
-}
-
-function unique(values: (string | null | undefined)[]): string[] {
-  return [...new Set(values.map((v) => (v ?? "").trim()).filter(Boolean))];
-}
-
-function priced(properties: Property[]): Property[] {
-  return properties.filter((p) => p.priceLakh > 0);
-}
-
-function priceSpan(properties: Property[]): string {
-  const list = priced(properties);
-  if (list.length === 0) return "";
-  const min = Math.min(...list.map((p) => p.priceLakh));
-  const max = Math.max(...list.map((p) => p.priceLakh));
-  if (min === max) return `from ${formatPriceLakh(min)}`;
-  return `from ${formatPriceLakh(min)} to ${formatPriceLakh(max)}`;
 }
 
 export function propertyFaqs(p: Property): { q: string; a: string }[] {
@@ -118,77 +80,6 @@ export function propertyFaqs(p: Property): { q: string; a: string }[] {
           : `Metro timing for ${p.name} is being updated. Check the location section for other connectivity.`,
     },
   ];
-}
-
-export function cityLandingCopy(city: string, properties: Property[]) {
-  const n = properties.length;
-  const builders = unique(properties.map((p) => p.builder.name));
-  const kinds = unique(properties.map((p) => p.kind));
-  const span = priceSpan(properties);
-  const kindLabel = kinds.length ? kinds.join(", ").toLowerCase() : "homes";
-  const title = `Properties in ${city}`;
-  const description = `${n} ${kindLabel}${n === 1 ? "" : "s"} in ${city}${
-    span ? ` ${span}` : ""
-  }. Compare price, amenities, location and builders on Creators Arena.`;
-  const intro =
-    n === 0
-      ? `Live projects in ${city} will appear here as they are published.`
-      : `${n} live ${n === 1 ? "project" : "projects"}${
-          span ? ` ${span}` : ""
-        }${builders.length ? ` · ${builders.slice(0, 3).join(", ")}` : ""}.`;
-  const faqs = [
-    {
-      q: `Are there flats for sale in ${city}?`,
-      a:
-        n > 0
-          ? `Yes — ${n} ${n === 1 ? "project is" : "projects are"} listed in ${city}${
-              span ? `, ${span}` : ""
-            }. Open any project to see configurations, floor plans and RERA details.`
-          : `Listings for ${city} are being added. Check back or browse nearby NCR locations.`,
-    },
-    {
-      q: `Which builders have projects in ${city}?`,
-      a: builders.length
-        ? `${builders.join(", ")} currently have projects listed in ${city}.`
-        : `Builder listings for ${city} will appear here as projects go live.`,
-    },
-    {
-      q: `Can I compare properties in ${city}?`,
-      a: `Yes. Shortlist 2–4 projects from ${city} and open Compare for a side-by-side score on price, amenities, location, builder and ROI.`,
-    },
-  ];
-  return { title, description, intro, faqs };
-}
-
-export function builderLandingCopy(builder: string, properties: Property[]) {
-  const n = properties.length;
-  const cities = unique(properties.map((p) => p.city));
-  const span = priceSpan(properties);
-  const title = `${builder} projects in NCR`;
-  const description = `${n} ${builder} ${
-    n === 1 ? "project" : "projects"
-  } across ${cities.join(", ") || "NCR"}${span ? `, ${span}` : ""}. Compare configurations, location and investment potential.`;
-  const intro =
-    n === 0
-      ? `${builder} projects will appear here as they are published.`
-      : `${n} live ${n === 1 ? "project" : "projects"}${
-          cities.length ? ` in ${cities.join(", ")}` : ""
-        }${span ? ` ${span}` : ""}.`;
-  const faqs = [
-    {
-      q: `Which ${builder} projects are listed?`,
-      a: n
-        ? `${properties.map((p) => p.name).join(", ")}.`
-        : `${builder} listings are being added.`,
-    },
-    {
-      q: `Where are ${builder} projects located?`,
-      a: cities.length
-        ? `${builder} currently has projects in ${cities.join(", ")}.`
-        : `Locations will show here once projects are live.`,
-    },
-  ];
-  return { title, description, intro, faqs };
 }
 
 export function propertyTitle(p: Property): string {
@@ -292,21 +183,6 @@ export function faqJsonLd(faqs: { q: string; a: string }[]) {
   };
 }
 
-export function itemListJsonLd(name: string, path: string, properties: Property[]) {
-  return {
-    "@type": "ItemList",
-    name,
-    url: absoluteUrl(path),
-    numberOfItems: properties.length,
-    itemListElement: properties.map((p, i) => ({
-      "@type": "ListItem",
-      position: i + 1,
-      url: absoluteUrl(propertyPath(p)),
-      name: p.name,
-    })),
-  };
-}
-
 export function propertyJsonLd(
   property: Property,
   reviews: { averageRating: number | null; count: number } | null,
@@ -365,7 +241,6 @@ export function propertyJsonLd(
     breadcrumbJsonLd([
       { name: "Home", path: "/" },
       { name: "Properties", path: "/properties" },
-      { name: property.city, path: cityPath(property.city) },
       { name: property.name, path: propertyPath(property) },
     ]),
     faqJsonLd(propertyFaqs(property)),

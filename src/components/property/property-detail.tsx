@@ -35,7 +35,7 @@ import { Lightbox } from "@/components/ui/lightbox";
 import { SiteVisitModal } from "@/components/property/site-visit-modal";
 import { PropertyReviews } from "@/components/reviews/property-reviews";
 import { cn, formatPriceLakh } from "@/lib/utils";
-import { builderPath, cityPath, propertyFaqs, propertyPath } from "@/lib/seo";
+import { propertyFaqs, propertyPath } from "@/lib/seo";
 
 const EXPERT_PHONE = "+919252996677";
 
@@ -162,7 +162,7 @@ export function PropertyDetail({
         <ChevronRight className="h-3 w-3" />
         <Link href="/properties" className="hover:text-accent">Properties</Link>
         <ChevronRight className="h-3 w-3" />
-        <Link href={cityPath(p.city)} className="hover:text-accent">{p.city}</Link>
+        <span>{p.locality}, {p.city}</span>
         <ChevronRight className="h-3 w-3" />
         <span className="font-semibold text-accent">{p.name}</span>
       </div>
@@ -255,9 +255,7 @@ export function PropertyDetail({
           <p className="mt-1 flex items-center gap-1.5 text-sm">
             <Building2 className="h-4 w-4 text-accent" />
             <span className="text-muted-foreground">By</span>
-            <Link href={builderPath(p.builder.name)} className="font-bold text-accent hover:underline">
-              {p.builder.name}
-            </Link>
+            <span className="font-bold text-accent">{p.builder.name}</span>
           </p>
           {p.reraId && (
             <span className="mt-2 inline-block rounded-md bg-muted px-2 py-1 text-[11px] font-semibold text-muted-foreground">

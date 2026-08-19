@@ -137,7 +137,7 @@ export default async function RootLayout({
               <main id="main-content" className="flex-1">
                 {children}
               </main>
-              <SiteFooter settings={publicSettings} cities={navCities} />
+              <SiteFooter settings={publicSettings} />
             </div>
             <Toaster />
           </MotionConfig>
