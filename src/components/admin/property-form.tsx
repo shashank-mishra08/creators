@@ -82,8 +82,36 @@ const TABS = [
 ];
 
 // ─────────── Image Upload Field ───────────
-function ImageField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+
+/** The shape the listing card and the detail hero are built around. */
+const COVER_RATIO = 16 / 9;
+/** How far off 16:9 a photo may be before it is worth saying so. */
+const RATIO_TOLERANCE = 0.02;
+
+function ImageField({
+  label,
+  value,
+  onChange,
+  hint,
+  checkRatio,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  /** Shown under the field — the size this image should be uploaded at. */
+  hint?: string;
+  /** Report the uploaded file's dimensions, and flag anything not 16:9. Only
+   *  for the cover: a floor plan or a master plan has no ratio to keep. */
+  checkRatio?: boolean;
+}) {
   const [uploading, setUploading] = useState(false);
+  // Read off the loaded file, so what is reported is the image itself rather
+  // than whatever was meant to be uploaded.
+  const [dims, setDims] = useState<{ w: number; h: number } | null>(null);
+
+  useEffect(() => {
+    setDims(null);
+  }, [value]);
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -119,9 +147,57 @@ function ImageField({ label, value, onChange }: { label: string; value: string; 
       </div>
       {value && (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={value} alt="Preview" className="mt-2 h-16 rounded-lg object-cover border border-slate-100" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+        <img
+          src={value}
+          alt="Preview"
+          className="mt-2 h-16 rounded-lg object-cover border border-slate-100"
+          onLoad={(e) => {
+            const img = e.currentTarget;
+            if (checkRatio) setDims({ w: img.naturalWidth, h: img.naturalHeight });
+          }}
+          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+        />
       )}
+      {hint && !dims && (
+        <p className="mt-1.5 text-[11px] text-slate-400">{hint}</p>
+      )}
+      {dims && <RatioNote w={dims.w} h={dims.h} />}
     </div>
+  );
+}
+
+/**
+ * What was actually uploaded, and whether the card will have to cut it.
+ *
+ * The listing card is 16:9 and the photo is cut to that by the CDN before it is
+ * sent. That is a good deal better than the browser trimming both edges, but a
+ * crop is still a crop — so it is worth knowing at upload time rather than
+ * discovering it on the listing.
+ */
+function RatioNote({ w, h }: { w: number; h: number }) {
+  if (!w || !h) return null;
+  const ratio = w / h;
+  const off = Math.abs(ratio / COVER_RATIO - 1);
+  const tooSmall = w < 1200;
+
+  if (off <= RATIO_TOLERANCE && !tooSmall) {
+    return (
+      <p className="mt-1.5 text-[11px] font-medium text-emerald-600">
+        {w}×{h} · 16:9 ✓
+      </p>
+    );
+  }
+
+  // How much of the height (or width) the 16:9 cut will take off.
+  const lost = Math.round((1 - Math.min(ratio, COVER_RATIO) / Math.max(ratio, COVER_RATIO)) * 100);
+
+  return (
+    <p className="mt-1.5 text-[11px] leading-snug text-amber-600">
+      {w}×{h}
+      {off > RATIO_TOLERANCE && ` · not 16:9 — about ${lost}% will be cropped to fit the card`}
+      {tooSmall && ` · under 1200px wide, it will look soft`}
+      . Upload at 1600×900.
+    </p>
   );
 }
 
@@ -601,7 +677,13 @@ export function PropertyForm({ title, subtitle: formSubtitle, initialData, onSub
         {tab === 6 && (
           <div className="space-y-5">
             <h2 className="text-base font-semibold text-slate-900 mb-4">Media & Images</h2>
-            <ImageField label="Cover / Hero Image" value={coverImage} onChange={setCoverImage} />
+            <ImageField
+              label="Cover / Hero Image"
+              value={coverImage}
+              onChange={setCoverImage}
+              hint="1600×900 (16:9) — the listing card and the detail hero are this shape."
+              checkRatio
+            />
             <ImageField label="Master Plan / Layout Image" value={layoutImage} onChange={setLayoutImage} />
 
             <div>
