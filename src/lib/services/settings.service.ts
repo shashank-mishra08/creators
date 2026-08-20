@@ -7,6 +7,14 @@ import { prisma } from "@/lib/db/prisma";
 
 const SINGLETON = "singleton";
 
+/** Old public domain left in Settings from before the arena launch. */
+const LEGACY_PUBLIC_HOST = /creatorshome\.in/i;
+
+/** Drop leftover creatorshome.in values so public pages use the arena fallbacks. */
+function scrubLegacyPublicHost(value: string): string {
+  return LEGACY_PUBLIC_HOST.test(value) ? "" : value;
+}
+
 /** The fields an admin may edit. `id`/`updatedAt` are managed, never accepted. */
 export const SETTINGS_FIELDS = [
   "contactPhone",
@@ -67,11 +75,16 @@ export function sanitizeCustomFields(input: unknown): CustomField[] {
 export const settingsService = {
   /** Read the settings row, creating an empty one on first access. */
   async get() {
-    return prisma.siteSettings.upsert({
+    const row = await prisma.siteSettings.upsert({
       where: { id: SINGLETON },
       create: { id: SINGLETON },
       update: {},
     });
+    return {
+      ...row,
+      contactEmail: scrubLegacyPublicHost(row.contactEmail),
+      websiteUrl: scrubLegacyPublicHost(row.websiteUrl),
+    };
   },
 
   /** Apply a whitelisted patch. Unknown keys are ignored (never trusted). */
@@ -144,12 +157,12 @@ export const settingsService = {
       if (!s) return null;
       return {
         contactPhone: s.contactPhone,
-        contactEmail: s.contactEmail,
+        contactEmail: scrubLegacyPublicHost(s.contactEmail),
         whatsappNumber: s.whatsappNumber,
         officeAddress: s.officeAddress,
         mapUrl: s.mapUrl,
         businessHours: s.businessHours,
-        websiteUrl: s.websiteUrl,
+        websiteUrl: scrubLegacyPublicHost(s.websiteUrl),
         reraNumber: s.reraNumber,
         footerTagline: s.footerTagline,
         instagramUrl: s.instagramUrl,
