@@ -54,7 +54,7 @@ export function AdminLoginForm() {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="admin@creatorshome.in"
+            placeholder="admin@creatorsarena.in"
             required
             autoComplete="email"
             className="w-full pl-11 pr-4 py-3.5 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-4 focus:ring-brand-purple/15 focus:border-brand-purple transition-all bg-slate-50/80 hover:bg-slate-50 focus:bg-white"

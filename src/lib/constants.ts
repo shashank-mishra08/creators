@@ -53,4 +53,4 @@ export const REVIEW_PHOTO_MAX_MB = 5;
  * public domain. Only read on the server — safe as a plain constant.
  */
 export const SITE_URL =
-  process.env.APP_URL?.replace(/\/$/, "") || "https://www.creatorshome.in";
+  process.env.APP_URL?.replace(/\/$/, "") || "https://www.creatorsarena.in";

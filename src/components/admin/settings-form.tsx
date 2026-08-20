@@ -181,7 +181,7 @@ export function SettingsForm({
               These control the website footer. Leave a field blank to keep its current
               default. Use “Add field” for any extra line you want in the footer.
             </p>
-            <Field label="Website URL" value={form.websiteUrl} onChange={(v) => set("websiteUrl", v)} disabled={d} placeholder="www.creatorshome.in" />
+            <Field label="Website URL" value={form.websiteUrl} onChange={(v) => set("websiteUrl", v)} disabled={d} placeholder="www.creatorsarena.in" />
             <Field label="RERA number" value={form.reraNumber} onChange={(v) => set("reraNumber", v)} disabled={d} placeholder="UPRERAAGT0000827072025" />
             <Field label="Footer tagline" value={form.footerTagline} onChange={(v) => set("footerTagline", v)} disabled={d} textarea hint="Short paragraph shown under the logo in the footer." />
 

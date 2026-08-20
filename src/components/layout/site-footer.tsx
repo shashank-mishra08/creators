@@ -30,8 +30,8 @@ const FALLBACK = {
     "At Creators Arena, we don't just close deals — we help you find the perfect space to grow, live, or build your dreams. Your gateway to smart property decisions.",
   rera: "UPRERAAGT0000827072025",
   phone: "+91-9891321123",
-  email: "contact@creatorshome.in",
-  website: "www.creatorshome.in",
+  email: "contact@creatorsarena.in",
+  website: "www.creatorsarena.in",
   address: "E-219, 2nd Floor, Sector 63, Noida 201301",
 };
 
