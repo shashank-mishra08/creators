@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { Building2 } from "lucide-react";
+import { cloudinaryCover } from "@/lib/cloudinary";
 import { cn } from "@/lib/utils";
 
 /**
@@ -14,6 +15,11 @@ import { cn } from "@/lib/utils";
  * dynamic /properties/[id] route as a failed static asset cascade again.
  *
  * Must be placed inside a `relative` parent with a defined height (uses `fill`).
+ *
+ * Pass `fit` where the box is a known, fixed shape. The photo is then cut to
+ * that shape by the CDN before it is sent, so `object-cover` has nothing left
+ * to trim — see `cloudinaryCover`. Without it the image is delivered whole and
+ * cropped in the browser, which is what every caller did before and still does.
  */
 export function CoverImage({
   src,
@@ -23,6 +29,7 @@ export function CoverImage({
   className,
   label,
   priority,
+  fit,
 }: {
   src?: string | null;
   alt: string;
@@ -32,6 +39,12 @@ export function CoverImage({
   label?: string;
   /** Preload this image (above-the-fold only — one or two per page at most). */
   priority?: boolean;
+  /**
+   * The shape of the box, for callers whose box is a fixed ratio. `width` is
+   * the widest the box ever gets, in CSS pixels; ask for roughly twice it so a
+   * retina screen still has pixels to work with.
+   */
+  fit?: { ratio: string; width: number };
 }) {
   const [failed, setFailed] = useState(false);
   const showImage = Boolean(src) && !failed;
@@ -39,7 +52,7 @@ export function CoverImage({
   if (showImage && src) {
     return (
       <Image
-        src={src}
+        src={fit ? cloudinaryCover(src, fit) : src}
         alt={alt}
         fill
         className={cn("object-cover", className)}

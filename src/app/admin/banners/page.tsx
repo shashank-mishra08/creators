@@ -24,6 +24,7 @@ const EMPTY: BannerInput = {
   subtitle: "",
   mediaType: "image",
   imageUrl: "",
+  imageUrlMobile: "",
   videoUrl: "",
   linkUrl: "",
   sortOrder: 0,
@@ -262,7 +263,10 @@ export default function AdminBannersPage() {
                       fill
                       unoptimized
                       sizes="96px"
-                      className="object-cover"
+                      // `contain`: the site never crops a banner, so a preview
+                      // that does made wide creatives look like they had lost
+                      // their edges when they had not.
+                      className="object-contain"
                     />
                   )}
                 </div>
@@ -380,6 +384,87 @@ export default function AdminBannersPage() {
   );
 }
 
+/** The two artwork slots a banner carries. */
+type MediaField = "imageUrl" | "imageUrlMobile";
+
+/**
+ * One artwork row: preview, upload button, paste-address field, hint.
+ *
+ * Used twice — once for the wide creative and once for the phone one — so the
+ * two stay identical in everything but their copy.
+ */
+function ImageSlot({
+  url,
+  emptyLabel,
+  buttonLabel,
+  hint,
+  uploading,
+  error,
+  onPick,
+  onUrlChange,
+}: {
+  url: string;
+  emptyLabel: string;
+  buttonLabel: string;
+  hint: string;
+  uploading: boolean;
+  error: string | null;
+  onPick: (file: File) => void;
+  onUrlChange: (value: string) => void;
+}) {
+  return (
+    <div className="flex items-start gap-3">
+      <div className="relative h-20 w-36 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+        {url ? (
+          <Image
+            src={url}
+            alt=""
+            fill
+            unoptimized
+            sizes="144px"
+            // `contain`, not `cover`: this preview stands in for what ships,
+            // and the site never crops a banner.
+            className="object-contain"
+          />
+        ) : (
+          <span className="flex h-full w-full items-center justify-center text-[11px] text-slate-400">
+            {emptyLabel}
+          </span>
+        )}
+      </div>
+
+      <div className="min-w-0 flex-1">
+        <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-[#7166F0] px-3 py-2 text-sm font-semibold text-[#7166F0] transition-colors hover:bg-[#7166F0]/5">
+          {uploading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Upload className="h-4 w-4" />
+          )}
+          {uploading ? "Uploading…" : buttonLabel}
+          <input
+            type="file"
+            accept="image/*"
+            className="hidden"
+            disabled={uploading}
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) onPick(f);
+            }}
+          />
+        </label>
+        <input
+          value={url}
+          onChange={(e) => onUrlChange(e.target.value)}
+          placeholder="…or paste the image address"
+          className={`${INPUT} mt-2`}
+        />
+        <p className="mt-1 text-[11px] leading-snug text-slate-400">{hint}</p>
+        {error && <p className="mt-1 text-[11px] text-red-600">{error}</p>}
+      </div>
+    </div>
+  );
+}
+
 function BannerEditor({
   value,
   isNew,
@@ -395,13 +480,18 @@ function BannerEditor({
   onCancel: () => void;
   onSave: () => void;
 }) {
-  const [uploading, setUploading] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
+  // Which slot is mid-upload, and which one failed — there are two of them
+  // now, and a shared boolean spun both spinners at once.
+  const [uploadingField, setUploadingField] = useState<MediaField | null>(null);
+  const [uploadError, setUploadError] = useState<{
+    field: MediaField;
+    message: string;
+  } | null>(null);
   const set = <K extends keyof BannerInput>(key: K, v: BannerInput[K]) =>
     onChange({ ...value, [key]: v });
 
-  async function upload(file: File) {
-    setUploading(true);
+  async function upload(file: File, field: MediaField) {
+    setUploadingField(field);
     setUploadError(null);
     try {
       const fd = new FormData();
@@ -409,11 +499,14 @@ function BannerEditor({
       const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
       const body = await res.json();
       if (!res.ok) throw new Error(body.error ?? "Upload failed");
-      set("imageUrl", body.data?.path ?? "");
+      set(field, body.data?.path ?? "");
     } catch (e) {
-      setUploadError(e instanceof Error ? e.message : "Upload failed");
+      setUploadError({
+        field,
+        message: e instanceof Error ? e.message : "Upload failed",
+      });
     } finally {
-      setUploading(false);
+      setUploadingField(null);
     }
   }
 
@@ -445,63 +538,45 @@ function BannerEditor({
             </div>
           </div>
 
-          <div className="flex items-start gap-3">
-            <div className="relative h-20 w-36 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
-              {value.imageUrl ? (
-                <Image
-                  src={value.imageUrl}
-                  alt=""
-                  fill
-                  unoptimized
-                  sizes="144px"
-                  className="object-cover"
-                />
-              ) : (
-                <span className="flex h-full w-full items-center justify-center text-[11px] text-slate-400">
-                  {value.mediaType === "video" ? "Poster" : "Preview"}
-                </span>
-              )}
-            </div>
+          <ImageSlot
+            url={value.imageUrl}
+            emptyLabel={value.mediaType === "video" ? "Poster" : "Desktop"}
+            buttonLabel={
+              value.mediaType === "video"
+                ? "Upload poster image"
+                : "Upload desktop image"
+            }
+            hint={
+              value.mediaType === "video"
+                ? "Shown while the video loads. Optional but recommended."
+                : "Wide artwork, 1920×960 (2:1). Used on tablets and desktops."
+            }
+            uploading={uploadingField === "imageUrl"}
+            error={uploadError?.field === "imageUrl" ? uploadError.message : null}
+            onPick={(f) => upload(f, "imageUrl")}
+            onUrlChange={(v) => set("imageUrl", v)}
+          />
 
-            <div className="min-w-0 flex-1">
-              <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-[#7166F0] px-3 py-2 text-sm font-semibold text-[#7166F0] transition-colors hover:bg-[#7166F0]/5">
-                {uploading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Upload className="h-4 w-4" />
-                )}
-                {uploading
-                  ? "Uploading…"
-                  : value.mediaType === "video"
-                    ? "Upload poster image"
-                    : "Upload image"}
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  disabled={uploading}
-                  onChange={(e) => {
-                    const f = e.target.files?.[0];
-                    if (f) upload(f);
-                  }}
-                />
-              </label>
-              <input
-                value={value.imageUrl}
-                onChange={(e) => set("imageUrl", e.target.value)}
-                placeholder="…or paste the image address"
-                className={`${INPUT} mt-2`}
+          {/* Only for image banners: a video plays at every width, so there is
+              nothing for a second still to do there. */}
+          {value.mediaType === "image" && (
+            <div className="mt-3 border-t border-slate-200 pt-3">
+              <ImageSlot
+                url={value.imageUrlMobile}
+                emptyLabel="Phone"
+                buttonLabel="Upload phone image"
+                hint="Optional. Portrait artwork, 1080×1800 (3:5) — the banner is taller than it is wide on a phone, so the desktop file lands small there. Left empty, the desktop one is used everywhere."
+                uploading={uploadingField === "imageUrlMobile"}
+                error={
+                  uploadError?.field === "imageUrlMobile"
+                    ? uploadError.message
+                    : null
+                }
+                onPick={(f) => upload(f, "imageUrlMobile")}
+                onUrlChange={(v) => set("imageUrlMobile", v)}
               />
-              <p className="mt-1 text-[11px] text-slate-400">
-                {value.mediaType === "video"
-                  ? "Shown while the video loads. Optional but recommended."
-                  : "Wide artwork works best — roughly 1600×420."}
-              </p>
-              {uploadError && (
-                <p className="mt-1 text-[11px] text-red-600">{uploadError}</p>
-              )}
             </div>
-          </div>
+          )}
 
           {value.mediaType === "video" && (
             <div className="mt-3">
@@ -607,7 +682,7 @@ function BannerEditor({
           onClick={onSave}
           disabled={
             busy ||
-            uploading ||
+            uploadingField !== null ||
             (value.mediaType === "video" ? !value.videoUrl : !value.imageUrl)
           }
           className="rounded-xl bg-[#7166F0] px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-[#7166F0]/30 transition-colors hover:bg-[#5a52d5] disabled:opacity-60"

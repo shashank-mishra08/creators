@@ -442,6 +442,10 @@ model Banner {
   // "image" or "video". Defaults to image so existing banners are unchanged.
   mediaType String    @default("image")
   imageUrl  String // image banner, or the poster frame for a video
+  // Portrait crop of the same creative, for phones. The stage is taller than it
+  // is wide there, so one landscape file cannot fill both. Empty = there isn't
+  // one, and imageUrl is used at every width — what every banner did before.
+  imageUrlMobile String @default("")
   videoUrl  String    @default("") // used when mediaType is "video"
   linkUrl   String    @default("") // optional click-through
   sortOrder Int       @default(0)

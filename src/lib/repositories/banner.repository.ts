@@ -11,6 +11,7 @@ type BannerRow = {
   subtitle: string;
   mediaType: string;
   imageUrl: string;
+  imageUrlMobile: string;
   videoUrl: string;
   linkUrl: string;
   sortOrder: number;
@@ -26,6 +27,7 @@ function mapBanner(b: BannerRow): Banner {
     subtitle: b.subtitle,
     mediaType: b.mediaType === "video" ? "video" : "image",
     imageUrl: b.imageUrl,
+    imageUrlMobile: b.imageUrlMobile,
     videoUrl: b.videoUrl,
     linkUrl: b.linkUrl,
     sortOrder: b.sortOrder,
@@ -42,6 +44,7 @@ const selectBanner = {
   subtitle: true,
   mediaType: true,
   imageUrl: true,
+  imageUrlMobile: true,
   videoUrl: true,
   linkUrl: true,
   sortOrder: true,
@@ -110,6 +113,7 @@ function toData(input: BannerInput) {
     subtitle: input.subtitle,
     mediaType: input.mediaType,
     imageUrl: input.imageUrl,
+    imageUrlMobile: input.imageUrlMobile,
     videoUrl: input.videoUrl,
     linkUrl: input.linkUrl,
     sortOrder: input.sortOrder,
