@@ -39,19 +39,21 @@ export async function generateMetadata({
   const image = absoluteMediaUrl(property.image) || "/art/skyline.png";
 
   return {
-    title,
+    // Absolute: skip the layout `%s · Creators Arena` template so the tab
+    // matches the SEO title (brand is already in the pattern).
+    title: { absolute: title },
     description,
     alternates: { canonical: url },
     openGraph: {
       type: "website",
-      title: `${property.name} · Creators Arena`,
+      title,
       description,
       url,
       images: [{ url: image, alt: `${property.name} in ${property.locality}, ${property.city}` }],
     },
     twitter: {
       card: "summary_large_image",
-      title: `${property.name} · Creators Arena`,
+      title,
       description,
       images: [image],
     },

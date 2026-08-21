@@ -30,6 +30,76 @@ export function propertyPath(p: { slug?: string | null; id: string }): string {
   return `/properties/${key}`;
 }
 
+function collapseWs(s: string): string {
+  return s.replace(/\s+/g, " ").trim();
+}
+
+/**
+ * Presentation-only. Does not write the database.
+ * Bare numeric localities become "Sector N". Named values stay as stored.
+ * YE 22A/22D/25 become "Sector …" only when city is Yamuna Expressway.
+ */
+export function formatLocalityLabel(locality: string, city?: string): string {
+  const raw = collapseWs(locality);
+  if (!raw) return raw;
+  if (/^sector\b/i.test(raw)) return raw;
+
+  const ye = collapseWs(city ?? "") === "Yamuna Expressway";
+  if (ye && /^22[a-d]$/i.test(raw)) {
+    return `Sector 22${raw.slice(-1).toUpperCase()}`;
+  }
+  if (ye && raw === "25") return "Sector 25";
+
+  if (/^\d+$/.test(raw)) return `Sector ${raw}`;
+  return raw;
+}
+
+/** Collapse "Saviour Saviour New" / "Max Estate Estate 105" without inventing names. */
+export function formatPropertyHeading(builderName: string, projectName: string): string {
+  const builder = collapseWs(builderName);
+  const project = collapseWs(projectName);
+  if (!builder) return project;
+  if (!project) return builder;
+
+  const bLow = builder.toLowerCase();
+  const pLow = project.toLowerCase();
+  if (pLow === bLow || pLow.startsWith(`${bLow} `)) return project;
+
+  const last = builder.split(" ").pop() ?? "";
+  const parts = project.split(" ");
+  if (last && parts[0].toLowerCase() === last.toLowerCase()) {
+    const rest = parts.slice(1).join(" ");
+    return rest ? `${builder} ${rest}` : builder;
+  }
+  return `${builder} ${project}`;
+}
+
+/** "3BHK+3T / 4BHK+4T+U" → "3/4 BHK" for titles. */
+export function compactBhkLabel(configs: string): string {
+  const s = collapseWs(configs);
+  if (!s) return "";
+  // "3 / 4 BHK" — digits are not glued to the word BHK.
+  const slashList = s.match(/^(\d+(?:\s*\/\s*\d+)+)\s*bhk\b/i);
+  let nums: string[];
+  if (slashList) {
+    nums = [...new Set(slashList[1].match(/\d+/g) ?? [])];
+  } else {
+    nums = [...new Set([...s.matchAll(/(\d+)\s*bhk/gi)].map((m) => m[1]))];
+    if (nums.length === 0 && /bhk/i.test(s)) {
+      nums = [...new Set(s.match(/\d+/g) ?? [])];
+    }
+  }
+  nums.sort((a, b) => Number(a) - Number(b));
+  return nums.length ? `${nums.join("/")} BHK` : s;
+}
+
+/** Presentation-only status fix for the known sheet typo. */
+export function formatPossessionLabel(possession: string): string {
+  const s = collapseWs(possession);
+  if (/constuction/i.test(s) || /^under\s+construct/i.test(s)) return "Under Construction";
+  return s;
+}
+
 /**
  * Turn a media src into an absolute URL. Cloudinary (and any other http(s))
  * paths are left alone — prefixing SITE_URL onto them used to produce
@@ -50,6 +120,7 @@ export function absoluteUrl(path: string): string {
 }
 
 export function propertyFaqs(p: Property): { q: string; a: string }[] {
+  const loc = formatLocalityLabel(p.locality, p.city);
   const areas = p.floorPlans.map((f) => f.areaSqFt).filter((n) => n > 0);
   const areaBit = areas.length
     ? `, from ${Math.min(...areas).toLocaleString("en-IN")} sq.ft onwards`
@@ -59,7 +130,7 @@ export function propertyFaqs(p: Property): { q: string; a: string }[] {
       q: `What is the possession date of ${p.name}?`,
       a:
         p.possession === "Ready to Move"
-          ? `${p.name} is ready to move in ${p.locality}, ${p.city}.`
+          ? `${p.name} is ready to move in ${loc}, ${p.city}.`
           : `Possession at ${p.name} is expected by ${p.possessionDate}.`,
     },
     {
@@ -70,7 +141,7 @@ export function propertyFaqs(p: Property): { q: string; a: string }[] {
     },
     {
       q: `What configurations are available at ${p.name}?`,
-      a: `${p.name} offers ${p.configs || "residential"} configurations${areaBit} in ${p.locality}, ${p.city}.`,
+      a: `${p.name} offers ${p.configs || "residential"} configurations${areaBit} in ${loc}, ${p.city}.`,
     },
     {
       q: `How far is ${p.name} from the metro?`,
@@ -83,14 +154,24 @@ export function propertyFaqs(p: Property): { q: string; a: string }[] {
 }
 
 export function propertyTitle(p: Property): string {
-  return `${p.name} in ${p.locality}, ${p.city}`;
+  const loc = formatLocalityLabel(p.locality, p.city);
+  const heading = formatPropertyHeading(p.builder.name, p.name);
+  const bhk = compactBhkLabel(p.configs);
+  const where = `${heading} in ${loc}, ${p.city}`;
+  if (p.priceLakh > 0 && bhk) return `${where} | ${bhk} from ${formatPriceLakh(p.priceLakh)}`;
+  if (p.priceLakh > 0) return `${where} | from ${formatPriceLakh(p.priceLakh)}`;
+  if (bhk) return `${where} | ${bhk}`;
+  return where;
 }
 
 export function propertyDescription(p: Property): string {
-  const priceBit = p.priceLakh > 0 ? ` from ${formatPriceLakh(p.priceLakh)}` : "";
-  return `${p.name} by ${p.builder.name} in ${p.locality}, ${p.city}. ${
-    p.configs || "Residential"
-  }${priceBit}. Compare price, amenities, location and investment potential on Creators Arena.`;
+  const loc = formatLocalityLabel(p.locality, p.city);
+  const heading = formatPropertyHeading(p.builder.name, p.name);
+  const bhk = compactBhkLabel(p.configs) || p.configs || "Residential";
+  const possession = formatPossessionLabel(p.possession);
+  const pricePart =
+    p.priceLakh > 0 ? `starting ${formatPriceLakh(p.priceLakh)}` : "price on request";
+  return `${heading} in ${loc}, ${p.city}. ${bhk}, ${possession}, ${pricePart}. Compare with similar NCR projects on Creators Arena.`;
 }
 
 function jsonLdGraph(nodes: Record<string, unknown>[]) {
@@ -198,7 +279,7 @@ export function propertyJsonLd(
     brand: { "@type": "Organization", name: property.builder.name },
     address: {
       "@type": "PostalAddress",
-      addressLocality: property.locality,
+      addressLocality: formatLocalityLabel(property.locality, property.city),
       addressRegion: property.city,
       addressCountry: "IN",
     },

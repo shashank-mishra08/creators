@@ -1,6 +1,7 @@
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import type { PropertyFilters } from "@/lib/data-source";
+import { formatLocalityLabel, formatPossessionLabel } from "@/lib/seo";
 import type {
   AmenityKey,
   Builder,
@@ -129,11 +130,11 @@ function mapProperty(p: PropertyRow): Property {
     description: p.description ?? "",
     builder: mapBuilder(p.builder),
     city: p.city as City,
-    locality: p.locality,
+    locality: formatLocalityLabel(p.locality, p.city),
     category: p.category ?? "",
     kind: p.kind as PropertyKind,
     configs: p.configsLabel,
-    possession: p.possession as Possession,
+    possession: formatPossessionLabel(p.possession) as Possession,
     possessionDate: p.possessionDate,
     reraId: p.reraId ?? "",
     priceLakh: p.pricing?.startingPriceLakh ?? 0,
