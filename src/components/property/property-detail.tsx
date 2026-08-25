@@ -35,7 +35,13 @@ import { Lightbox } from "@/components/ui/lightbox";
 import { SiteVisitModal } from "@/components/property/site-visit-modal";
 import { PropertyReviews } from "@/components/reviews/property-reviews";
 import { cn, formatPriceLakh } from "@/lib/utils";
-import { formatPropertyHeading, propertyFaqs, propertyPath } from "@/lib/seo";
+import {
+  compactBhkLabel,
+  formatLocalityLabel,
+  formatPropertyHeading,
+  propertyFaqs,
+  propertyPath,
+} from "@/lib/seo";
 
 const EXPERT_PHONE = "+919252996677";
 
@@ -152,6 +158,11 @@ export function PropertyDetail({
   // "ACE" + "Arte" → "ACE Arte". The same string the H1 and the <title> are
   // built from, so the section headings can never drift from them.
   const heading = formatPropertyHeading(p.builder.name, p.name);
+  // Both read off the record, never asserted. The configurations a project
+  // actually sells ("4/5 BHK" for County Clove, "3 BHK" for Saviour New) and
+  // the locality as the title already spells it ("128" → "Sector 128").
+  const bhk = compactBhkLabel(p.configs);
+  const localityLabel = formatLocalityLabel(p.locality, p.city);
 
   return (
     <div className="container py-6">
@@ -382,7 +393,11 @@ export function PropertyDetail({
       {/* Floor Plans + Amenities */}
       <div className="mt-4 grid gap-4 lg:grid-cols-[1.4fr_1fr]">
         <div className="rounded-2xl border border-border bg-card p-5 shadow-glass">
-          <h2 className="mb-3 font-display text-base font-bold text-primary dark:text-foreground">{heading} Floor Plans</h2>
+          {/* "<name> 3 BHK floor plan" is the query; the BHK comes from the
+              record, so a project that sells 4/5 BHK says 4/5 BHK. */}
+          <h2 className="mb-3 font-display text-base font-bold text-primary dark:text-foreground">
+            {bhk ? `${heading} ${bhk} Floor Plans` : `${heading} Floor Plans`}
+          </h2>
           {!hasFloorPlans && (
             <p className="text-sm text-muted-foreground">Floor plans will be available soon.</p>
           )}
@@ -498,7 +513,13 @@ export function PropertyDetail({
       {/* Location & Connectivity */}
       <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_1.4fr]">
         <div className="rounded-2xl border border-border bg-card p-5 shadow-glass">
-          <h2 className="mb-3 font-display text-base font-bold text-primary dark:text-foreground">{heading} Location & Connectivity</h2>
+          {/* The locality is the other half of a local search — "Sector 128",
+              "NH09/NH24", "Omicron 1A" — and it is whatever the record says. */}
+          <h2 className="mb-3 font-display text-base font-bold text-primary dark:text-foreground">
+            {localityLabel
+              ? `${heading} Location & Connectivity in ${localityLabel}`
+              : `${heading} Location & Connectivity`}
+          </h2>
           <ul className="space-y-2.5">
             {loc.map((l) => (
               <li key={l.label} className="flex items-center justify-between text-sm">
