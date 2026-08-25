@@ -149,6 +149,9 @@ export function PropertyDetail({
   ];
 
   const faqs = propertyFaqs(p);
+  // "ACE" + "Arte" → "ACE Arte". The same string the H1 and the <title> are
+  // built from, so the section headings can never drift from them.
+  const heading = formatPropertyHeading(p.builder.name, p.name);
 
   return (
     <div className="container py-6">
@@ -247,7 +250,7 @@ export function PropertyDetail({
       <div className="mt-4 grid gap-4 rounded-2xl border border-border bg-card p-5 shadow-glass lg:grid-cols-[1.4fr_1fr]">
         <div>
           <h1 className="font-display text-2xl font-extrabold text-primary dark:text-foreground">
-            {formatPropertyHeading(p.builder.name, p.name)} in {p.locality}, {p.city}
+            {heading} in {p.locality}, {p.city}
           </h1>
           <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
             <MapPin className="h-4 w-4 text-accent" /> {p.locality}, {p.city}
@@ -298,7 +301,7 @@ export function PropertyDetail({
       {/* Project Details — full description from the source sheet */}
       {p.description.trim() && (
         <div className="mt-4 rounded-2xl border border-border bg-card p-5 shadow-glass">
-          <h2 className="mb-3 font-display text-base font-bold text-primary dark:text-foreground">Project Details</h2>
+          <h2 className="mb-3 font-display text-base font-bold text-primary dark:text-foreground">{heading} Project Details</h2>
           <div className="space-y-3 text-sm leading-relaxed text-muted-foreground">
             {p.description
               .split(/\n+/)
@@ -314,7 +317,7 @@ export function PropertyDetail({
       {/* Price & Configuration */}
       <div className="mt-4">
         <div className="rounded-2xl border border-border bg-card p-5 shadow-glass">
-          <h2 className="mb-3 font-display text-base font-bold text-primary dark:text-foreground">Price & Configuration</h2>
+          <h2 className="mb-3 font-display text-base font-bold text-primary dark:text-foreground">{heading} Price & Configuration</h2>
           <div className="overflow-hidden rounded-xl border border-border">
             <table className="w-full text-sm">
               <thead className="bg-muted text-xs text-muted-foreground">
@@ -335,6 +338,13 @@ export function PropertyDetail({
               </tbody>
             </table>
           </div>
+          {/* Already on the record and shown nowhere until now — it is the
+              number people compare projects on. */}
+          {p.pricePerSqFt > 0 && (
+            <p className="mt-2 text-xs text-muted-foreground">
+              Approx. ₹{p.pricePerSqFt.toLocaleString("en-IN")} per sq.ft
+            </p>
+          )}
         </div>
       </div>
 
@@ -372,7 +382,7 @@ export function PropertyDetail({
       {/* Floor Plans + Amenities */}
       <div className="mt-4 grid gap-4 lg:grid-cols-[1.4fr_1fr]">
         <div className="rounded-2xl border border-border bg-card p-5 shadow-glass">
-          <h2 className="mb-3 font-display text-base font-bold text-primary dark:text-foreground">Floor Plans</h2>
+          <h2 className="mb-3 font-display text-base font-bold text-primary dark:text-foreground">{heading} Floor Plans</h2>
           {!hasFloorPlans && (
             <p className="text-sm text-muted-foreground">Floor plans will be available soon.</p>
           )}
@@ -410,7 +420,11 @@ export function PropertyDetail({
                 )}
               </button>
               <div className="rounded-xl bg-muted/50 p-3">
-                <div className="text-sm font-bold text-foreground">{plan.config} Floor Plan</div>
+                {/* An h3: it sits under the Floor Plans h2 and names the
+                    configuration, which was the one place the page had a
+                    heading's job being done by a styled div. Same classes, so
+                    nothing moves. */}
+                <h3 className="text-sm font-bold text-foreground">{plan.config} Floor Plan</h3>
                 <dl className="mt-1 space-y-0.5 text-xs text-muted-foreground">
                   <div className="flex justify-between gap-2">
                     <dt>Super Area</dt>
@@ -443,7 +457,7 @@ export function PropertyDetail({
 
         <div className="rounded-2xl border border-border bg-card p-5 shadow-glass">
           <h2 className="mb-3 flex items-center gap-2 font-display text-base font-bold text-primary dark:text-foreground">
-            Amenities
+            {heading} Amenities
             {availableAmenities.length > 0 && (
               <span className="rounded-full bg-accent/10 px-2 py-0.5 text-[11px] font-bold text-accent">
                 {availableAmenities.length}
@@ -484,7 +498,7 @@ export function PropertyDetail({
       {/* Location & Connectivity */}
       <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_1.4fr]">
         <div className="rounded-2xl border border-border bg-card p-5 shadow-glass">
-          <h2 className="mb-3 font-display text-base font-bold text-primary dark:text-foreground">Location & Connectivity</h2>
+          <h2 className="mb-3 font-display text-base font-bold text-primary dark:text-foreground">{heading} Location & Connectivity</h2>
           <ul className="space-y-2.5">
             {loc.map((l) => (
               <li key={l.label} className="flex items-center justify-between text-sm">

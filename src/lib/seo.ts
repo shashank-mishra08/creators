@@ -125,7 +125,25 @@ export function propertyFaqs(p: Property): { q: string; a: string }[] {
   const areaBit = areas.length
     ? `, from ${Math.min(...areas).toLocaleString("en-IN")} sq.ft onwards`
     : "";
+
+  // Price is the question people actually type, and every part of the answer is
+  // already on the record. Skipped entirely when the record carries no price,
+  // rather than answered with a placeholder.
+  const rateBit =
+    p.pricePerSqFt > 0
+      ? `, about ₹${p.pricePerSqFt.toLocaleString("en-IN")} per sq.ft`
+      : "";
+  const range = p.priceRangeLabel.trim();
+  const priceAnswer = range
+    ? `${p.name} is priced ${range}${rateBit} in ${loc}, ${p.city}.`
+    : p.priceLakh > 0
+      ? `${p.name} starts from ${formatPriceLakh(p.priceLakh)}${rateBit} in ${loc}, ${p.city}.`
+      : null;
+
   return [
+    ...(priceAnswer
+      ? [{ q: `What is the price of ${p.name}?`, a: priceAnswer }]
+      : []),
     {
       q: `What is the possession date of ${p.name}?`,
       a:
