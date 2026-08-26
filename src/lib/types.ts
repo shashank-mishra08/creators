@@ -7,7 +7,11 @@
  * regardless of the backing store (see `/lib/data-source.ts`).
  */
 
-export type Possession = "Ready to Move" | "Under Construction" | "New Launch";
+export type Possession =
+  | "Ready to Move"
+  | "Under Construction"
+  | "New Launch"
+  | "Pre Launch";
 
 export type PropertyKind = "Apartment" | "Villa" | "Plot" | "Builder Floor";
 

@@ -100,6 +100,9 @@ export function normalizeStatus(v: unknown): string | null {
   const low = s.toLowerCase();
   if (low.includes("construct")) return "Under Construction";
   if (low.includes("ready")) return "Ready to Move";
+  // Before the plain "launch" rule below, which would otherwise swallow this
+  // and file a pre-launch project as a new launch without saying so.
+  if (/pre[\s-]*launch/.test(low)) return "Pre Launch";
   if (low.includes("launch")) return "New Launch";
   return s; // keep raw; validator will flag unknown
 }

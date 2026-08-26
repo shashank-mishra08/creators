@@ -75,7 +75,9 @@ const COMMON_AMENITIES = [
 // drifted to three cities while the database held five, so two markets could
 // not be selected when adding a property.
 const KINDS = ["Apartment", "Villa", "Plot", "Builder Floor"];
-const POSSESSIONS = ["Ready to Move", "Under Construction", "New Launch"];
+// Kept in step with POSSESSIONS in @/lib/constants by hand — this form does
+// not import it, and a value missing here cannot be chosen when adding.
+const POSSESSIONS = ["Ready to Move", "Under Construction", "New Launch", "Pre Launch"];
 
 const TABS = [
   "Basic Info", "Pricing", "Configurations", "Location",

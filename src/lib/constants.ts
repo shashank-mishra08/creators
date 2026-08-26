@@ -32,6 +32,7 @@ export const POSSESSIONS: Possession[] = [
   "Ready to Move",
   "Under Construction",
   "New Launch",
+  "Pre Launch",
 ];
 
 /** Comparison selection limits (shared by UI store and backend services). */
