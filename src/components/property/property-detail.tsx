@@ -31,6 +31,8 @@ import { rememberProperty } from "@/lib/recent-properties";
 import { Button } from "@/components/ui/button";
 import { ShareButton } from "@/components/ui/share-button";
 import { CoverImage } from "@/components/ui/cover-image";
+import { PropertyVideo } from "@/components/property/property-video";
+import { parseVideoSource } from "@/lib/video";
 import { Lightbox } from "@/components/ui/lightbox";
 import { SiteVisitModal } from "@/components/property/site-visit-modal";
 import { PropertyReviews } from "@/components/reviews/property-reviews";
@@ -161,6 +163,10 @@ export function PropertyDetail({
   // Both read off the record, never asserted. The configurations a project
   // actually sells ("4/5 BHK" for County Clove, "3 BHK" for Saviour New) and
   // the locality as the title already spells it ("128" → "Sector 128").
+  // Decided here rather than inside the card, because the builder block's own
+  // width depends on whether a video will sit beside it. An unplayable URL
+  // counts as no video, so the row does not split around an empty column.
+  const hasVideo = parseVideoSource(p.videoUrl) !== null;
   const bhk = compactBhkLabel(p.configs);
   const localityLabel = formatLocalityLabel(p.locality, p.city);
 
@@ -545,24 +551,38 @@ export function PropertyDetail({
         </div>
       </div>
 
-      {/* About the Builder */}
-      <div className="mt-4 rounded-2xl border border-border bg-card p-5 shadow-glass">
-        <h2 className="mb-3 font-display text-base font-bold text-primary dark:text-foreground">About the Builder</h2>
-        <div className="flex flex-wrap items-center gap-6">
-          <div className="flex items-center gap-3">
-            <span className="flex h-12 w-12 items-center justify-center rounded-xl text-white" style={{ background: p.builder.logoColor }}>
-              <Building2 className="h-6 w-6" />
-            </span>
-            <div className="font-display text-lg font-bold text-primary dark:text-foreground">{p.builder.name}</div>
+      {/* About the Builder — with the video tour beside it when there is one.
+          The builder block is a short row of metrics that used to run the full
+          width with nothing on its right; a video is the same height and fills
+          it. With no video the row is a single column, exactly as before. */}
+      <div className={cn("mt-4 grid gap-4", hasVideo && "lg:grid-cols-[1.6fr_1fr]")}>
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-glass">
+          <h2 className="mb-3 font-display text-base font-bold text-primary dark:text-foreground">About the Builder</h2>
+          <div className="flex flex-wrap items-center gap-6">
+            <div className="flex items-center gap-3">
+              <span className="flex h-12 w-12 items-center justify-center rounded-xl text-white" style={{ background: p.builder.logoColor }}>
+                <Building2 className="h-6 w-6" />
+              </span>
+              <div className="font-display text-lg font-bold text-primary dark:text-foreground">{p.builder.name}</div>
+            </div>
+            {p.builder.established > 0 && (
+              <Metric value={`${new Date().getFullYear() - p.builder.established}+`} label="Years of Experience" />
+            )}
+            {p.builder.deliveredProjects > 0 && (
+              <Metric value={`${p.builder.deliveredProjects}+`} label="Projects Delivered" />
+            )}
+            {p.builder.rating > 0 && <Metric value={p.builder.rating.toFixed(1)} label="Builder Rating" />}
           </div>
-          {p.builder.established > 0 && (
-            <Metric value={`${new Date().getFullYear() - p.builder.established}+`} label="Years of Experience" />
-          )}
-          {p.builder.deliveredProjects > 0 && (
-            <Metric value={`${p.builder.deliveredProjects}+`} label="Projects Delivered" />
-          )}
-          {p.builder.rating > 0 && <Metric value={p.builder.rating.toFixed(1)} label="Builder Rating" />}
         </div>
+
+        {hasVideo && (
+          <div data-print-hide className="rounded-2xl border border-border bg-card p-5 shadow-glass">
+            <h2 className="mb-3 font-display text-base font-bold text-primary dark:text-foreground">
+              {heading} Video Tour
+            </h2>
+            <PropertyVideo url={p.videoUrl} title={heading} />
+          </div>
+        )}
       </div>
 
       {/* Similar Properties. Left off the printed sheet: someone sharing a

@@ -121,6 +121,9 @@ function mapProperty(p: PropertyRow): Property {
     .filter((m) => m.type === "gallery")
     .map((m) => m.url);
   const layout = p.media.find((m) => m.type === "layout")?.url ?? null;
+  // The admin form has written these rows since it was built; nothing read
+  // them, so the field never reached the page.
+  const video = p.media.find((m) => m.type === "video")?.url ?? "";
 
   return {
     id: p.id,
@@ -146,6 +149,7 @@ function mapProperty(p: PropertyRow): Property {
     image: cover,
     gallery,
     layout,
+    videoUrl: video,
     gradient: [p.gradientFrom, p.gradientTo],
     amenities,
     amenityList,

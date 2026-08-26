@@ -62,6 +62,25 @@ function sign(params: Record<string, string>, secret: string): string {
  * and appends it to the delivery URL.
  */
 export async function uploadImage(file: File, publicId: string): Promise<string> {
+  return upload(file, publicId, "image");
+}
+
+/**
+ * Uploads a video and returns its permanent https URL.
+ *
+ * Cloudinary keeps videos on a different resource path from images, and an
+ * upload sent to the image endpoint is rejected rather than converted — hence a
+ * second entry point rather than a flag on the first.
+ */
+export async function uploadVideo(file: File, publicId: string): Promise<string> {
+  return upload(file, publicId, "video");
+}
+
+async function upload(
+  file: File,
+  publicId: string,
+  resourceType: "image" | "video",
+): Promise<string> {
   const { cloudName, apiKey, apiSecret, folder } = env();
   if (!cloudName || !apiKey || !apiSecret) {
     throw new Error("Cloudinary is not configured");
@@ -79,7 +98,7 @@ export async function uploadImage(file: File, publicId: string): Promise<string>
   body.append("signature", sign(signed, apiSecret));
 
   const res = await fetch(
-    `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+    `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`,
     { method: "POST", body },
   );
 

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Minus, Upload, X, ChevronLeft, ChevronRight, Check, Loader2 } from "lucide-react";
 import { CITIES } from "@/lib/constants";
+import { parseVideoSource } from "@/lib/video";
 
 // ─────────── Types ───────────
 export interface Config { label: string; areaSqFt: string; carpetAreaSqft: string; balconyAreaSqft: string; builtUpAreaSqft: string; priceLabel: string; floorPlanImage: string; }
@@ -80,6 +81,29 @@ const TABS = [
   "Basic Info", "Pricing", "Configurations", "Location",
   "Amenities", "Investment", "Media", "Highlights",
 ];
+
+/**
+ * Tells the admin, before saving, whether the page will be able to play what is
+ * in the field — the same check the property page makes, so the two can never
+ * disagree. A link that looks fine but is not a shape we can embed would
+ * otherwise just quietly show no video at all.
+ */
+function VideoCheck({ url }: { url: string }) {
+  const source = parseVideoSource(url);
+  if (!source) {
+    return (
+      <p className="mt-1 text-[11px] text-amber-600">
+        This link cannot be played — no video will show. Use a YouTube link, or
+        an uploaded MP4/WebM/MOV.
+      </p>
+    );
+  }
+  return (
+    <p className="mt-1 text-[11px] font-medium text-emerald-600">
+      {source.kind === "youtube" ? "YouTube video" : "Uploaded video file"} ✓
+    </p>
+  );
+}
 
 // ─────────── Image Upload Field ───────────
 
@@ -274,6 +298,26 @@ export function PropertyForm({ title, subtitle: formSubtitle, initialData, onSub
   );
   const [brochureUrl, setBrochureUrl] = useState(initialData?.brochureUrl || "");
   const [videoUrl, setVideoUrl] = useState(initialData?.videoUrl || "");
+  const [videoUploading, setVideoUploading] = useState(false);
+  const [videoError, setVideoError] = useState<string | null>(null);
+
+  /** Same endpoint the images use; it routes video to Cloudinary's video path. */
+  async function uploadVideoFile(file: File) {
+    setVideoUploading(true);
+    setVideoError(null);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Upload failed");
+      setVideoUrl(data.data?.path ?? "");
+    } catch (e) {
+      setVideoError(e instanceof Error ? e.message : "Upload failed");
+    } finally {
+      setVideoUploading(false);
+    }
+  }
 
   // Highlights
   const [highlights, setHighlights] = useState<string[]>(
@@ -721,8 +765,38 @@ export function PropertyForm({ title, subtitle: formSubtitle, initialData, onSub
               <input type="text" value={brochureUrl} onChange={(e) => setBrochureUrl(e.target.value)} placeholder="/properties/brochure.pdf or https://..." className={INPUT} />
             </div>
             <div>
-              <label className={LABEL}>Video URL</label>
-              <input type="url" value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} placeholder="https://youtube.com/..." className={INPUT} />
+              <label className={LABEL}>Video Tour</label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={videoUrl}
+                  onChange={(e) => setVideoUrl(e.target.value)}
+                  placeholder="https://youtube.com/watch?v=… or upload a file"
+                  className={INPUT}
+                />
+                <label className="shrink-0 flex items-center gap-1.5 px-3 py-2.5 border border-[#7166F0] text-[#7166F0] rounded-xl text-sm font-medium cursor-pointer hover:bg-[#7166F0]/5 transition-colors">
+                  {videoUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                  {videoUploading ? "Uploading…" : "Upload"}
+                  <input
+                    type="file"
+                    accept="video/mp4,video/webm,video/quicktime"
+                    className="hidden"
+                    disabled={videoUploading}
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) uploadVideoFile(f);
+                    }}
+                  />
+                </label>
+              </div>
+              <p className="mt-1 text-[11px] leading-snug text-slate-400">
+                Paste a YouTube link, or upload an MP4/WebM/MOV up to 50MB — it
+                goes to Cloudinary. Shown beside &ldquo;About the Builder&rdquo; on the
+                property page, and opens full-screen when clicked. Leave blank
+                for no video.
+              </p>
+              {videoError && <p className="mt-1 text-[11px] text-red-600">{videoError}</p>}
+              {videoUrl && !videoUploading && <VideoCheck url={videoUrl} />}
             </div>
           </div>
         )}

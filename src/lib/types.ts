@@ -144,6 +144,12 @@ export interface Property {
   gallery: string[];
   /** Master plan / land layout image. */
   layout: string | null;
+  /**
+   * Walkthrough video — a pasted link or an uploaded file, whichever the admin
+   * gave. "" when there is none. Read through `parseVideoSource` before it is
+   * shown; the raw value is not trusted to be playable.
+   */
+  videoUrl: string;
   /** Tailwind-friendly gradient stops for the card fallback / accent. */
   gradient: [string, string];
   amenities: Record<AmenityKey, boolean>;
