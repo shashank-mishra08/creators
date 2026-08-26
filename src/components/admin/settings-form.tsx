@@ -3,7 +3,7 @@
 import { useState } from "react";
 import {
   Phone, Share2, Bell, Wrench, Save, Loader2, CheckCircle2, AlertTriangle,
-  PanelBottom, Plus, Trash2,
+  PanelBottom, Plus, Trash2, LineChart,
 } from "lucide-react";
 
 type CustomField = { label: string; value: string };
@@ -38,6 +38,7 @@ const TABS = [
   { id: "footer", label: "Footer", icon: PanelBottom },
   { id: "social", label: "Social", icon: Share2 },
   { id: "leads", label: "Leads", icon: Bell },
+  { id: "tracking", label: "Tracking", icon: LineChart },
   { id: "advanced", label: "Advanced", icon: Wrench },
 ] as const;
 
@@ -258,11 +259,40 @@ export function SettingsForm({
           </>
         )}
 
-        {/* No SEO & Tracking tab: metaTitle, metaDescription, ogImageUrl, ga4Id
-            and metaPixelId are written here and read by nothing — `getPublic()`
-            never exposed them and no layout code injects an analytics script.
-            The form promised settings that did not apply. The columns and the
-            save path are left intact, so putting the tab back is a UI change. */}
+        {/*
+          Tracking is back because the scripts now exist: the root layout reads
+          these two through `getTracking()` and `<Analytics>` injects gtag and
+          the Pixel from them. A blank field means that tag is simply not on the
+          site — the component renders nothing rather than a broken script.
+
+          metaTitle, metaDescription and ogImageUrl stay out. They are still
+          written by nothing and read by nothing, and a settings field that does
+          not apply is worse than no field.
+        */}
+        {tab === "tracking" && (
+          <>
+            <Field
+              label="Google Analytics 4 — Measurement ID"
+              value={form.ga4Id}
+              onChange={(v) => set("ga4Id", v)}
+              disabled={d}
+              placeholder="G-XXXXXXXXXX"
+              hint="From GA4 → Admin → Data streams → your web stream. Starts with 'G-'. Anything in another shape is ignored and no tag is added. Leave blank to switch Analytics off."
+            />
+            <Field
+              label="Meta (Facebook) Pixel ID"
+              value={form.metaPixelId}
+              onChange={(v) => set("metaPixelId", v)}
+              disabled={d}
+              placeholder="123456789012345"
+              hint="From Meta Events Manager → your pixel. Digits only. Leave blank to switch the Pixel off."
+            />
+            <p className="text-xs text-slate-500">
+              Saved here and live on the next page load — no deploy needed. Both
+              tags load on every public page; the admin panel is never tracked.
+            </p>
+          </>
+        )}
 
         {tab === "advanced" && (
           <div>
