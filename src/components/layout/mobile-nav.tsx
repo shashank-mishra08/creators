@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { GitCompareArrows, Heart, LogOut, Menu, ShieldCheck, Star, X } from "lucide-react";
@@ -71,175 +72,196 @@ export function MobileNav({
         <Menu className="h-[18px] w-[18px]" />
       </button>
 
-      {/* Overlay + drawer. `overflow-hidden` clips the off-screen (closed)
-          drawer so its transform can't create horizontal page scroll. */}
-      <div
-        className={cn(
-          "fixed inset-0 z-[60] overflow-hidden",
-          open ? "" : "pointer-events-none",
-        )}
-        aria-hidden={!open}
-      >
-        <div
-          onClick={() => setOpen(false)}
-          className={cn(
-            "absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300",
-            open ? "opacity-100" : "opacity-0",
-          )}
-        />
-        <aside
-          id="mobile-nav-drawer"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Menu"
-          className={cn(
-            "absolute right-0 top-0 flex h-full w-[82%] max-w-xs flex-col border-l border-border bg-background shadow-lift transition-transform duration-300 will-change-transform",
-            open ? "translate-x-0" : "translate-x-full",
-          )}
-        >
-          <div className="flex items-center justify-between border-b border-border px-5 py-4">
-            <span className="text-primary dark:text-foreground">
-              <Logo imageClassName="h-11 mt-0" />
-            </span>
-            <button
-              type="button"
-              aria-label="Close menu"
-              onClick={() => setOpen(false)}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
+      {/*
+        Overlay + drawer, rendered into <body> rather than here.
 
-          {/* The header bar has no room for the search on a phone, so it lives
-              here. Typing updates the URL rather than navigating, so the drawer
-              stays open and the listing behind it is already filtered when it
-              closes. Hidden from `md` up, where the bar shows them inline. */}
-          {isListingPath(pathname) && (
-            <div className="border-b border-border p-4 md:hidden">
-              <React.Suspense fallback={null}>
-                <ListingSearchControls cities={cities} stacked />
-              </React.Suspense>
-            </div>
-          )}
+        `position: fixed` is measured against the viewport only while no
+        ancestor has a filter, transform or perspective — any of those makes
+        that ancestor the containing block instead. The header picks up
+        `backdrop-blur-xl` the moment the page is scrolled, which made this
+        drawer resolve against the header's own 64px-tall box: opening the menu
+        below the top of the page produced a full-height panel squeezed into the
+        header strip and then clipped away by `overflow-hidden`. Nothing
+        appeared, and scrolling back to the top "fixed" it, because at the top
+        the header carries no blur.
 
-          <nav className="flex flex-col gap-1 p-4">
-            {nav.map((item) => {
-              const active =
-                item.href === "/"
-                  ? pathname === "/"
-                  : pathname.startsWith(item.href.split("#")[0]);
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={cn(
-                    "rounded-xl px-4 py-3 text-base font-semibold transition-colors",
-                    active
-                      ? "bg-accent/10 text-accent"
-                      : "text-foreground hover:bg-muted",
-                  )}
-                >
-                  {item.label}
-                </Link>
-              );
-            })}
-            <Link
-              href="/shortlist"
-              className="flex items-center justify-between rounded-xl px-4 py-3 text-base font-semibold text-foreground transition-colors hover:bg-muted"
-            >
-              <span className="flex items-center gap-2">
-                <Heart className="h-4 w-4 text-accent" /> Saved
-              </span>
-              {mounted && savedCount > 0 && (
-                <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1.5 text-[11px] font-bold text-accent-foreground">
-                  {savedCount}
-                </span>
-              )}
-            </Link>
-            <Link
-              href="/shortlist?tab=review"
-              className="flex items-center gap-2 rounded-xl px-4 py-3 text-base font-semibold text-foreground transition-colors hover:bg-muted"
-            >
-              <Star className="h-4 w-4 text-accent" /> Write a review
-            </Link>
-          </nav>
+        A portal takes the drawer out of the header entirely, so no styling the
+        header grows later can reach it.
 
-          <div className="mt-auto border-t border-border p-4">
-            {mounted && ready && user ? (
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent text-sm font-bold text-accent-foreground">
-                    {user.name
-                      .split(" ")
-                      .map((p) => p[0])
-                      .slice(0, 2)
-                      .join("")
-                      .toUpperCase()}
-                  </span>
-                  <div className="min-w-0">
-                    <div className="truncate text-sm font-bold text-foreground">
-                      {user.name}
-                    </div>
-                    <div className="truncate text-xs text-muted-foreground">
-                      {user.email}
-                    </div>
-                  </div>
-                </div>
-                {/* Same session covers the panel, so this opens it directly.
-                    Admins only — a convenience, not the gate: the admin routes
-                    verify the account server-side either way. */}
-                {user.isAdmin && (
-                  <Link href="/admin" className="block">
-                    <Button variant="accent" size="md" className="w-full">
-                      <ShieldCheck className="h-4 w-4" /> Admin panel
-                    </Button>
-                  </Link>
-                )}
-                <Button
-                  variant="outline"
-                  size="md"
-                  className="w-full"
-                  onClick={() => {
-                    logout();
-                    setOpen(false);
-                    router.push("/");
-                  }}
-                >
-                  <LogOut className="h-4 w-4" /> Log out
-                </Button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 gap-2">
-                <Link href="/login">
-                  <Button variant="outline" size="md" className="w-full">
-                    Log in
-                  </Button>
-                </Link>
-                <Link href="/signup">
-                  <Button variant="accent" size="md" className="w-full">
-                    Sign up
-                  </Button>
-                </Link>
-              </div>
+        `overflow-hidden` still clips the closed drawer, whose transform would
+        otherwise create horizontal page scroll.
+      */}
+      {mounted &&
+        createPortal(
+          <div
+            className={cn(
+              "fixed inset-0 z-[60] overflow-hidden",
+              open ? "" : "pointer-events-none",
             )}
-            {/* "Compare selected", not "Compare": the nav list above already has
-                a Compare item, and that one goes to /compare/quick to start a
-                fresh comparison. This one opens the selection built while
-                browsing, which is why it carries the count. */}
-            <Link href="/compare" className="mt-3 block">
-              <Button variant="ghost" size="sm" className="w-full justify-start gap-1.5">
-                <GitCompareArrows className="h-4 w-4" /> Compare selected
-                {compareBadge > 0 && (
-                  <span className="ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1.5 text-[11px] font-bold text-accent-foreground">
-                    {compareBadge}
+            aria-hidden={!open}
+          >
+            <div
+              onClick={() => setOpen(false)}
+              className={cn(
+                "absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300",
+                open ? "opacity-100" : "opacity-0",
+              )}
+            />
+            <aside
+              id="mobile-nav-drawer"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Menu"
+              className={cn(
+                "absolute right-0 top-0 flex h-full w-[82%] max-w-xs flex-col border-l border-border bg-background shadow-lift transition-transform duration-300 will-change-transform",
+                open ? "translate-x-0" : "translate-x-full",
+              )}
+            >
+              <div className="flex items-center justify-between border-b border-border px-5 py-4">
+                <span className="text-primary dark:text-foreground">
+                  <Logo imageClassName="h-11 mt-0" />
+                </span>
+                <button
+                  type="button"
+                  aria-label="Close menu"
+                  onClick={() => setOpen(false)}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              {/* The header bar has no room for the search on a phone, so it lives
+                  here. Typing updates the URL rather than navigating, so the drawer
+                  stays open and the listing behind it is already filtered when it
+                  closes. Hidden from `md` up, where the bar shows them inline. */}
+              {isListingPath(pathname) && (
+                <div className="border-b border-border p-4 md:hidden">
+                  <React.Suspense fallback={null}>
+                    <ListingSearchControls cities={cities} stacked />
+                  </React.Suspense>
+                </div>
+              )}
+
+              <nav className="flex flex-col gap-1 p-4">
+                {nav.map((item) => {
+                  const active =
+                    item.href === "/"
+                      ? pathname === "/"
+                      : pathname.startsWith(item.href.split("#")[0]);
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={cn(
+                        "rounded-xl px-4 py-3 text-base font-semibold transition-colors",
+                        active
+                          ? "bg-accent/10 text-accent"
+                          : "text-foreground hover:bg-muted",
+                      )}
+                    >
+                      {item.label}
+                    </Link>
+                  );
+                })}
+                <Link
+                  href="/shortlist"
+                  className="flex items-center justify-between rounded-xl px-4 py-3 text-base font-semibold text-foreground transition-colors hover:bg-muted"
+                >
+                  <span className="flex items-center gap-2">
+                    <Heart className="h-4 w-4 text-accent" /> Saved
                   </span>
+                  {mounted && savedCount > 0 && (
+                    <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1.5 text-[11px] font-bold text-accent-foreground">
+                      {savedCount}
+                    </span>
+                  )}
+                </Link>
+                <Link
+                  href="/shortlist?tab=review"
+                  className="flex items-center gap-2 rounded-xl px-4 py-3 text-base font-semibold text-foreground transition-colors hover:bg-muted"
+                >
+                  <Star className="h-4 w-4 text-accent" /> Write a review
+                </Link>
+              </nav>
+
+              <div className="mt-auto border-t border-border p-4">
+                {mounted && ready && user ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3">
+                      <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent text-sm font-bold text-accent-foreground">
+                        {user.name
+                          .split(" ")
+                          .map((p) => p[0])
+                          .slice(0, 2)
+                          .join("")
+                          .toUpperCase()}
+                      </span>
+                      <div className="min-w-0">
+                        <div className="truncate text-sm font-bold text-foreground">
+                          {user.name}
+                        </div>
+                        <div className="truncate text-xs text-muted-foreground">
+                          {user.email}
+                        </div>
+                      </div>
+                    </div>
+                    {/* Same session covers the panel, so this opens it directly.
+                        Admins only — a convenience, not the gate: the admin routes
+                        verify the account server-side either way. */}
+                    {user.isAdmin && (
+                      <Link href="/admin" className="block">
+                        <Button variant="accent" size="md" className="w-full">
+                          <ShieldCheck className="h-4 w-4" /> Admin panel
+                        </Button>
+                      </Link>
+                    )}
+                    <Button
+                      variant="outline"
+                      size="md"
+                      className="w-full"
+                      onClick={() => {
+                        logout();
+                        setOpen(false);
+                        router.push("/");
+                      }}
+                    >
+                      <LogOut className="h-4 w-4" /> Log out
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2">
+                    <Link href="/login">
+                      <Button variant="outline" size="md" className="w-full">
+                        Log in
+                      </Button>
+                    </Link>
+                    <Link href="/signup">
+                      <Button variant="accent" size="md" className="w-full">
+                        Sign up
+                      </Button>
+                    </Link>
+                  </div>
                 )}
-              </Button>
-            </Link>
-          </div>
-        </aside>
-      </div>
+                {/* "Compare selected", not "Compare": the nav list above already has
+                    a Compare item, and that one goes to /compare/quick to start a
+                    fresh comparison. This one opens the selection built while
+                    browsing, which is why it carries the count. */}
+                <Link href="/compare" className="mt-3 block">
+                  <Button variant="ghost" size="sm" className="w-full justify-start gap-1.5">
+                    <GitCompareArrows className="h-4 w-4" /> Compare selected
+                    {compareBadge > 0 && (
+                      <span className="ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1.5 text-[11px] font-bold text-accent-foreground">
+                        {compareBadge}
+                      </span>
+                    )}
+                  </Button>
+                </Link>
+              </div>
+            </aside>
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }
