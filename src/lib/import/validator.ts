@@ -346,7 +346,12 @@ export function validateAndClean(parsed: ParsedProject): ValidationResult {
 
   // ---- status / possession ----
   const possession = C.normalizeStatus(s.projectStatus) ?? "Under Construction";
-  if (s.projectStatus && !["Ready to Move", "Under Construction", "New Launch"].includes(possession))
+  if (
+    s.projectStatus &&
+    !["Ready to Move", "Under Construction", "New Launch", "Pre Launch"].includes(
+      possession,
+    )
+  )
     warn("projectStatus", `Unrecognised status "${s.projectStatus}" — defaulted`);
 
   // ---- amenities ----
