@@ -1,9 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ChevronDown, Home, LogOut, Menu, Search } from "lucide-react";
+import { replaceParams } from "@/lib/url-params";
+
+/** The one page this box searches. */
+const LIST_PATH = "/admin/properties";
 
 const ROLE_LABEL: Record<string, string> = {
   SUPER_ADMIN: "Super Admin",
@@ -19,8 +23,35 @@ export function AdminHeader({
   onMenuClick?: () => void;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [showMenu, setShowMenu] = useState(false);
-  const [query, setQuery] = useState("");
+
+  /*
+   * On the properties list this box IS the list's filter, so it reads and
+   * writes `?q=` — the same param the list's own box uses. It used to keep a
+   * private copy of the term and push a URL on submit, which broke in two ways
+   * a person would report as "the search does nothing":
+   *
+   *   Searching a term the URL already held pushed the identical URL. Nothing
+   *   changed, so the list — which only followed `?q=` when it changed — never
+   *   re-filtered. Search "eldeco", clear the list's own box, search "eldeco"
+   *   again from up here: no effect, forever.
+   *
+   *   Arriving at `?q=eldeco` by reload, bookmark or Back left this box empty
+   *   over a visibly filtered list, with nothing to clear.
+   *
+   * Off the list there is no `?q=` to read, so the term is held here until
+   * submit carries it to the list.
+   */
+  const onList = pathname === LIST_PATH;
+  const urlQuery = searchParams.get("q") ?? "";
+  const [draft, setDraft] = useState("");
+  const query = onList ? urlQuery : draft;
+
+  // Leaving the list, or landing on it from a link that carries a term, hands
+  // the term over so the box does not jump between two values as you navigate.
+  useEffect(() => setDraft(urlQuery), [urlQuery]);
 
   const displayName = user?.name || "Admin";
   const displayRole = (user && ROLE_LABEL[user.role]) || "Super Admin";
@@ -45,13 +76,16 @@ export function AdminHeader({
         </button>
 
         {/* Full search from sm up; below that it would crowd out everything else.
-            Submitting hands the term to the properties list via ?q=, which is
-            where the matching actually happens — one search box, one behaviour. */}
+            Submitting from another page hands the term to the properties list
+            via ?q=, which is where the matching happens — one search box, one
+            behaviour. On the list itself there is nowhere to go, and the typing
+            has already filtered it. */}
         <form
           onSubmit={(e) => {
             e.preventDefault();
             const q = query.trim();
-            router.push(q ? `/admin/properties?q=${encodeURIComponent(q)}` : "/admin/properties");
+            if (onList) return;
+            router.push(q ? `${LIST_PATH}?q=${encodeURIComponent(q)}` : LIST_PATH);
           }}
           role="search"
           className="relative hidden w-full max-w-xl sm:block"
@@ -62,7 +96,14 @@ export function AdminHeader({
           <input
             type="search"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            // On the list every keystroke filters, the way the list's own box
+            // does; anywhere else it waits for Enter, which is what takes you
+            // to the list in the first place.
+            onChange={(e) =>
+              onList
+                ? replaceParams({ q: e.target.value.trim() ? e.target.value : null })
+                : setDraft(e.target.value)
+            }
             aria-label="Search properties"
             className="block w-full pl-10 pr-3 py-2.5 border-0 rounded-lg text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-white/20 transition-all bg-white shadow-sm"
             placeholder="Search properties by name, builder or locality…"

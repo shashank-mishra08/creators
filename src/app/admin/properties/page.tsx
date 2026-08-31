@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { DeleteConfirmModal } from "@/components/admin/delete-confirm-modal";
 import { useCan } from "@/components/admin/role-context";
+import { replaceParams } from "@/lib/url-params";
 
 interface AdminProperty {
   id: string;
@@ -36,8 +37,6 @@ export default function AdminPropertiesPage() {
   // Same permission table the API enforces, so a button is never offered that
   // would come back 403. The API remains the boundary; this is the courtesy.
   const allowed = useCan();
-  // Seeded from ?q= so the header search can hand a term over to this list.
-  const [search, setSearch] = useState("");
   // The sidebar links here with ?status=deleted, so Recently Deleted is
   // reachable as its own destination rather than only as a chip on this page.
   const searchParams = useSearchParams();
@@ -47,12 +46,23 @@ export default function AdminPropertiesPage() {
     "all" | "active" | "hidden" | "deleted"
   >(initialStatus);
 
-  // Follow ?q= whenever it changes: the header search pushes a new URL while
-  // this page is already mounted, so reading it once at mount is not enough.
-  const urlQuery = searchParams.get("q") ?? "";
-  useEffect(() => {
-    setSearch(urlQuery);
-  }, [urlQuery]);
+  /*
+   * The term lives in `?q=` and nowhere else.
+   *
+   * It used to live here as well, seeded from the URL by an effect — and two
+   * copies of one value drift. Clearing this box left `?q=` behind, so
+   * searching the same term again from the header pushed a URL that had not
+   * changed, the effect never re-ran, and the header search sat there doing
+   * nothing. With one source of truth that cannot happen: both boxes read the
+   * same param, and both write it.
+   *
+   * Writes do not navigate — see `@/lib/url-params`.
+   */
+  const search = searchParams.get("q") ?? "";
+  const setSearch = useCallback(
+    (value: string) => replaceParams({ q: value.trim() ? value : null }),
+    [],
+  );
   const [deleteTarget, setDeleteTarget] = useState<AdminProperty | null>(null);
   const [purgeTarget, setPurgeTarget] = useState<AdminProperty | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
