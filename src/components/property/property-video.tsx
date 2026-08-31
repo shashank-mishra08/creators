@@ -26,6 +26,9 @@ export function PropertyVideo({
   url: string;
   /** Property name, for the dialog label and the poster's alt text. */
   title: string;
+  /** Classes for the poster frame. A ratio here overrides the default 16:9 —
+   *  the still is only a door to the player, which opens at 16:9 regardless,
+   *  so a flatter crop costs nothing but the top and bottom of a thumbnail. */
   className?: string;
 }) {
   const source = React.useMemo(() => parseVideoSource(url), [url]);
@@ -40,7 +43,10 @@ export function PropertyVideo({
         onClick={() => setOpen(true)}
         aria-label={`Play the video tour of ${title}`}
         className={cn(
-          "group relative block w-full overflow-hidden rounded-xl border border-border bg-[#0B0718] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
+          // The ratio lives here rather than on the image so a caller can
+          // change it: `cn` merges through tailwind-merge, and a conflicting
+          // aspect class on the frame wins over this one.
+          "group relative block aspect-video w-full overflow-hidden rounded-xl border border-border bg-[#0B0718] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
           className,
         )}
       >
@@ -82,7 +88,7 @@ function Poster({ source, title }: { source: VideoSource; title: string }) {
         alt={`Video tour of ${title}`}
         loading="lazy"
         decoding="async"
-        className="aspect-video w-full object-cover"
+        className="h-full w-full object-cover"
       />
     );
   }
@@ -93,7 +99,7 @@ function Poster({ source, title }: { source: VideoSource; title: string }) {
       muted
       playsInline
       aria-label={`Video tour of ${title}`}
-      className="aspect-video w-full object-cover"
+      className="h-full w-full object-cover"
     />
   );
 }

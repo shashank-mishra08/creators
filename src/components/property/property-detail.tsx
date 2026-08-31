@@ -570,7 +570,7 @@ export function PropertyDetail({
             // it the 16:9 poster would refuse to shrink below its intrinsic
             // width and push the builder pane out of the card.
             hasVideo &&
-              "lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-8",
+              "lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-6",
           )}
         >
           <div className="flex flex-col">
@@ -583,16 +583,22 @@ export function PropertyDetail({
                 do this — the switch is a breakpoint, not a render. */}
             <div
               className={cn(
-                "flex flex-1 flex-wrap content-center items-center gap-6",
+                "flex flex-wrap content-start items-center gap-6",
                 hasVideo &&
-                  "lg:flex-col lg:flex-nowrap lg:items-stretch lg:justify-center lg:gap-0 lg:divide-y lg:divide-border",
+                  "lg:flex-col lg:flex-nowrap lg:items-stretch lg:gap-0 lg:divide-y lg:divide-border",
               )}
             >
-              <div className={cn("flex items-center gap-3", hasVideo && "lg:pb-4")}>
-                <span className="flex h-12 w-12 items-center justify-center rounded-xl text-white" style={{ background: p.builder.logoColor }}>
-                  <Building2 className="h-6 w-6" />
+              <div className={cn("flex items-center gap-3", hasVideo && "lg:gap-4 lg:pb-3")}>
+                <span
+                  className={cn(
+                    "flex h-12 w-12 items-center justify-center rounded-xl text-white",
+                    hasVideo && "lg:h-14 lg:w-14",
+                  )}
+                  style={{ background: p.builder.logoColor }}
+                >
+                  <Building2 className={cn("h-6 w-6", hasVideo && "lg:h-7 lg:w-7")} />
                 </span>
-                <div className="font-display text-lg font-bold text-primary dark:text-foreground">{p.builder.name}</div>
+                <div className={cn("font-display text-lg font-bold text-primary dark:text-foreground", hasVideo && "lg:text-xl")}>{p.builder.name}</div>
               </div>
               {p.builder.established > 0 && (
                 <Metric listed={hasVideo} value={`${new Date().getFullYear() - p.builder.established}+`} label="Years of Experience" />
@@ -608,11 +614,16 @@ export function PropertyDetail({
               where the video is dropped, and below `lg`, where the panes stack
               and a vertical rule would divide nothing. */}
           {hasVideo && (
-            <div data-print-hide className="lg:border-l lg:border-border lg:pl-8">
+            <div data-print-hide className="lg:border-l lg:border-border lg:pl-6">
               <h2 className="mb-3 font-display text-base font-bold text-primary dark:text-foreground">
                 {heading} Video Tour
               </h2>
-              <PropertyVideo url={p.videoUrl} title={heading} />
+              {/* A flatter still only where the pane is wide. 16:9 across two
+                  fifths of a desktop row made the card taller than anything in
+                  it needed to be; the player still opens at 16:9, so this costs
+                  the top and bottom of a thumbnail and nothing else. Below `lg`
+                  the frame is narrow enough that 16:9 is not the problem. */}
+              <PropertyVideo url={p.videoUrl} title={heading} className="lg:aspect-[7/3]" />
             </div>
           )}
         </div>
@@ -784,11 +795,11 @@ function Metric({ value, label, listed = false }: { value: string; label: string
     <div
       className={cn(
         listed &&
-          "lg:flex lg:flex-row-reverse lg:items-baseline lg:justify-between lg:gap-4 lg:py-3.5",
+          "lg:flex lg:flex-row-reverse lg:items-baseline lg:justify-between lg:gap-4 lg:py-2.5",
       )}
     >
-      <div className="font-display text-xl font-extrabold text-accent">{value}</div>
-      <div className="text-[11px] text-muted-foreground">{label}</div>
+      <div className={cn("font-display text-xl font-extrabold text-accent", listed && "lg:text-2xl")}>{value}</div>
+      <div className={cn("text-[11px] text-muted-foreground", listed && "lg:text-xs")}>{label}</div>
     </div>
   );
 }
