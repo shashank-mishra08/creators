@@ -551,38 +551,71 @@ export function PropertyDetail({
         </div>
       </div>
 
-      {/* About the Builder — with the video tour beside it when there is one.
-          The builder block is a short row of metrics that used to run the full
-          width with nothing on its right; a video is the same height and fills
-          it. With no video the row is a single column, exactly as before. */}
-      <div className={cn("mt-4 grid gap-4", hasVideo && "lg:grid-cols-[1.6fr_1fr]")}>
-        <div className="rounded-2xl border border-border bg-card p-5 shadow-glass">
-          <h2 className="mb-3 font-display text-base font-bold text-primary dark:text-foreground">About the Builder</h2>
-          <div className="flex flex-wrap items-center gap-6">
-            <div className="flex items-center gap-3">
-              <span className="flex h-12 w-12 items-center justify-center rounded-xl text-white" style={{ background: p.builder.logoColor }}>
-                <Building2 className="h-6 w-6" />
-              </span>
-              <div className="font-display text-lg font-bold text-primary dark:text-foreground">{p.builder.name}</div>
-            </div>
-            {p.builder.established > 0 && (
-              <Metric value={`${new Date().getFullYear() - p.builder.established}+`} label="Years of Experience" />
-            )}
-            {p.builder.deliveredProjects > 0 && (
-              <Metric value={`${p.builder.deliveredProjects}+`} label="Projects Delivered" />
-            )}
-            {p.builder.rating > 0 && <Metric value={p.builder.rating.toFixed(1)} label="Builder Rating" />}
-          </div>
-        </div>
+      {/* About the Builder and the video tour: one card, two panes.
+          These were two cards side by side, and the builder half was mostly
+          empty — three short metrics under a heading, against a card of its
+          own. The room that bought nothing there goes to the video instead,
+          which is the half worth looking at: one border, and the wider column
+          is the video's. The builder metrics sit centred against it rather
+          than stranded at the top of a tall pane.
 
-        {hasVideo && (
-          <div data-print-hide className="rounded-2xl border border-border bg-card p-5 shadow-glass">
-            <h2 className="mb-3 font-display text-base font-bold text-primary dark:text-foreground">
-              {heading} Video Tour
-            </h2>
-            <PropertyVideo url={p.videoUrl} title={heading} />
+          With no video there is nothing to divide, so the card is the builder
+          row running the full width — exactly as it always was. */}
+      <div className="mt-4 rounded-2xl border border-border bg-card p-5 shadow-glass">
+        <div
+          className={cn(
+            "grid gap-6",
+            // The video takes 60% of the row. Both tracks are `minmax(0,…)`:
+            // a grid column is `auto` at its narrowest by default, so without
+            // it the 16:9 poster would refuse to shrink below its intrinsic
+            // width and push the builder pane out of the card.
+            hasVideo &&
+              "lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-8",
+          )}
+        >
+          <div className="flex flex-col">
+            <h2 className="mb-3 font-display text-base font-bold text-primary dark:text-foreground">About the Builder</h2>
+            {/* Two shapes from one markup, because the pane is two different
+                shapes. Beside a video it is a tall narrow column, so the
+                metrics become a divided list that fills the height it has been
+                given; stacked or with no video it is a wide short strip, so
+                they stay the wrapped row they have always been. A prop cannot
+                do this — the switch is a breakpoint, not a render. */}
+            <div
+              className={cn(
+                "flex flex-1 flex-wrap content-center items-center gap-6",
+                hasVideo &&
+                  "lg:flex-col lg:flex-nowrap lg:items-stretch lg:justify-center lg:gap-0 lg:divide-y lg:divide-border",
+              )}
+            >
+              <div className={cn("flex items-center gap-3", hasVideo && "lg:pb-4")}>
+                <span className="flex h-12 w-12 items-center justify-center rounded-xl text-white" style={{ background: p.builder.logoColor }}>
+                  <Building2 className="h-6 w-6" />
+                </span>
+                <div className="font-display text-lg font-bold text-primary dark:text-foreground">{p.builder.name}</div>
+              </div>
+              {p.builder.established > 0 && (
+                <Metric listed={hasVideo} value={`${new Date().getFullYear() - p.builder.established}+`} label="Years of Experience" />
+              )}
+              {p.builder.deliveredProjects > 0 && (
+                <Metric listed={hasVideo} value={`${p.builder.deliveredProjects}+`} label="Projects Delivered" />
+              )}
+              {p.builder.rating > 0 && <Metric listed={hasVideo} value={p.builder.rating.toFixed(1)} label="Builder Rating" />}
+            </div>
           </div>
-        )}
+
+          {/* The rule sits on this pane, so it disappears with it — on paper,
+              where the video is dropped, and below `lg`, where the panes stack
+              and a vertical rule would divide nothing. */}
+          {hasVideo && (
+            <div data-print-hide className="lg:border-l lg:border-border lg:pl-8">
+              <h2 className="mb-3 font-display text-base font-bold text-primary dark:text-foreground">
+                {heading} Video Tour
+              </h2>
+              <PropertyVideo url={p.videoUrl} title={heading} />
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Similar Properties. Left off the printed sheet: someone sharing a
@@ -738,9 +771,22 @@ function Stat({ icon: Icon, label, value }: { icon: React.ComponentType<{ classN
   );
 }
 
-function Metric({ value, label }: { value: string; label: string }) {
+/**
+ * `listed` opts into the divided-list shape the builder pane takes at `lg`
+ * when a video is beside it: label on the left, figure on the right, one to a
+ * line. `flex-row-reverse` puts the label first without moving the figure out
+ * in front of it in the DOM, where a screen reader would read the number
+ * before knowing what it counts. Everywhere else — and at every width below
+ * `lg` — this is the stacked figure-over-label it has always been.
+ */
+function Metric({ value, label, listed = false }: { value: string; label: string; listed?: boolean }) {
   return (
-    <div>
+    <div
+      className={cn(
+        listed &&
+          "lg:flex lg:flex-row-reverse lg:items-baseline lg:justify-between lg:gap-4 lg:py-3.5",
+      )}
+    >
       <div className="font-display text-xl font-extrabold text-accent">{value}</div>
       <div className="text-[11px] text-muted-foreground">{label}</div>
     </div>
