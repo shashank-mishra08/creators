@@ -799,7 +799,7 @@ function Metric({ value, label, listed = false }: { value: string; label: string
       )}
     >
       <div className={cn("font-display text-xl font-extrabold text-accent", listed && "lg:text-2xl")}>{value}</div>
-      <div className={cn("text-[11px] text-muted-foreground", listed && "lg:text-xs")}>{label}</div>
+      <div className={cn("text-[11px] text-muted-foreground", listed && "lg:text-sm")}>{label}</div>
     </div>
   );
 }
