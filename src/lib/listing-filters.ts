@@ -55,3 +55,17 @@ export function writeListingParams(next: { q?: string; cities?: Iterable<string>
     qs ? `${window.location.pathname}?${qs}` : window.location.pathname,
   );
 }
+
+/**
+ * Is either listing control carrying a value right now?
+ *
+ * Takes anything with a `get` — `URLSearchParams` and the read-only object
+ * `useSearchParams` hands back both qualify — so a caller can ask this of the
+ * live params or of `window.location.search` before React has run.
+ */
+export function hasListingSearch(params: { get(name: string): string | null }): boolean {
+  return (
+    (params.get(QUERY_PARAM) ?? "").trim() !== "" ||
+    parseCities(params.get(CITY_PARAM)).length > 0
+  );
+}

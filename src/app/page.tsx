@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getDataSource } from "@/lib/data-source";
 import { type HeroSlide } from "@/components/landing/hero-3d";
 import { HeroShowcase } from "@/components/landing/hero-showcase";
+import { HeroSlot } from "@/components/landing/hero-slot";
 import { PropertyExplorer } from "@/components/listing/property-explorer";
 import { ReviewSection } from "@/components/landing/review-section";
 import { bannerService } from "@/lib/services/banner.service";
@@ -79,14 +80,20 @@ export default async function HomePage() {
       {/* Hero and banners share one rotating stage: the client's read was that
           a hero alone added no value, so the promotions now get the same room
           rather than a strip below the fold. With no live banners this is the
-          hero on its own, exactly as before. */}
-      <HeroShowcase
-        slides={buildHeroSlides(properties)}
-        banners={banners}
-        // The same array the explorer below is given, so the hero's count and
-        // the grid are one number rather than two that drift.
-        projectCount={properties.length}
-      />
+          hero on its own, exactly as before.
+
+          The slot around it stands the stage down while a search started in the
+          navbar is running, so the results below land directly under the search
+          box instead of a screen-height scroll away. */}
+      <HeroSlot>
+        <HeroShowcase
+          slides={buildHeroSlides(properties)}
+          banners={banners}
+          // The same array the explorer below is given, so the hero's count and
+          // the grid are one number rather than two that drift.
+          projectCount={properties.length}
+        />
+      </HeroSlot>
       <PropertyExplorer
         initial={properties}
         seed={seed}

@@ -7,10 +7,12 @@ import { LocationPickerButton } from "@/components/listing/location-picker";
 import {
   CITY_PARAM,
   QUERY_PARAM,
+  hasListingSearch,
   isListingPath,
   parseCities,
   writeListingParams,
 } from "@/lib/listing-filters";
+import { useNavSearch } from "@/store/nav-search";
 import type { City, CityCount } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -26,6 +28,11 @@ import { cn } from "@/lib/utils";
  * opened on an empty list for a second or two after the page was interactive
  * while the toolbar's identical picker opened complete — the two controls are
  * meant to be one control shown twice, and that was the one place they differed.
+ *
+ * Every write also records that the search came from here, which is the one
+ * thing the URL cannot say — the home page drops its hero for a search started
+ * in the navbar and leaves it alone for one typed into the toolbar beside the
+ * results. See `@/store/nav-search`.
  */
 export function ListingSearchControls({
   cities,
@@ -36,6 +43,21 @@ export function ListingSearchControls({
   stacked?: boolean;
 }) {
   const searchParams = useSearchParams();
+  const setFromNav = useNavSearch((s) => s.setFromNav);
+
+  /**
+   * Write, then read the origin flag back off the URL `writeListingParams` has
+   * just replaced. Deriving it from the address bar rather than from the value
+   * in hand keeps one definition of "a search is on" — clearing the box while a
+   * city is still picked is still a search, and the flag has to stay set.
+   */
+  const write = React.useCallback(
+    (next: { q?: string; cities?: Iterable<string> }) => {
+      writeListingParams(next);
+      setFromNav(hasListingSearch(new URLSearchParams(window.location.search)));
+    },
+    [setFromNav],
+  );
 
   const query = searchParams.get(QUERY_PARAM) ?? "";
   const cityNames = React.useMemo(() => cities.map((c) => c.name), [cities]);
@@ -55,7 +77,7 @@ export function ListingSearchControls({
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <input
           value={query}
-          onChange={(e) => writeListingParams({ q: e.target.value })}
+          onChange={(e) => write({ q: e.target.value })}
           placeholder="Search projects, builders or locations..."
           aria-label="Search projects, builders or locations"
           className={cn(
@@ -66,7 +88,7 @@ export function ListingSearchControls({
         {query && (
           <button
             type="button"
-            onClick={() => writeListingParams({ q: "" })}
+            onClick={() => write({ q: "" })}
             aria-label="Clear search"
             className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
           >
@@ -78,7 +100,7 @@ export function ListingSearchControls({
       <LocationPickerButton
         cities={cityNames}
         selected={selected}
-        onApply={(next) => writeListingParams({ cities: next })}
+        onApply={(next) => write({ cities: next })}
         count={(c) => cities.find((x) => x.name === c)?.count ?? 0}
         className={cn(
           "rounded-xl bg-card/80 backdrop-blur",
