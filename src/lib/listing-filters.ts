@@ -54,3 +54,14 @@ export function hasListingSearch(params: { get(name: string): string | null }): 
     parseCities(params.get(CITY_PARAM)).length > 0
   );
 }
+
+/**
+ * The listing URL showing one city's projects.
+ *
+ * One definition, because these links are now written from more than one place
+ * — the footer's Locations column, the Trending Localities row and a property's
+ * breadcrumb all have to agree with what the listing actually reads.
+ */
+export function cityListingPath(city: string): string {
+  return `/properties?${CITY_PARAM}=${encodeURIComponent(city)}`;
+}

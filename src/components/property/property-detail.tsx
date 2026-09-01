@@ -36,6 +36,7 @@ import { parseVideoSource } from "@/lib/video";
 import { Lightbox } from "@/components/ui/lightbox";
 import { SiteVisitModal } from "@/components/property/site-visit-modal";
 import { PropertyReviews } from "@/components/reviews/property-reviews";
+import { cityListingPath } from "@/lib/listing-filters";
 import { cn, formatPriceLakh } from "@/lib/utils";
 import {
   compactBhkLabel,
@@ -182,7 +183,18 @@ export function PropertyDetail({
         <ChevronRight className="h-3 w-3" />
         <Link href="/properties" className="hover:text-accent">Properties</Link>
         <ChevronRight className="h-3 w-3" />
-        <span>{p.locality}, {p.city}</span>
+        {/* The city is the one part of this crumb with somewhere to go: the
+            listing already filters on `?city=`, and until now every route from
+            a project to the rest of its city ran through the footer's boilerplate
+            column. The locality stays text — 18 of 23 localities hold a single
+            project, so "everything in this sector" would lead back to the page
+            you are standing on. */}
+        <span>
+          {p.locality},{" "}
+          <Link href={cityListingPath(p.city)} className="hover:text-accent">
+            {p.city}
+          </Link>
+        </span>
         <ChevronRight className="h-3 w-3" />
         <span className="font-semibold text-accent">{p.name}</span>
       </div>
