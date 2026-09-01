@@ -32,6 +32,7 @@ import { LocationPickerButton } from "@/components/listing/location-picker";
 import {
   CITY_PARAM,
   QUERY_PARAM,
+  cityListingPath,
   parseCities,
   writeListingParams,
 } from "@/lib/listing-filters";
@@ -152,6 +153,10 @@ export function PropertyExplorer({ initial, seed, title, subtitle, variant = "fe
 
   const router = useRouter();
   const searchParams = useSearchParams();
+  // Trending Localities points at `/properties?city=…`; only there is that the
+  // page the visitor is already on, and only there can a click be handled
+  // without the link lying about where it goes.
+  const onListingPage = usePathname() === "/properties";
   const selected = useComparison((s) => s.selected);
 
   const [tab, setTab] = React.useState(0);
@@ -683,11 +688,35 @@ export function PropertyExplorer({ initial, seed, title, subtitle, variant = "fe
             <h3 className="mb-4 font-display text-lg font-bold text-primary dark:text-foreground">
               Trending Localities
             </h3>
+            {/*
+              Links, not buttons.
+
+              This is the only block on the site dedicated to navigating by
+              location, and as buttons it was invisible: nothing to crawl,
+              nothing to open in a new tab, nothing to copy. The href is the
+              same `?city=` URL the footer and the location pickers already
+              produce, so it is one destination written three ways rather than
+              a new mechanism.
+
+              On the listing page that destination IS this page, so a plain
+              click is intercepted and filters in place — no navigation, no
+              re-query, exactly what the button did. A modifier-click falls
+              through to the browser so new-tab and copy-link work, and a
+              middle-click never reaches this handler at all. Anywhere else the
+              click is left alone: the link would be claiming one page and
+              doing another, which is worse than a navigation.
+            */}
             <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-5">
               {cityNames.map((c) => (
-                <button
+                <Link
                   key={c}
-                  onClick={() => setLocations(new Set([c]))}
+                  href={cityListingPath(c)}
+                  onClick={(e) => {
+                    if (!onListingPage) return;
+                    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+                    e.preventDefault();
+                    setLocations(new Set([c]));
+                  }}
                   className="flex items-center gap-2.5 rounded-xl border border-border bg-card p-3 text-left transition-colors hover:border-accent/50"
                 >
                   <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent/10">
@@ -699,7 +728,7 @@ export function PropertyExplorer({ initial, seed, title, subtitle, variant = "fe
                       {count((p) => p.city === c)} Properties
                     </span>
                   </span>
-                </button>
+                </Link>
               ))}
             </div>
           </div>

@@ -49,3 +49,18 @@ export function cloudinaryCover(
     `c_fill,ar_${ratio},g_auto,w_${width},f_auto,q_auto`,
   );
 }
+
+/**
+ * The same picture, capped to a width. Nothing is cropped and nothing is
+ * upscaled — `c_limit` only ever shrinks, and only when the original is
+ * bigger.
+ *
+ * This is the variant for anything that is not a photograph. A floor plan is a
+ * drawing: `cloudinaryCover`'s `c_fill` would cut rooms off its edges, and
+ * `g_auto` has no face or horizon to reason about. Here the frame is left
+ * exactly as it was drawn and only the pixel count comes down, with
+ * `f_auto,q_auto` choosing the format and quality.
+ */
+export function cloudinaryLimit(url: string, width: number): string {
+  return cloudinaryTransform(url, `c_limit,w_${width},f_auto,q_auto`);
+}

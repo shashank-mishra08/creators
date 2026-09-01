@@ -36,6 +36,7 @@ import { parseVideoSource } from "@/lib/video";
 import { Lightbox } from "@/components/ui/lightbox";
 import { SiteVisitModal } from "@/components/property/site-visit-modal";
 import { PropertyReviews } from "@/components/reviews/property-reviews";
+import { cityListingPath } from "@/lib/listing-filters";
 import { cn, formatPriceLakh } from "@/lib/utils";
 import {
   compactBhkLabel,
@@ -182,7 +183,18 @@ export function PropertyDetail({
         <ChevronRight className="h-3 w-3" />
         <Link href="/properties" className="hover:text-accent">Properties</Link>
         <ChevronRight className="h-3 w-3" />
-        <span>{p.locality}, {p.city}</span>
+        {/* The city is the one part of this crumb with somewhere to go: the
+            listing already filters on `?city=`, and until now every route from
+            a project to the rest of its city ran through the footer's boilerplate
+            column. The locality stays text — 18 of 23 localities hold a single
+            project, so "everything in this sector" would lead back to the page
+            you are standing on. */}
+        <span>
+          {p.locality},{" "}
+          <Link href={cityListingPath(p.city)} className="hover:text-accent">
+            {p.city}
+          </Link>
+        </span>
         <ChevronRight className="h-3 w-3" />
         <span className="font-semibold text-accent">{p.name}</span>
       </div>
@@ -198,7 +210,23 @@ export function PropertyDetail({
             aria-label={`View photos of ${p.name}`}
             className="absolute inset-0 z-[1] cursor-zoom-in focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-default"
           >
-            <CoverImage src={photos[cover] ?? p.image} alt={`${p.name} in ${p.locality}, ${p.city}`} gradient={p.gradient} label={p.name} sizes="(max-width:1024px) 100vw, 60vw" />
+            {/*
+              This is the page's LCP element, and it was being loaded last.
+              `next/image` lazy-loads by default, so the one picture the visitor
+              is waiting on sat behind every other request on the page — the
+              measured LCP was 4.5s at the median. `priority` marks it eager and
+              preloads it, which is what the flag exists for; nothing else on
+              the page takes it, so there is still only one image competing.
+
+              `fit` without a ratio caps the delivery at 1600px and lets the CDN
+              pick the format — the stored files are already about that wide, so
+              in practice this is a format and quality change, not a resize.
+              Deliberately not a ratio: cropping to the hero's shape would send
+              fewer bytes still, but `g_auto` would be choosing which part of
+              someone's project photo to discard, and the framing here is the
+              one the client has already signed off.
+            */}
+            <CoverImage src={photos[cover] ?? p.image} alt={`${p.name} in ${p.locality}, ${p.city}`} gradient={p.gradient} label={p.name} sizes="(max-width:1024px) 100vw, 60vw" priority fit={{ width: 1600 }} />
           </button>
 
           <span className="pointer-events-none absolute left-4 top-4 z-[2] rounded-lg bg-white/90 px-3 py-1.5 text-xs font-bold text-slate-800 shadow-sm backdrop-blur">
@@ -433,7 +461,18 @@ export function PropertyDetail({
                   plan.image ? "cursor-zoom-in" : "cursor-default",
                 )}
               >
-                <CoverImage src={plan.image} alt={`${p.name} ${plan.config} floor plan`} gradient={p.gradient} label={`${plan.config} · ${plan.areaSqFt.toLocaleString("en-IN")} sq.ft`} sizes="360px" />
+                {/*
+                  The card is ~420px wide; the drawings behind it run to 3300px
+                  and 4MB, and there are up to a dozen on a page — floor plans
+                  alone were 42MB of the catalogue's images. Capped to 900px
+                  (twice the card, for retina) with the format left to the CDN.
+
+                  No ratio, so nothing is cropped: `c_fill` would cut rooms off
+                  the edges of a drawing, and unlike a photograph a floor plan
+                  does not survive that. `setZoom` below still opens the stored
+                  URL, so the lightbox is unchanged and full resolution.
+                */}
+                <CoverImage src={plan.image} alt={`${p.name} ${plan.config} floor plan`} gradient={p.gradient} label={`${plan.config} · ${plan.areaSqFt.toLocaleString("en-IN")} sq.ft`} sizes="360px" fit={{ width: 900 }} />
                 {plan.image && (
                   <span className="absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-lg bg-black/60 px-2 py-1 text-[11px] font-semibold text-white opacity-0 backdrop-blur transition-opacity group-hover:opacity-100">
                     <Expand className="h-3 w-3" /> Expand
