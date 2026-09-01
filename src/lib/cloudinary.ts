@@ -64,3 +64,41 @@ export function cloudinaryCover(
 export function cloudinaryLimit(url: string, width: number): string {
   return cloudinaryTransform(url, `c_limit,w_${width},f_auto,q_auto`);
 }
+
+/** Is this a Cloudinary delivery URL we can still ask for a variant of? */
+export function isCloudinaryUpload(url: string): boolean {
+  if (!url.includes("res.cloudinary.com") || !url.includes(UPLOAD)) return false;
+  // Already carrying a transformation — `cloudinaryTransform` would hand it
+  // back untouched, so a loader built on it could only ever return one width.
+  return !/^[a-z]_[^/]*\//.test(url.split(UPLOAD)[1]);
+}
+
+/**
+ * The `srcset` for one picture: the same file at each width a browser might
+ * reasonably ask for, so a phone stops downloading the desktop copy.
+ *
+ * The widths are the ones `next/image` would have used, minus anything above
+ * what the box can show. `fit.width` is the ceiling: `c_limit` answers a
+ * request for 3840px with the untouched original, which is the very thing this
+ * is meant to avoid. Widths at or above the ceiling collapse to one entry, so
+ * the set never advertises a size the CDN will not actually deliver.
+ */
+const SRCSET_WIDTHS = [256, 384, 640, 750, 828, 1080, 1200, 1600, 1920];
+
+export function cloudinarySrcSet(
+  url: string,
+  fit?: { ratio?: string; width: number },
+): string {
+  const ceiling = fit?.width ?? Infinity;
+  const widths = SRCSET_WIDTHS.filter((w) => w < ceiling);
+  if (Number.isFinite(ceiling)) widths.push(ceiling);
+
+  return widths
+    .map((w) => {
+      const variant = fit?.ratio
+        ? cloudinaryCover(url, { ratio: fit.ratio, width: w })
+        : cloudinaryLimit(url, w);
+      return `${variant} ${w}w`;
+    })
+    .join(", ");
+}
