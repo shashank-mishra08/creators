@@ -9,6 +9,29 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/store/auth";
 import { cn } from "@/lib/utils";
 
+/**
+ * Where to send someone after they sign in, from the `?redirect=` parameter.
+ *
+ * The parameter used to be handed to `router.push` as it arrived, so a link
+ * like `/login?redirect=https://example.invalid` walked the visitor off the
+ * site immediately after they typed their password — the shape phishing takes.
+ * Only a path on this site is accepted now:
+ *
+ *   `//host` is protocol-relative and leaves the site despite the leading slash
+ *   `\\` is normalised to `/` by some browsers, so it writes the same trick
+ *   anything absolute (`https:…`, `mailto:…`) fails the leading-slash test
+ *
+ * Anything else falls back to the shortlist, which is where the app sends
+ * people who arrive at sign-in without a destination.
+ */
+function safeRedirect(raw: string | null): string {
+  const fallback = "/shortlist";
+  if (!raw) return fallback;
+  if (!raw.startsWith("/")) return fallback;
+  if (raw.startsWith("//") || raw.includes("\\")) return fallback;
+  return raw;
+}
+
 export function AuthScreen({ initialMode }: { initialMode: "login" | "signup" }) {
   const router = useRouter();
   const [mode, setMode] = React.useState<"login" | "signup">(initialMode);
@@ -26,9 +49,8 @@ export function AuthScreen({ initialMode }: { initialMode: "login" | "signup" })
   const [submitting, setSubmitting] = React.useState(false);
 
   const redirectAfterAuth = () => {
-    const redirect =
-      new URLSearchParams(window.location.search).get("redirect") || "/shortlist";
-    router.push(redirect);
+    const raw = new URLSearchParams(window.location.search).get("redirect");
+    router.push(safeRedirect(raw));
   };
 
   React.useEffect(() => setError(null), [mode, setError]);
