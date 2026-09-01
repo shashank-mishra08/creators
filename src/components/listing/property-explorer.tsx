@@ -676,8 +676,13 @@ export function PropertyExplorer({ initial, seed, title, subtitle, variant = "fe
           ) : (
             <motion.div layout className="grid gap-5 sm:auto-rows-fr sm:grid-cols-2 xl:grid-cols-3">
               <AnimatePresence mode="popLayout">
-                {filtered.map((p) => (
-                  <ListingCard key={p.id} property={p} />
+                {filtered.map((p, i) => (
+                  // The first row is the listing's LCP element and was lazy
+                  // like every other card, so the one picture the visitor is
+                  // waiting on was discovered last. Two, because the grid is
+                  // one column on a phone and two or three above that — any
+                  // more and the eager images start competing with each other.
+                  <ListingCard key={p.id} property={p} priority={i < 2} />
                 ))}
               </AnimatePresence>
             </motion.div>
@@ -1025,8 +1030,11 @@ function RadioRow({
   );
 }
 
-const ListingCard = React.forwardRef<HTMLDivElement, { property: Property }>(
-  function ListingCard({ property: p }, ref) {
+const ListingCard = React.forwardRef<
+  HTMLDivElement,
+  { property: Property; priority?: boolean }
+>(
+  function ListingCard({ property: p, priority }, ref) {
     const router = useRouter();
     const pathname = usePathname();
     const mounted = useMounted();
@@ -1069,6 +1077,7 @@ const ListingCard = React.forwardRef<HTMLDivElement, { property: Property }>(
             label={p.name}
             sizes="(max-width:768px) 100vw, 360px"
             fit={{ ratio: "16:9", width: 800 }}
+            priority={priority}
           />
           <button
             onClick={handleShortlist}

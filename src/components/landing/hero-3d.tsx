@@ -334,12 +334,16 @@ function DeckCard({
     <div className={float} style={{ transform: `rotate(${rotate}deg)` }}>
       <Link href={propertyPath(card)} className="glass block w-60 overflow-hidden rounded-2xl shadow-lift">
         <div className="relative h-28 w-full">
+          {/* The card is 240px wide and was being handed the stored original —
+              500 to 900KB apiece, and eight of them on the home page. `fit`
+              caps the delivery; no ratio, so the framing is untouched. */}
           <CoverImage
             src={card.image}
             alt={card.name}
             gradient={card.gradient}
             sizes="240px"
             priority={eager}
+            fit={{ width: 680 }}
           />
           <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full bg-black/55 px-2 py-0.5 text-[10px] font-bold text-white backdrop-blur">
             <Star className="h-2.5 w-2.5 fill-accent text-accent" />
@@ -373,6 +377,7 @@ function WinnerCard({ card, eager }: { card: HeroCard; eager: boolean }) {
             gradient={card.gradient}
             sizes="256px"
             priority={eager}
+            fit={{ width: 680 }}
           />
           <span className="absolute left-2 top-2 rounded-full bg-accent px-2 py-0.5 text-[10px] font-bold text-accent-foreground">
             ★ Top pick

@@ -135,6 +135,18 @@ export function PropertyDetail({
 
   // Gallery side tiles — ONLY real brochure images (no empty placeholder slots).
   const tiles: string[] = [...p.gallery].slice(0, 4);
+  /*
+   * The hero shares its row with the gallery strip only when there are photos
+   * for one — `lg:grid-cols-[1.6fr_1fr]` below — so it is about 60% of the
+   * container with tiles beside it and the whole container without them.
+   *
+   * This used to say 60vw either way, which cost nothing while `sizes` was
+   * inert. Now that it picks the file, describing a 1392px box as 864px buys a
+   * visibly softer hero on every property that has no gallery.
+   */
+  const heroSizes = tiles.length
+    ? "(max-width:1024px) 100vw, 60vw"
+    : "(max-width:1024px) 100vw, 96vw";
 
   // Every real photo, cover first, de-duplicated — this is what the lightbox
   // pages through. The cover often also appears in p.gallery.
@@ -226,7 +238,7 @@ export function PropertyDetail({
               someone's project photo to discard, and the framing here is the
               one the client has already signed off.
             */}
-            <CoverImage src={photos[cover] ?? p.image} alt={`${p.name} in ${p.locality}, ${p.city}`} gradient={p.gradient} label={p.name} sizes="(max-width:1024px) 100vw, 60vw" priority fit={{ width: 1600 }} />
+            <CoverImage src={photos[cover] ?? p.image} alt={`${p.name} in ${p.locality}, ${p.city}`} gradient={p.gradient} label={p.name} sizes={heroSizes} priority fit={{ width: 1600 }} />
           </button>
 
           <span className="pointer-events-none absolute left-4 top-4 z-[2] rounded-lg bg-white/90 px-3 py-1.5 text-xs font-bold text-slate-800 shadow-sm backdrop-blur">
@@ -547,7 +559,7 @@ export function PropertyDetail({
             onClick={() => setZoom(p.layout!)}
             className="group relative block h-64 w-full overflow-hidden rounded-xl border border-border sm:h-96 cursor-zoom-in"
           >
-            <CoverImage src={p.layout} alt={`${p.name} Master Plan`} gradient={p.gradient} sizes="(max-width:1024px) 100vw, 80vw" />
+            <CoverImage src={p.layout} alt={`${p.name} Master Plan`} gradient={p.gradient} sizes="(max-width:1024px) 100vw, 94vw" />
             <span className="absolute bottom-4 right-4 inline-flex items-center gap-1 rounded-lg bg-black/60 px-3 py-2 text-xs font-semibold text-white opacity-0 backdrop-blur transition-opacity group-hover:opacity-100">
               <Expand className="h-4 w-4" /> Expand Layout
             </span>
@@ -677,7 +689,7 @@ export function PropertyDetail({
             {similar.map((s) => (
               <Link key={s.id} href={propertyPath(s)} className="group overflow-hidden rounded-2xl border border-border bg-card shadow-glass transition-transform hover:-translate-y-1">
                 <div className="relative h-36 w-full">
-                  <CoverImage src={s.image} alt={s.name} gradient={s.gradient} label={s.name} sizes="280px" />
+                  <CoverImage src={s.image} alt={s.name} gradient={s.gradient} label={s.name} sizes="(max-width:640px) 100vw, 33vw" />
                 </div>
                 <div className="p-3">
                   <div className="truncate text-sm font-bold text-primary dark:text-foreground">{s.builder.name} {s.name}</div>
