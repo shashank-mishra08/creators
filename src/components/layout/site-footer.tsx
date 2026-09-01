@@ -5,22 +5,19 @@ import { Mail, MapPin, Phone, Globe, Clock, Instagram, Facebook, Linkedin, Youtu
 import { Logo } from "@/components/brand/logo";
 import { usePathname } from "next/navigation";
 import type { PublicSettings } from "@/lib/services/settings.service";
+import type { CityCount } from "@/lib/types";
 
-const QUICK_LINKS = [
-  "Home",
-  "About Us",
-  "Residential",
-  "Commercial",
-  "Services",
-  "Careers",
-  "Blog",
-];
-const LOCATIONS = [
-  "Noida",
-  "Delhi",
-  "Gurugram",
-  "Greater Noida",
-  "Greater Noida West",
+/**
+ * Only pages that exist.
+ *
+ * This list used to be seven labels with no href at all, so every one of them
+ * fell through to FooterLink's `href="#"` default and went nowhere. Six of the
+ * seven had no page behind them either — About Us, Residential, Commercial,
+ * Services, Careers, Blog — so they are gone rather than pointed somewhere
+ * arbitrary. Add an entry here when the page it names is built.
+ */
+const QUICK_LINKS: { label: string; href: string }[] = [
+  { label: "Home", href: "/" },
 ];
 
 // Current defaults — used as fallbacks so the footer looks unchanged whenever a
@@ -35,7 +32,20 @@ const FALLBACK = {
   address: "E-219, 2nd Floor, Sector 63, Noida 201301",
 };
 
-export function SiteFooter({ settings }: { settings?: PublicSettings | null }) {
+export function SiteFooter({
+  settings,
+  cities = [],
+}: {
+  settings?: PublicSettings | null;
+  /**
+   * Cities that actually hold a public project, counted in the root layout —
+   * the same list the header's location picker is built from, so the footer
+   * cannot advertise a market the catalogue does not have. The hardcoded list
+   * this replaces named Noida, Delhi, Gurugram and Greater Noida, none of which
+   * had a single property, while missing the four that hold 41 between them.
+   */
+  cities?: CityCount[];
+}) {
   const pathname = usePathname();
   if (pathname.startsWith("/admin")) return null;
 
@@ -92,15 +102,26 @@ export function SiteFooter({ settings }: { settings?: PublicSettings | null }) {
 
         <FooterCol title="Quick Links">
           {QUICK_LINKS.map((l) => (
-            <FooterLink key={l} label={l} />
+            <FooterLink key={l.href} label={l.label} href={l.href} />
           ))}
         </FooterCol>
 
-        <FooterCol title="Locations">
-          {LOCATIONS.map((l) => (
-            <FooterLink key={l} label={l} href="/properties" />
-          ))}
-        </FooterCol>
+        {/* Nothing to list if the catalogue is empty or unreadable — an empty
+            column under a heading reads as a fault. */}
+        {cities.length > 0 && (
+          <FooterCol title="Locations">
+            {cities.map((c) => (
+              <FooterLink
+                key={c.name}
+                label={c.name}
+                // The listing reads `?city=` (see lib/listing-filters), so each
+                // of these lands on that city's projects rather than on the
+                // unfiltered list, which is where all five used to go.
+                href={`/properties?city=${encodeURIComponent(c.name)}`}
+              />
+            ))}
+          </FooterCol>
+        )}
 
         <div>
           <h4 className="mb-4 text-sm font-bold uppercase tracking-wider">
@@ -170,7 +191,9 @@ function FooterCol({
   );
 }
 
-function FooterLink({ label, href = "#" }: { label: string; href?: string }) {
+// `href` is required: the optional version defaulted to "#", which is how a
+// whole column of links came to point at nothing.
+function FooterLink({ label, href }: { label: string; href: string }) {
   return (
     <li>
       <Link
