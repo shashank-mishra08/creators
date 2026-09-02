@@ -26,7 +26,13 @@ export function Logo({
           alt="Creators Arena"
           width={320}
           height={200}
-          priority
+          // No `priority`. It put a `<link rel=preload as=image>` for this file
+          // in the head of every page on the site, and the logo is never the
+          // LCP — the property pages' is the hero, the listing's is the first
+          // card, the home page's is a line of text. The preload was spending
+          // the first of the connection on 56KB that nothing was waiting for.
+          // The mark still sits in the initial viewport, so the browser fetches
+          // it immediately either way; only the head-of-queue claim is gone.
           className={cn(
             "h-28 w-auto object-contain mt-4",
             dark && "brightness-0 invert",

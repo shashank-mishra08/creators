@@ -20,11 +20,25 @@ export function Analytics({
     <>
       {ga && (
         <>
+          {/* `lazyOnload` rather than `afterInteractive`.
+              `afterInteractive` has Next put a `<link rel=preload as=script>`
+              for gtag.js in the head, so 170KB of Google Tag Manager was
+              claiming bandwidth ahead of the page's own content on every
+              route — before the hero, before the fonts. Nothing on the page
+              waits for analytics, so it waits for the page instead: this
+              loads on browser idle and emits no preload.
+
+              The cost is that a visitor who leaves within the first second or
+              so may not be counted. `gtag('config')` still fires a page_view
+              on its own the moment it runs; only the very shortest sessions
+              are at risk. */}
           <Script
             src={`https://www.googletagmanager.com/gtag/js?id=${ga}`}
-            strategy="afterInteractive"
+            strategy="lazyOnload"
           />
-          <Script id="ga4" strategy="afterInteractive">
+          {/* Same strategy, so the config still runs after the library it
+              configures — mixing the two would reverse that order. */}
+          <Script id="ga4" strategy="lazyOnload">
             {`window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${ga}');`}
           </Script>
         </>

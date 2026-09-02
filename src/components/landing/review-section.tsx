@@ -19,7 +19,6 @@ interface Card {
   propertyId?: string;
   propertySlug?: string;
   /** Only the curated cards carry the avatar service + buyer badge. */
-  avatarSeed?: number;
 }
 
 /**
@@ -61,7 +60,6 @@ export function ReviewSection({ reviews = [] }: { reviews?: ReviewWithProperty[]
       line1: "Purchased 4 BHK,",
       line2: "Sector 146, Noida",
       rating: 5,
-      avatarSeed: 1,
       text: "Beautiful interface, detailed property information, and excellent support. The site made comparing projects effortless.",
     },
     {
@@ -70,7 +68,6 @@ export function ReviewSection({ reviews = [] }: { reviews?: ReviewWithProperty[]
       line1: "Purchased 3 BHK,",
       line2: "Sector 150, Noida",
       rating: 5,
-      avatarSeed: 2,
       text: "Creators Arena helped me find the perfect investment property. The location analysis and ROI metrics were spot on!",
     },
     {
@@ -79,7 +76,6 @@ export function ReviewSection({ reviews = [] }: { reviews?: ReviewWithProperty[]
       line1: "Purchased 2 BHK,",
       line2: "Golf Course Ext",
       rating: 5,
-      avatarSeed: 3,
       text: "I loved the side-by-side comparison feature. It made choosing between different builders so much easier and transparent.",
     },
     {
@@ -88,7 +84,6 @@ export function ReviewSection({ reviews = [] }: { reviews?: ReviewWithProperty[]
       line1: "Purchased Villa,",
       line2: "Yamuna Expressway",
       rating: 5,
-      avatarSeed: 4,
       text: "Highly recommend this platform. The pricing details are accurate, and I felt confident making my final decision here.",
     },
     {
@@ -97,7 +92,6 @@ export function ReviewSection({ reviews = [] }: { reviews?: ReviewWithProperty[]
       line1: "Purchased 3 BHK,",
       line2: "Greater Noida West",
       rating: 5,
-      avatarSeed: 5,
       text: "A very smooth and premium experience. All the floor plans and amenity details were exactly as shown on the site.",
     },
   ];
@@ -174,21 +168,23 @@ export function ReviewSection({ reviews = [] }: { reviews?: ReviewWithProperty[]
                 <div>
                   <div className="flex justify-between items-start mb-5">
                     <div className="flex gap-3">
+                      {/* Initials for everyone.
+                          The curated launch cards used to pull a stock portrait
+                          from i.pravatar.cc — five strangers' faces under five
+                          customers' names, which is the thing the comment on
+                          the other branch already said not to do. They also
+                          cost the home page five third-party image requests and
+                          five preloads in the head, all of them below the fold,
+                          on a page whose LCP is a line of text.
+
+                          The fallback this replaces them with is not new: every
+                          real review has always rendered this way, so the two
+                          kinds of card now look like each other instead of
+                          only one of them looking real. */}
                       <div className="w-10 h-10 rounded-full bg-slate-200 overflow-hidden flex-shrink-0 dark:bg-muted">
-                        {review.avatarSeed ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={`https://i.pravatar.cc/150?u=${review.avatarSeed}`}
-                            alt={review.name}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          // Real reviewers get their initials, not a stock photo
-                          // of someone else.
-                          <span className="flex h-full w-full items-center justify-center bg-brand-purple/10 text-xs font-bold text-brand-purple">
-                            {initialsOf(review.name)}
-                          </span>
-                        )}
+                        <span className="flex h-full w-full items-center justify-center bg-brand-purple/10 text-xs font-bold text-brand-purple">
+                          {initialsOf(review.name)}
+                        </span>
                       </div>
                       <div className="flex flex-col">
                         <span className="text-sm font-semibold text-slate-900 dark:text-foreground">{review.name}</span>

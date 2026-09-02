@@ -35,6 +35,7 @@ import { PropertyVideo } from "@/components/property/property-video";
 import { parseVideoSource } from "@/lib/video";
 import { Lightbox } from "@/components/ui/lightbox";
 import { SiteVisitModal } from "@/components/property/site-visit-modal";
+import { PropertyMap } from "@/components/property/property-map";
 import { PropertyReviews } from "@/components/reviews/property-reviews";
 import { cityListingPath } from "@/lib/listing-filters";
 import { cn, formatPriceLakh } from "@/lib/utils";
@@ -591,15 +592,11 @@ export function PropertyDetail({
             View on Google Maps
           </a>
         </div>
-        <div className="overflow-hidden rounded-2xl border border-border shadow-glass">
-          <iframe
-            title={`Map of ${p.name}`}
-            src={`https://www.google.com/maps?q=${mapsQuery}&output=embed`}
-            className="h-full min-h-[16rem] w-full"
-            loading="lazy"
-            referrerPolicy="no-referrer-when-downgrade"
-          />
-        </div>
+        <PropertyMap
+          query={mapsQuery}
+          title={p.name}
+          className="overflow-hidden rounded-2xl border border-border shadow-glass"
+        />
       </div>
 
       {/* About the Builder and the video tour: one card, two panes.
