@@ -71,6 +71,44 @@ const COMMON_AMENITIES = [
   { key: "spa", label: "Spa & Sauna" },
 ];
 
+/**
+ * Slug an amenity the way the importer and the repository do — lowercase,
+ * letters and digits only — so `swimming_pool` and `swimmingpool` are
+ * recognised as the same amenity rather than saved twice.
+ */
+function amenitySlug(key: string): string {
+  return key.toLowerCase().replace(/[^a-z0-9]+/g, "");
+}
+
+/**
+ * Every common amenity gets a checkbox, whether or not the property already
+ * has a row for it.
+ *
+ * Editing used to render only what was stored, which meant an amenity that had
+ * never been saved could not be turned on: 43 of the 45 projects carry no
+ * clubhouse row at all, so the detail page said "Clubhouse — No" and the admin
+ * had nowhere to say otherwise. Swimming Pool, Gym, Sports Court and Kids Play
+ * Area were in the same position on most records.
+ *
+ * Stored rows win where both exist, so a property keeps its own key, label,
+ * note and checked state; only the genuinely absent ones are added, unchecked.
+ * The merged list is sorted by label because the stored rows arrive that way
+ * and appending to the end would have broken it.
+ *
+ * A common amenity counts as already present if either its key or its label
+ * matches. Both are needed: the imported sheets store "Gymnasium" under the
+ * key `gymnasium` while the list here calls the same thing `gym`, and matching
+ * on the key alone put two identical "Gymnasium" checkboxes side by side.
+ */
+function withCommonAmenities(stored: Amenity[]): Amenity[] {
+  const haveKeys = new Set(stored.map((a) => amenitySlug(a.key)));
+  const haveLabels = new Set(stored.map((a) => amenitySlug(a.label)));
+  const missing = COMMON_AMENITIES.filter(
+    (c) => !haveKeys.has(amenitySlug(c.key)) && !haveLabels.has(amenitySlug(c.label)),
+  ).map((c) => ({ ...c, available: false, note: "" }));
+  return [...stored, ...missing].sort((a, b) => a.label.localeCompare(b.label));
+}
+
 // Sourced from the shared constant rather than a local copy — this list had
 // drifted to three cities while the database held five, so two markets could
 // not be selected when adding a property.
@@ -281,7 +319,10 @@ export function PropertyForm({ title, subtitle: formSubtitle, initialData, onSub
 
   // Amenities
   const [amenities, setAmenities] = useState<Amenity[]>(
-    initialData?.amenities?.length ? initialData.amenities : COMMON_AMENITIES.map((a) => ({ ...a, available: false, note: "" }))
+    initialData?.amenities?.length
+      ? withCommonAmenities(initialData.amenities)
+      // A new property starts from the common list in its curated order.
+      : COMMON_AMENITIES.map((a) => ({ ...a, available: false, note: "" }))
   );
   const [customAmenity, setCustomAmenity] = useState("");
 
